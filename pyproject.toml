@@ -1,0 +1,46 @@
+[project]
+name = "jacinta"
+version = "0.1.0"
+description = "..."
+readme = "README.md"
+requires-python = ">=3.13"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Pablo Gómez Álvarez", email = "contact@theconsmind.com" }
+]
+dependencies = [
+    "black>=25.9.0",
+    "numpy>=2.3.4",
+    "ruff>=0.14.2",
+]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.10.7",
+    "pip>=25.3",
+]
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+include = '\.py$'
+extend-exclude = '\.venv|dist|build'
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+src = ["src"]
+exclude = [".venv", "dist", "build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["jacinta"]
