@@ -60,21 +60,22 @@ For each dimension _i_ that has both bounds defined:
 
 1. **Normalize to [0, 1]**
 
-   $$
+   ```math
    u_i = \frac{x_i - \min_i}{\max_i - \min_i}
-   $$
+   ```
 
 2. **Shift to [-1, 1]**
 
-   $$
+   ```math
    v_i = 2u_i - 1
-   $$
+   ```
 
 3. **Map to ℝ (unbound transformation)**
-   $$
+
+   ```math
    y_i = \tfrac{1}{2} \ln\!\left(\frac{1 + v_i}{1 - v_i}\right)
-        = \operatorname{artanh}(v_i)
-   $$
+        = \mathrm{artanh}(v_i)
+   ```
 
 This transformation preserves continuity and order:  
 values near the midpoint of the interval map to 0, while approaching the bounds results in large positive or negative outputs.
