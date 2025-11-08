@@ -6,6 +6,17 @@ import numpy as np
 
 
 class Transmitter:
+    """
+    Transmitter is responsible for mapping Jacinta's internal control
+    values back into the external, possibly bounded space.
+
+    It acts as the "inverse" counterpart of Receiver:
+        - internal space:   typically unbounded (ℝ)
+        - external space:   finite intervals [min_x[i], max_x[i]]
+
+    Only fully bounded dimensions are rescaled back using a tanh-based
+    squashing transform.
+    """
 
     def __init__(
         self,
@@ -22,22 +33,28 @@ class Transmitter:
                 np.nan means "no lower bound".
             max_x (float | np.ndarray | None): Upper bounds per dimension.
                 np.nan means "no upper bound".
-
-        Returns:
-            None
         """
+        # Normalize lower bounds to a float array:
+        # - None  -> all dimensions unbounded below    -> fill with NaN
+        # - float -> same lower bound for all dims     -> broadcast scalar
+        # - array -> per-dimension lower bounds        -> copy to own memory
         if min_x is None:
             self.min_x = np.full(size, np.nan, dtype=float)
         elif isinstance(min_x, float):
             self.min_x = np.full(size, min_x, dtype=float)
         else:
-            self.min_x = min_x.astype(float).copy()
+            self.min_x = np.asarray(min_x, dtype=float).copy()
+
+        # Same normalization logic for upper bounds.
         if max_x is None:
             self.max_x = np.full(size, np.nan, dtype=float)
         elif isinstance(max_x, float):
             self.max_x = np.full(size, max_x, dtype=float)
         else:
             self.max_x = np.asarray(max_x, dtype=float)
+
+        # Dimensions with both bounds finite are considered "fully bounded"
+        # and will be transformed back into their [min_x, max_x] interval.
         self.has_bounds: np.ndarray = np.isfinite(self.min_x) & np.isfinite(self.max_x)
         return
 
@@ -46,12 +63,10 @@ class Transmitter:
         """
         Return the dimensionality of the Transmitter.
 
-        Args:
-            None
-
         Returns:
             int: Number of dimensions.
         """
+        # Dimensionality is given by the size of the bounds vectors.
         N = self.min_x.size
         return N
 
@@ -59,12 +74,10 @@ class Transmitter:
         """
         Create a deep copy of the current Transmitter.
 
-        Args:
-            None
-
         Returns:
             Transmitter: A new Transmitter with the same parameters.
         """
+        # Reuse the constructor so future changes in __init__ are honored.
         transmitter = self.__class__(self.N, self.min_x, self.max_x)
         return transmitter
 
@@ -72,12 +85,10 @@ class Transmitter:
         """
         Serialize Transmitter configuration to a dictionary.
 
-        Args:
-            None
-
         Returns:
             dict[str, any]: Serializable snapshot of the Transmitter.
         """
+        # Convert numpy arrays into JSON-friendly Python lists.
         data = {
             "class": self.__class__.__name__,
             "size": self.N,
@@ -98,6 +109,7 @@ class Transmitter:
         Returns:
             Transmitter: Reconstructed Transmitter instance.
         """
+        # Reconstruct core arrays and delegate initialization to __init__.
         transmitter = cls(
             size=int(data["size"]),
             min_x=np.array(data["min_x"], dtype=float),
@@ -111,10 +123,8 @@ class Transmitter:
 
         Args:
             file_path (str): Target file path.
-
-        Returns:
-            None
         """
+        # Persist configuration only (no runtime-dependent state).
         data = self.to_dict()
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
@@ -131,6 +141,7 @@ class Transmitter:
         Returns:
             Transmitter: Reconstructed Transmitter instance.
         """
+        # Mirror the save() path: JSON -> dict -> Transmitter.
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
         transmitter = cls.from_dict(data)
@@ -146,12 +157,24 @@ class Transmitter:
         Returns:
             np.ndarray: External values clamped to [min_x, max_x] where applicable.
         """
+        # Work on a copy to avoid mutating the caller's array.
         y = x.copy()
+
+        # Indices of dimensions that have both finite bounds.
         idx = np.where(self.has_bounds)[0]
+
         if idx.size > 0:
+            # 1) Squash unbounded values in ℝ into (-1, 1) using tanh.
+            #    This is the natural inverse of the artanh used by Receiver.
             x = np.tanh(x[idx])
+
+            # 2) Linearly map (-1, 1) -> (0, 1).
             x = (x + 1.0) * 0.5
+
+            # 3) Rescale (0, 1) into the original [min_x, max_x] interval.
             y[idx] = self.min_x[idx] + x * (self.max_x[idx] - self.min_x[idx])
+
+        # Unbounded or partially bounded dimensions pass through unchanged.
         return y
 
     def add_dimension(
@@ -165,14 +188,16 @@ class Transmitter:
                 np.nan means "no lower bound".
             max_x (float | None): Upper bound for the new dimension.
                 np.nan means "no upper bound".
-
-        Returns:
-            None
         """
+        # Append the new bounds as length-1 arrays to maintain 1D structure.
         new_min_x = np.array([min_x], dtype=float)
         new_max_x = np.array([max_x], dtype=float)
+
+        # Extend bounds vectors.
         self.min_x = np.concatenate([self.min_x, new_min_x])
         self.max_x = np.concatenate([self.max_x, new_max_x])
+
+        # Recompute mask to keep internal invariants consistent.
         self.has_bounds = np.isfinite(self.min_x) & np.isfinite(self.max_x)
         return
 
@@ -182,10 +207,8 @@ class Transmitter:
 
         Args:
             idx (int): Index of the dimension to remove.
-
-        Returns:
-            None
         """
+        # Remove the index across all internal arrays so they stay aligned.
         self.min_x = np.delete(self.min_x, idx, axis=0)
         self.max_x = np.delete(self.max_x, idx, axis=0)
         self.has_bounds = np.delete(self.has_bounds, idx, axis=0)

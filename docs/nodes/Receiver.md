@@ -58,19 +58,19 @@ Receiver is designed with **clarity, safety, and reversibility** in mind.
 
 For each dimension _i_ that has both bounds defined:
 
-1. **Normalize to [0, 1]**
+1. **Normalize to [0, 1]:**
 
    ```math
    u_i = \frac{x_i - \min_i}{\max_i - \min_i}
    ```
 
-2. **Shift to [-1, 1]**
+2. **Shift to [-1, 1]:**
 
    ```math
    v_i = 2u_i - 1
    ```
 
-3. **Map to ℝ (unbound transformation)**
+3. **Map to ℝ (unbound transformation):**
 
    ```math
    y_i = \tfrac{1}{2} \ln\!\left(\frac{1 + v_i}{1 - v_i}\right)
@@ -135,8 +135,8 @@ print("Transformed y:", y)
 **Possible Output**
 
 ```
-Input x: [ 0.5   -3.2   4.   2.5]
-Transformed y: [ 0.   -3.2   4.   2.5]
+Input x: [ 0.5 -3.2  4.   2.5]
+Transformed y: [ 0.  -3.2  4.   2.5]
 ```
 
 Here, only the first dimension is transformed (since it’s fully bounded),  
