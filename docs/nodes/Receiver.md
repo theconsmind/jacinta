@@ -14,36 +14,36 @@ The following features are planned for upcoming releases:
 
 ## 🧩 Overview
 
-The **Receiver** module is the entry point of Jacinta’s data pipeline.  
+The Receiver module is the entry point of Jacinta’s data pipeline.  
 It handles external inputs and transforms them into a standardized internal representation, optionally mapping bounded components into the full real line (ℝ).
 
 This makes Receiver especially useful when dealing with real-world data that has natural limits (e.g., normalized features, sensor ranges, physical constraints).
 
 ## 🎯 Purpose
 
-Receiver’s mission is to make external data **ready for internal processing**.  
+Receiver’s mission is to make external data ready for internal processing.  
 In particular, it:
 
 - Accepts data of arbitrary dimensionality.
-- Optionally rescales components bounded in `[min_x, max_x]` into an **unbounded space** using a stable mathematical transform.
+- Optionally rescales components bounded in `[min_x, max_x]` into an unbounded space using a stable mathematical transform.
 - Leaves unbounded or partially bounded dimensions untouched.
 - Preserves the structure and ordering of the data.
 
-This helps ensure that later stages in Jacinta (e.g., the `Processor`) operate in a continuous, smooth domain without artificial clipping or discontinuities.
+This helps ensure that later stages in Jacinta (e.g., the Processor) operate in a continuous, smooth domain without artificial clipping or discontinuities.
 
 ## ⚙️ Design Philosophy
 
-Receiver is designed with **clarity, safety, and reversibility** in mind.
+Receiver is designed with clarity, safety, and reversibility in mind.
 
 - **Explicit bounds:**  
   Each dimension explicitly declares whether it is bounded, partially bounded, or unbounded. No implicit assumptions.
 
 - **Selective normalization:**  
-  Only dimensions with _both_ finite bounds are normalized.  
+  Only dimensions with both finite bounds are normalized.  
   Others are transparently passed through.
 
 - **Numerical stability:**  
-  A small `ε` margin prevents hitting singularities (e.g., `artanh(±1)`), ensuring smooth gradients and finite outputs.
+  A small `ϵ` margin prevents hitting singularities (e.g., `artanh(±1)`), ensuring smooth gradients and finite outputs.
 
 - **Reversibility by design:**  
   The transformation is bijective for bounded dimensions, meaning it can be inverted perfectly by the corresponding Transmitter module.
@@ -61,19 +61,19 @@ For each dimension _i_ that has both bounds defined:
 1. **Normalize to [0, 1]:**
 
    ```math
-   u_i = \frac{x_i - \min_i}{\max_i - \min_i}
+   u_i = \frac{x_i - \text{min}_i}{\text{max}_i - \text{min}_i}
    ```
 
 2. **Shift to [-1, 1]:**
 
    ```math
-   v_i = 2u_i - 1
+   v_i = 2 u_i - 1
    ```
 
 3. **Map to ℝ (unbound transformation):**
 
    ```math
-   y_i = \tfrac{1}{2} \ln\!\left(\frac{1 + v_i}{1 - v_i}\right)
+   y_i = \frac{1}{2} \ln\!\left(\frac{1 + v_i}{1 - v_i}\right)
         = \mathrm{artanh}(v_i)
    ```
 
@@ -88,10 +88,17 @@ Dimensions with undefined or infinite bounds remain unchanged.
 
 **Parameters**
 
-- `size (int)`: Dimensionality of the input vector.
-- `min_x (float | np.ndarray | None)`: Lower bounds per dimension; use `np.nan` or `None` for unbounded.
-- `max_x (float | np.ndarray | None)`: Upper bounds per dimension; use `np.nan` or `None` for unbounded.
-- `eps (float)`: Small positive constant used for numerical stability.
+- `size (int)`  
+  Dimensionality of the input vector.
+
+- `min_x (float | np.ndarray | None)`  
+  Lower bounds per dimension; use `np.nan` or `None` for unbounded.
+
+- `max_x (float | np.ndarray | None)`  
+  Upper bounds per dimension; use `np.nan` or `None` for unbounded.
+
+- `eps (float)`  
+  Small positive constant used for numerical stability.
 
 ### Core Methods
 
@@ -108,8 +115,10 @@ Dimensions with undefined or infinite bounds remain unchanged.
 ## 🧩 Example Usage
 
 ```python
-from jacinta.nodes import Receiver
 import numpy as np
+
+from jacinta.nodes import Receiver
+
 
 # Define a Receiver with mixed bounds:
 #  - Dimension 0: fully bounded [0, 1]

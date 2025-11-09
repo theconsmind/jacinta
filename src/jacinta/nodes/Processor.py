@@ -6,6 +6,17 @@ import numpy as np
 
 
 class Processor:
+    """
+    Processor maintains and updates a stochastic policy over actions
+    represented by a multivariate Gaussian N(mu, Sigma).
+
+    It can:
+        - sample actions from the current Gaussian (process_forward)
+        - update its parameters using a scalar reward signal (process_backward)
+
+    This makes it suitable as Jacinta's "internal decision maker" or
+    search mechanism in continuous spaces.
+    """
 
     def __init__(
         self,
@@ -32,25 +43,41 @@ class Processor:
             r_alpha (float): EMA factor for reward baseline update.
             r_beta (float): EMA factor for reward scale update.
             eps (float): Numerical epsilon for stability.
-
-        Returns:
-            None
         """
+        # Last sampled point from process_forward, needed for credit assignment
+        # in process_backward. Set to None when no valid sample is cached.
         self._last_y: np.ndarray | None = None
+
+        # Mean of the Gaussian:
+        # - scalar -> broadcast to all dimensions
+        # - array  -> copied to avoid external aliasing
         self.mu = (
             np.full(size, mu, dtype=float)
             if isinstance(mu, float)
-            else mu.astype(float).copy()
+            else np.asarray(mu, dtype=float).copy()
         )
+
+        # Covariance of the Gaussian:
+        # - scalar sigma -> interpreted as std, converted to sigma^2 * I
+        # - array        -> used as full covariance matrix (copied)
         self.sigma = (
             (sigma**2) * np.eye(size, dtype=float)
             if isinstance(sigma, float)
-            else sigma.astype(float).copy()
+            else np.asarray(sigma, dtype=float).copy()
         )
+
+        # Lower bound on per-dimension variance to avoid collapse and
+        # numerical issues (e.g. singular covariance matrices).
         self.min_var = min_var
         self.eps = eps
+
+        # Step sizes for gradient-like updates of mean and covariance.
         self.lr_mu = lr_mu
         self.lr_sigma = lr_sigma
+
+        # Reward normalization state:
+        # - r_baseline: running mean of rewards
+        # - r_scale:    running mean of |reward - baseline|
         self.r_baseline: float = 0.0
         self.r_scale: float = 0.0
         self.r_alpha = r_alpha
@@ -62,12 +89,10 @@ class Processor:
         """
         Return the dimensionality of the Processor.
 
-        Args:
-            None
-
         Returns:
             int: Number of dimensions.
         """
+        # Dimensionality is inferred from the length of the mean vector.
         N = self.mu.size
         return N
 
@@ -75,12 +100,10 @@ class Processor:
         """
         Create a deep copy of the current Processor.
 
-        Args:
-            None
-
         Returns:
             Processor: A new Processor with the same parameters.
         """
+        # Reuse constructor to keep behavior consistent with __init__.
         processor = self.__class__(
             self.N,
             self.mu,
@@ -92,8 +115,12 @@ class Processor:
             self.r_beta,
             self.eps,
         )
+
+        # Copy cached last sample if present (keeps learning continuity).
         if self._last_y is not None:
             processor._last_y = self._last_y.copy()
+
+        # Copy reward normalization state.
         processor.r_baseline = self.r_baseline
         processor.r_scale = self.r_scale
         return processor
@@ -102,12 +129,10 @@ class Processor:
         """
         Serialize Processor state to a dictionary.
 
-        Args:
-            None
-
         Returns:
             dict[str, any]: Serializable snapshot of the Processor.
         """
+        # Convert numpy arrays to lists so they can be JSON-encoded.
         data = {
             "class": self.__class__.__name__,
             "size": self.N,
@@ -135,6 +160,7 @@ class Processor:
         Returns:
             Processor: Reconstructed Processor instance.
         """
+        # Rehydrate numpy arrays and delegate to __init__ for validation.
         processor = cls(
             size=int(data["size"]),
             mu=np.array(data["mu"], dtype=float),
@@ -156,10 +182,8 @@ class Processor:
 
         Args:
             file_path (str): Target file path.
-
-        Returns:
-            None
         """
+        # Persist configuration and learning state for later reuse.
         data = self.to_dict()
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
@@ -176,6 +200,7 @@ class Processor:
         Returns:
             Processor: Reconstructed Processor instance.
         """
+        # Simple deserialization path mirroring save().
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
         processor = cls.from_dict(data)
@@ -185,15 +210,19 @@ class Processor:
         """
         Sample from the current Gaussian distribution.
 
-        Args:
-            None
-
         Returns:
             np.ndarray: Sampled vector from N(mu, sigma).
         """
+        # Standard normal noise in R^N.
         z = np.random.randn(self.N)
+
+        # Cholesky factorization: sigma = L L^T, assumes sigma is SPD.
         L = np.linalg.cholesky(self.sigma)
+
+        # Reparameterization: y = mu + L z ~ N(mu, sigma).
         y = self.mu + L @ z
+
+        # Cache last sample for use in process_backward().
         self._last_y = y
         return y
 
@@ -203,25 +232,48 @@ class Processor:
 
         Args:
             r (float): Scalar reward used to scale the update.
-
-        Returns:
-            None
         """
+        # Normalize reward to stabilize learning across different scales.
         r = self._process_reward(r)
+
+        # Deviation of last sample from current mean.
         diff = self._last_y - self.mu
+
+        # Direction for mean update:
+        # solve sigma * v_mu = diff  -> v_mu = sigma^{-1} diff
+        # fall back to pseudo-inverse if sigma is near-singular.
         try:
             v_mu = np.linalg.solve(self.sigma, diff)
         except np.linalg.LinAlgError:
             v_mu = np.linalg.pinv(self.sigma) @ diff
+
+        # Normalize direction to unit length to decouple update magnitude
+        # from the norm of diff / sigma.
         v_mu /= np.linalg.norm(v_mu) + self.eps
+
+        # Gradient-like mean update scaled by normalized reward.
         self.mu += self.lr_mu * r * v_mu
+
+        # Direction for covariance update:
+        # push sigma towards outer(diff, diff) (natural policy gradient–like).
         v_sigma = np.outer(diff, diff) - self.sigma
+
+        # Normalize matrix update to prevent excessively large steps.
         v_sigma /= np.linalg.norm(v_sigma) + self.eps
+
+        # Covariance update (symmetric matrix before post-processing).
         self.sigma += self.lr_sigma * r * v_sigma
+
+        # Enforce exact symmetry numerically: sigma = (sigma + sigma^T) / 2.
         self.sigma = 0.5 * (self.sigma + self.sigma.T)
+
+        # Ensure all variances stay above min_var to keep sigma positive
+        # definite (or at least well-conditioned).
         diag = np.diag(self.sigma)
         diag = np.maximum(diag, self.min_var)
         np.fill_diagonal(self.sigma, diag)
+
+        # Invalidate cached sample: only one backward step per forward sample.
         self._last_y = None
         return
 
@@ -232,16 +284,21 @@ class Processor:
         Args:
             mu (float): Mean for the new dimension.
             sigma (float): Std for the new dimension.
-
-        Returns:
-            None
         """
+        # Extend mean vector with new component.
         new_mu = np.concatenate([self.mu, np.array([mu], dtype=float)])
+
+        # Create enlarged covariance matrix and copy existing structure.
         new_sigma = np.zeros((self.N + 1, self.N + 1), dtype=float)
         new_sigma[: self.N, : self.N] = self.sigma
+
+        # Initialize new dimension as independent with variance sigma^2.
         new_sigma[self.N, self.N] = sigma**2
+
         self.mu = new_mu
         self.sigma = new_sigma
+
+        # Any previous sample no longer matches the new dimensionality.
         self._last_y = None
         return
 
@@ -251,13 +308,16 @@ class Processor:
 
         Args:
             idx (int): Index of the dimension to remove.
-
-        Returns:
-            None
         """
+        # Remove component from mean vector.
         self.mu = np.delete(self.mu, idx, axis=0)
+
+        # Remove corresponding row and column from covariance matrix
+        # to keep it consistent with the reduced dimensionality.
         self.sigma = np.delete(self.sigma, idx, axis=0)
         self.sigma = np.delete(self.sigma, idx, axis=1)
+
+        # Invalidate any cached sample (shape no longer matches).
         self._last_y = None
         return
 
@@ -271,14 +331,22 @@ class Processor:
         Returns:
             float: Stabilized reward suitable for parameter updates.
         """
+        # Exponential moving average for reward baseline (center of rewards).
         self.r_baseline = (
             (1.0 - self.r_alpha) * self.r_baseline + self.r_alpha * r
             if self.r_baseline is not None
             else r
         )
+
+        # Center reward around the moving baseline.
         r_centered = r - self.r_baseline
+
+        # Exponential moving average of absolute centered reward,
+        # used as a scale (like a running standard deviation).
         self.r_scale = (1.0 - self.r_beta) * self.r_scale + self.r_beta * abs(
             r_centered
         )
+
+        # Normalize reward to have roughly unit scale; eps prevents division by 0.
         r_norm = r_centered / (self.r_scale + self.eps)
         return r_norm

@@ -14,19 +14,19 @@ The following improvements are planned for future versions:
 
 ## 🧩 Overview
 
-The **Transmitter** module is the **final stage** in Jacinta’s core pipeline.  
-It takes internal outputs — potentially unbounded — and converts them into an **external bounded representation** suitable for interaction with the environment.
+The Transmitter module is the final stage in Jacinta’s core pipeline.  
+It takes internal outputs — potentially unbounded — and converts them into an external bounded representation suitable for interaction with the environment.
 
-Where the **Receiver** converts finite intervals into ℝ, the **Transmitter** does the reverse:  
+Where the Receiver converts finite intervals into ℝ, the Transmitter does the reverse:  
 it compresses real-valued signals back into their natural or physical limits.
 
 ## 🎯 Purpose
 
 Transmitter’s role is to ensure that Jacinta’s outputs are:
 
-- **Interpretable** by the external world (e.g., control commands, actuator ranges, probability scales).
-- **Numerically stable**, by smoothly bounding values within `[min_x, max_x]`.
-- **Symmetric** with respect to the Receiver, maintaining consistent forward–inverse mapping.
+- Interpretable by the external world (e.g., control commands, actuator ranges, probability scales).
+- Numerically stable, by smoothly bounding values within `[min_x, max_x]`.
+- Symmetric with respect to the Receiver, maintaining consistent forward–inverse mapping.
 
 In essence, the Transmitter performs a controlled “compression” of Jacinta’s raw internal activations into valid, externally usable data.
 
@@ -52,8 +52,6 @@ The Transmitter was built with the following guiding principles:
 - **Serializable state:**  
   Full configuration can be saved, loaded, or cloned to ensure reproducibility in simulations and AI deployments.
 
----
-
 ## 🧠 Mathematical Transformation
 
 For each dimension _i_ with both finite bounds:
@@ -73,12 +71,12 @@ For each dimension _i_ with both finite bounds:
 3. **Map to [min, max]:**
 
    ```math
-   y_i = \text{min}\_i + u_i \times (\text{max}\_i - \text{min}\_i)
+   y_i = \text{min}_i + u_i (\text{max}_i - \text{min}_i)
    ```
 
 Unbounded or partially bounded dimensions remain unchanged.
 
-This process is the exact mathematical **inverse** of the Receiver’s transformation, guaranteeing continuity and reversibility.
+This process is the exact mathematical inverse of the Receiver’s transformation, guaranteeing continuity and reversibility.
 
 ## 🧱 Class Interface
 
@@ -86,9 +84,14 @@ This process is the exact mathematical **inverse** of the Receiver’s transform
 
 **Parameters**
 
-- `size (int)`: Number of output dimensions.
-- `min_x (float | np.ndarray | None)`: Lower bounds per dimension (`np.nan` or `None` = unbounded).
-- `max_x (float | np.ndarray | None)`: Upper bounds per dimension (`np.nan` or `None` = unbounded).
+- `size (int)`  
+  Number of output dimensions.
+
+- `min_x (float | np.ndarray | None)`  
+  Lower bounds per dimension (`np.nan` or `None` = unbounded).
+
+- `max_x (float | np.ndarray | None)`  
+  Upper bounds per dimension (`np.nan` or `None` = unbounded).
 
 ### Core Methods
 
@@ -102,13 +105,13 @@ This process is the exact mathematical **inverse** of the Receiver’s transform
 | `save(path)` / `load(path)`             | Save or restore configuration as JSON.                        |
 | `N` _(property)_                        | Returns the number of dimensions.                             |
 
----
-
 ## 🧩 Example Usage
 
 ```python
-from jacinta.nodes import Transmitter
 import numpy as np
+
+from jacinta.nodes import Transmitter
+
 
 # Define a Transmitter with mixed bounds:
 #  - Dimension 0: fully bounded [0, 1]
