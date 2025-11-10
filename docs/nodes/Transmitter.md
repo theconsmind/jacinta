@@ -9,8 +9,6 @@ The following improvements are planned for future versions:
   Add safeguards for inconsistent bounds or invalid inputs.
 - **Unit testing:**  
   Introduce comprehensive tests to verify numerical stability and correct inverse behavior with respect to the Receiver.
-- **Configurable transformation function:**  
-  Allow users to define custom "squashing" functions (e.g., `tanh`, `sigmoid`, or custom mappings) instead of being limited to the hyperbolic tangent.
 
 ## 🧩 Overview
 

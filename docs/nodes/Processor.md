@@ -9,8 +9,6 @@ The following improvements are planned for upcoming releases:
   Improve robustness by detecting invalid configurations and numerical instabilities.
 - **Unit testing:**  
   Add automated tests to ensure correctness, stability, and reproducibility.
-- **Exploration of alternative reinforcement learning methods:**  
-  Experiment with non-Gaussian distributions, alternative reward-processing schemes, and different adaptive update rules.
 
 ## 🧩 Overview
 

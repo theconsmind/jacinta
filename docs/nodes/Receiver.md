@@ -9,8 +9,6 @@ The following features are planned for upcoming releases:
   Improve robustness by detecting invalid configurations and runtime inconsistencies.
 - **Unit testing:**  
   Add automated test coverage to ensure numerical stability and backward compatibility.
-- **Configurable transformation function:**  
-  Allow different unbounding strategies (e.g., `tanh⁻¹`, `logit`, or custom mappings) instead of being limited to the hyperbolic tangent.
 
 ## 🧩 Overview
 

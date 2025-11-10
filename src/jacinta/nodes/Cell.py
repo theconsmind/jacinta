@@ -44,10 +44,10 @@ class Cell:
         self.base_res: int = self.res
         self.min_lr = min_lr
         self.lr_k = lr_k
+        self.processor.lr_mu = min_lr + (1.0 - min_lr) / (lr_k * lev + 1.0)
+        self.processor.lr_sigma = self.processor.lr_mu * 0.1
         self.min_x: np.ndarray = np.full(self.bounds.shape[0], np.inf, dtype=float)
         self.max_x: np.ndarray = np.full(self.bounds.shape[0], -np.inf, dtype=float)
-        self.processor.lr = min_lr + (1.0 - min_lr) / (lr_k * lev + 1.0)
-        print(f"Lev: {self.lev} | Res: {self.res} | Lr: {self.processor.lr}")
         return
 
     @property
