@@ -159,7 +159,7 @@ The scale tracks the mean absolute deviation of rewards, allowing normalization 
 \tilde{r} = \frac{r_{centered}}{r_{scale} + \epsilon}
 ```
 
-This normalized reward $ \tilde{r} $ becomes the driving signal for learning,  
+This normalized reward becomes the driving signal for learning,  
 ensuring consistent adaptation even if raw rewards drift over time.
 
 ### 3. Mean Update — Adjusting Central Expectation
@@ -207,10 +207,17 @@ M = d d^T - \Sigma
 
 This captures whether the observed deviation `d` suggests more or less variability than expected.
 
-The covariance is updated proportionally to this residual and the normalized reward:
+To separate the update direction from its magnitude (as in the mean update),
+the residual is explicitly normalized:
 
 ```math
-\Sigma \leftarrow \Sigma + \eta_\Sigma \tilde{r} \frac{M}{\|M\|_F + \epsilon}
+\tilde{M} = \frac{M}{\|M\|_F + \epsilon}
+```
+
+The covariance is then updated proportionally to the normalized residual and the normalized reward:
+
+```math
+\Sigma \leftarrow \Sigma + \eta_\Sigma \tilde{r} \tilde{M}
 ```
 
 This rule produces the following emergent behaviors:
