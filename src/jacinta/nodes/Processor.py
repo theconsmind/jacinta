@@ -46,7 +46,7 @@ class Processor:
         """
         # Last sampled point from process_forward, needed for credit assignment
         # in process_backward. Set to None when no valid sample is cached.
-        self._last_y: np.ndarray | None = None
+        self.last_y: np.ndarray | None = None
 
         # Mean of the Gaussian:
         # - scalar -> broadcast to all dimensions
@@ -117,8 +117,8 @@ class Processor:
         )
 
         # Copy cached last sample if present (keeps learning continuity).
-        if self._last_y is not None:
-            processor._last_y = self._last_y.copy()
+        if self.last_y is not None:
+            processor.last_y = self.last_y.copy()
 
         # Copy reward normalization state.
         processor.r_baseline = self.r_baseline
@@ -223,7 +223,7 @@ class Processor:
         y = self.mu + L @ z
 
         # Cache last sample for use in process_backward().
-        self._last_y = y
+        self.last_y = y
         return y
 
     def process_backward(self, r: float) -> None:
@@ -237,7 +237,7 @@ class Processor:
         r = self._process_reward(r)
 
         # Deviation of last sample from current mean.
-        diff = self._last_y - self.mu
+        diff = self.last_y - self.mu
 
         # Direction for mean update:
         # solve sigma * v_mu = diff  -> v_mu = sigma^{-1} diff
@@ -274,7 +274,7 @@ class Processor:
         np.fill_diagonal(self.sigma, diag)
 
         # Invalidate cached sample: only one backward step per forward sample.
-        self._last_y = None
+        self.last_y = None
         return
 
     def add_dimension(self, mu: float = 0.0, sigma: float = 100.0) -> None:
@@ -286,7 +286,8 @@ class Processor:
             sigma (float): Std for the new dimension.
         """
         # Extend mean vector with new component.
-        new_mu = np.concatenate([self.mu, np.array([mu], dtype=float)])
+        new_mu = np.array([mu], dtype=float)
+        self.mu = np.concatenate([self.mu, new_mu])
 
         # Create enlarged covariance matrix and copy existing structure.
         new_sigma = np.zeros((self.N + 1, self.N + 1), dtype=float)
@@ -294,12 +295,10 @@ class Processor:
 
         # Initialize new dimension as independent with variance sigma^2.
         new_sigma[self.N, self.N] = sigma**2
-
-        self.mu = new_mu
         self.sigma = new_sigma
 
         # Any previous sample no longer matches the new dimensionality.
-        self._last_y = None
+        self.last_y = None
         return
 
     def remove_dimension(self, idx: int) -> None:
@@ -318,7 +317,7 @@ class Processor:
         self.sigma = np.delete(self.sigma, idx, axis=1)
 
         # Invalidate any cached sample (shape no longer matches).
-        self._last_y = None
+        self.last_y = None
         return
 
     def _process_reward(self, r: float) -> float:

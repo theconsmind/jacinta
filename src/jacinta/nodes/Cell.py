@@ -19,22 +19,11 @@ class Cell:
         min_lr: float = 1e-3,
         lr_k: float = 1e-3,
     ) -> None:
-        """
-        Initialize a spatial Cell with recursive subdivision capability.
-
-        Args:
-            bounds (np.ndarray): Array of shape (N, 2) with [low, high] per dimension.
-            processor (Processor): Payload to be stored in the Cell.
-            lev (int): Current subdivision level (root is 1).
-            max_lev (int): Maximum allowed subdivision level.
-            lev_k (float): Coefficient used in the Subcells resolution formula.
-            min_lr (float): Minimum learning rate in the lr schedule.
-            lr_k (float): Coefficient used in the lr schedule.
-        """
+        """ """
         self.bounds = np.asarray(bounds, dtype=float).copy()
         self.min_x: np.ndarray = np.full(self.N, np.inf, dtype=float)
         self.max_x: np.ndarray = np.full(self.N, -np.inf, dtype=float)
-        self._mids: np.ndarray | None = None
+        self.mids: np.ndarray = np.full(self.N, np.nan, dtype=float)
 
         self.lev = lev
         self.lev_k = lev_k
@@ -52,23 +41,13 @@ class Cell:
 
     @property
     def N(self) -> int:
-        """
-        Return the dimensionality of the Cell.
-
-        Returns:
-            int: Number of dimensions of the bounds.
-        """
+        """ """
         N = self.bounds.shape[0]
         return N
 
     @property
     def L(self) -> int:
-        """
-        Return the maximum depth of the subtree rooted at this Cell.
-
-        Returns:
-            int: Tree depth starting from this node.
-        """
+        """ """
         L = 1
         subcells = [subcell for subcell in self.subcells if subcell is not None]
         if subcells:
@@ -76,12 +55,7 @@ class Cell:
         return L
 
     def copy(self) -> Cell:
-        """
-        Create a deep copy of this Cell, including its subtree.
-
-        Returns:
-            Cell: A new Cell with the same configuration and subcells.
-        """
+        """ """
         cell = self.__class__(
             self.bounds,
             self.processor,
@@ -93,7 +67,7 @@ class Cell:
         )
         cell.min_x = self.min_x.copy()
         cell.max_x = self.max_x.copy()
-        cell._mids = self._mids.copy() if self._mids is not None else self._mids
+        cell.mids = self.mids.copy()
         cell.sub_res = self.sub_res.copy()
         cell.subcells = [
             subcell.copy() if subcell is not None else subcell
@@ -102,16 +76,15 @@ class Cell:
         return cell
 
     def to_dict(self) -> dict[str, any]:
-        """
-        Serialize Cell and its subtree to a dictionary.
-
-        Returns:
-            dict[str, any]: Serializable snapshot of the Cell.
-        """
+        """ """
         data = {
             "class": self.__class__.__name__,
             "bounds": self.bounds.tolist(),
-            "processor": self.processor.to_dict() if self.processor is not None else self.processor,
+            "processor": (
+                self.processor.to_dict()
+                if self.processor is not None
+                else self.processor
+            ),
             "lev": self.lev,
             "max_lev": self.max_lev,
             "lev_k": self.lev_k,
@@ -124,24 +97,20 @@ class Cell:
             ],
             "min_x": self.min_x.tolist(),
             "max_x": self.max_x.tolist(),
-            "mids": self._mids.tolist() if self._mids is not None else self._mids,
+            "mids": self.mids.tolist(),
         }
         return data
 
     @classmethod
     def from_dict(cls, data: dict[str, any]) -> Cell:
-        """
-        Reconstruct a Cell (and its subtree) from a dict.
-
-        Args:
-            data (dict[str, any]): Serialized Cell data.
-
-        Returns:
-            Cell: Reconstructed Cell instance.
-        """
+        """ """
         cell = cls(
             bounds=np.array(data["bounds"], dtype=float),
-            processor=Processor.from_dict(data["processor"]) if data["processor"] is not None else data["processor"],
+            processor=(
+                Processor.from_dict(data["processor"])
+                if data["processor"] is not None
+                else data["processor"]
+            ),
             lev=int(data["lev"]),
             max_lev=int(data["max_lev"]),
             lev_k=float(data["lev_k"]),
@@ -151,7 +120,7 @@ class Cell:
         cell.sub_res = np.asarray(data["sub_res"], dtype=float).copy()
         cell.min_x = np.asarray(data["min_x"], dtype=float).copy()
         cell.max_x = np.asarray(data["max_x"], dtype=float).copy()
-        cell._mids = np.asarray(data["mids"], dtype=float).copy() if data["mids"] is not None else data["mids"]
+        cell.mids = np.asarray(data["mids"], dtype=float).copy()
         cell.subcells = [
             cls.from_dict(subcell) if subcell is not None else subcell
             for subcell in data["subcells"]
@@ -159,12 +128,7 @@ class Cell:
         return cell
 
     def save(self, file_path: str) -> None:
-        """
-        Save Cell tree as JSON to disk.
-
-        Args:
-            file_path (str): Target path.
-        """
+        """ """
         data = self.to_dict()
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
@@ -172,43 +136,19 @@ class Cell:
 
     @classmethod
     def load(cls, file_path: str) -> Cell:
-        """
-        Load Cell tree from a JSON file.
-
-        Args:
-            file_path (str): Source JSON path.
-
-        Returns:
-            Cell: Reconstructed Cell instance.
-        """
+        """ """
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
         cell = cls.from_dict(data)
         return cell
 
     def contains(self, x: np.ndarray) -> bool:
-        """
-        Check whether a point lies inside the Cell bounds.
-
-        Args:
-            x (np.ndarray): Point coordinates of shape (N,).
-
-        Returns:
-            bool: True if the point is inside, False otherwise.
-        """
+        """ """
         contains = np.all((x >= self.bounds[:, 0]) & (x < self.bounds[:, 1]))
         return contains
 
     def find(self, x: np.ndarray) -> Cell | None:
-        """
-        Recursively find the deepest Subcell that contains x.
-
-        Args:
-            x (np.ndarray): Query point.
-
-        Returns:
-            Cell | None: Deepest Cell containing x, or None if x is outside.
-        """
+        """ """
         cell = None
         if self.contains(x):
             for subcell in self.subcells:
@@ -220,14 +160,7 @@ class Cell:
         return cell
 
     def hit(self, x: np.ndarray) -> None:
-        """
-        Register a hit at the leaf Cell containing x.
-        When the hit budget for the corresponding subcell reaches zero,
-        that subcell is materialized as a new Cell.
-
-        Args:
-            x (np.ndarray): Point where the hit occurred.
-        """
+        """ """
         cell = self.find(x)
         if cell is not None:
             cell.min_x = np.minimum(cell.min_x, x)
@@ -239,74 +172,77 @@ class Cell:
                     cell._create_subcell(sub_idx)
         return
 
-    #def add_dimension(self, low: float, high: float) -> None:
-    #    """
-    #    Add a new dimension to this Cell and to all its Subcells.
-    #
-    #    Args:
-    #        low (float): Lower bound of the new dimension.
-    #        high (float): Upper bound of the new dimension.
-    #    """
-    #    new_row = np.array([[low, high]], dtype=float)
-    #    self.bounds = np.concatenate([self.bounds, new_row], axis=0)
-    #    self.min_x = np.concatenate([self.min_x, np.array([np.inf], dtype=float)])
-    #    self.max_x = np.concatenate([self.max_x, np.array([-np.inf], dtype=float)])
-    #    for subcell in self.subcells:
-    #        subcell.add_dimension(low, high)
-    #    return
-    #
-    #def remove_dimension(self, idx: int) -> None:
-    #    """
-    #    Remove a dimension from this Cell and all of its Subcells.
-    #
-    #    Args:
-    #        idx (int): Index of the dimension to remove.
-    #    """
-    #    self.bounds = np.delete(self.bounds, idx, axis=0)
-    #    self.min_x = np.delete(self.min_x, idx, axis=0)
-    #    self.max_x = np.delete(self.max_x, idx, axis=0)
-    #    for subcell in self.subcells:
-    #        subcell.remove_dimension(idx)
-    #    return
+    def add_dimension(self, low: float, high: float) -> None:
+        """ """
+        new_bounds = np.array([[low, high]], dtype=float)
+        self.bounds = np.concatenate([self.bounds, new_bounds])
 
-    def _compute_mids(self) -> np.ndarray:
-        """
-        TODO
-        """
-        mids = np.mean(self.bounds, axis=1)
-        for d in range(self.N):
+        new_min_x = np.array([np.inf], dtype=float)
+        new_max_x = np.array([-np.inf], dtype=float)
+
+        self.min_x = np.concatenate([self.min_x, new_min_x])
+        self.max_x = np.concatenate([self.max_x, new_max_x])
+
+        new_mid = np.array([np.nan], dtype=float)
+        self.mids = np.concatenate([self.mids, new_mid])
+
+        new_subcells = [None] * (2**self.N)
+        new_sub_res = np.empty(2**self.N, dtype=float)
+
+        for idx, subcell in enumerate(self.subcells):
+            idx0 = idx
+            idx1 = idx | (1 << (self.N - 1))
+            new_subcells[idx0] = subcell
+            new_subcells[idx1] = subcell
+            if subcell is not None:
+                subcell.add_dimension(low, high)
+
+            res = self.sub_res[idx]
+            new_sub_res[idx0] = res
+            new_sub_res[idx1] = res
+
+        self.subcells = new_subcells
+        self.sub_res = new_sub_res
+        return
+
+    def remove_dimension(self, idx: int) -> None:
+        """ """
+        raise NotImplementedError
+
+    def _update_mids(self):
+        """ """
+        idx = np.where(np.isnan(self.mids))[0]
+        mids = np.mean(self.bounds[idx], axis=1)
+        for k, d in enumerate(idx):
             low, high = self.bounds[d]
-            if not np.isfinite(mids[d]):
+            if not np.isfinite(mids[k]):
                 min_x = self.min_x[d]
                 max_x = self.max_x[d]
                 if np.isneginf(low) and np.isposinf(high):
-                    mids[d] = 0.0
+                    mids[k] = 0.0
                 elif np.isneginf(low) and np.isfinite(high):
-                    mids[d] = min_x - 1.0
+                    mids[k] = min_x - 1.0
                 elif np.isfinite(low) and np.isposinf(high):
-                    mids[d] = max_x + 1.0
-        return mids
+                    mids[k] = max_x + 1.0
+        self.mids[idx] = mids
+        return
 
     def _get_subcell_index(self, x: np.ndarray) -> int:
-        """
-        TODO
-        """
+        """ """
         idx = 0
-        self._mids = self._mids if self._mids is not None else self._compute_mids()
+        self._update_mids()
         for d in range(self.N):
-            if x[d] > self._mids[d]:
-                idx |= (1 << d)
+            if x[d] > self.mids[d]:
+                idx |= 1 << d
         return idx
 
     def _create_subcell(self, idx: int) -> None:
-        """
-        # TODO
-        """
-        self._mids = self._mids if self._mids is not None else self._compute_mids()
+        """ """
+        self._update_mids()
         subcell_bounds = np.zeros_like(self.bounds)
         for d in range(self.N):
             low, high = self.bounds[d]
-            mid = self._mids[d]
+            mid = self.mids[d]
             take_upper = (idx >> d) & 1
             if take_upper == 0:
                 subcell_bounds[d, 0] = low
