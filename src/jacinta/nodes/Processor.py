@@ -22,7 +22,7 @@ class Processor:
         self,
         size: int,
         mu: float | np.ndarray = 0.0,
-        sigma: float | np.ndarray = 100.0,
+        sigma: float | np.ndarray = 10.0,
         lr_mu: float = 1e-3,
         lr_sigma: float = 1e-4,
         min_var: float = 1e-8,
@@ -44,10 +44,6 @@ class Processor:
             r_beta (float): EMA factor for reward scale update.
             eps (float): Numerical epsilon for stability.
         """
-        # Last sampled point from process_forward, needed for credit assignment
-        # in process_backward. Set to None when no valid sample is cached.
-        self.last_y: np.ndarray | None = None
-
         # Mean of the Gaussian:
         # - scalar -> broadcast to all dimensions
         # - array  -> copied to avoid external aliasing
@@ -116,10 +112,6 @@ class Processor:
             self.eps,
         )
 
-        # Copy cached last sample if present (keeps learning continuity).
-        if self.last_y is not None:
-            processor.last_y = self.last_y.copy()
-
         # Copy reward normalization state.
         processor.r_baseline = self.r_baseline
         processor.r_scale = self.r_scale
@@ -168,12 +160,14 @@ class Processor:
             lr_mu=float(data["lr_mu"]),
             lr_sigma=float(data["lr_sigma"]),
             min_var=float(data["min_var"]),
-            r_baseline=float(data["r_baseline"]),
-            r_scale=float(data["r_scale"]),
             r_alpha=float(data["r_alpha"]),
             r_beta=float(data["r_beta"]),
             eps=float(data["eps"]),
         )
+
+        # Restore reward normalization state.
+        processor.r_baseline = float(data["r_baseline"])
+        processor.r_scale = float(data["r_scale"])
         return processor
 
     def save(self, file_path: str) -> None:
@@ -221,23 +215,21 @@ class Processor:
 
         # Reparameterization: y = mu + L z ~ N(mu, sigma).
         y = self.mu + L @ z
-
-        # Cache last sample for use in process_backward().
-        self.last_y = y
         return y
 
-    def process_backward(self, r: float) -> None:
+    def process_backward(self, y: np.ndarray, r: float) -> None:
         """
-        Update mean and covariance based on reward signal.
+        Update mean and covariance based on a sample and reward signal.
 
         Args:
+            y (np.ndarray): Sampled point used to guide the update.
             r (float): Scalar reward used to scale the update.
         """
         # Normalize reward to stabilize learning across different scales.
         r = self._process_reward(r)
 
-        # Deviation of last sample from current mean.
-        diff = self.last_y - self.mu
+        # Deviation of sample from current mean.
+        diff = y - self.mu
 
         # Direction for mean update:
         # solve sigma * v_mu = diff  -> v_mu = sigma^{-1} diff
@@ -272,9 +264,6 @@ class Processor:
         diag = np.diag(self.sigma)
         diag = np.maximum(diag, self.min_var)
         np.fill_diagonal(self.sigma, diag)
-
-        # Invalidate cached sample: only one backward step per forward sample.
-        self.last_y = None
         return
 
     def add_dimension(self, mu: float = 0.0, sigma: float = 100.0) -> None:
@@ -296,9 +285,6 @@ class Processor:
         # Initialize new dimension as independent with variance sigma^2.
         new_sigma[self.N, self.N] = sigma**2
         self.sigma = new_sigma
-
-        # Any previous sample no longer matches the new dimensionality.
-        self.last_y = None
         return
 
     def remove_dimension(self, idx: int) -> None:
@@ -315,9 +301,6 @@ class Processor:
         # to keep it consistent with the reduced dimensionality.
         self.sigma = np.delete(self.sigma, idx, axis=0)
         self.sigma = np.delete(self.sigma, idx, axis=1)
-
-        # Invalidate any cached sample (shape no longer matches).
-        self.last_y = None
         return
 
     def _process_reward(self, r: float) -> float:
