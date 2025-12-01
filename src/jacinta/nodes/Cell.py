@@ -143,10 +143,6 @@ class Cell:
     #    cell = cls.from_dict(data)
     #    return cell
 
-    ############################################################################
-    ############################################################################
-    #####     #####
-
     def process_forward(self, x: np.ndarray, hit: bool = True) -> np.ndarray | None:
         """ """
         cell = self._hit(x, hit=hit)
@@ -156,7 +152,7 @@ class Cell:
     def process_backward(self, x: np.ndarray, y: np.ndarray, r: float) -> None:
         """ """
         cell = self._hit(x, hit=False)
-        while cell is not None:
+        while cell:
             cell.processor.process_backward(y, r)
             cell = cell.parent
         return
@@ -240,44 +236,54 @@ class Cell:
             if hit and (cell.max_lev < 0 or cell.lev < cell.max_lev):
                 child_idx = cell._get_child_idx(x)
                 cell.res[child_idx] -= 1.0
+
+                mirror_idx = child_idx ^ (1 << (cell.N - 1))
+                if (
+                    0 <= mirror_idx < len(cell.childs)
+                    and cell.childs[mirror_idx] is cell.childs[child_idx]
+                ):
+                    cell.res[mirror_idx] = cell.res[child_idx]
+
                 if cell.res[child_idx] <= 0.0:
                     cell = cell._create_child(child_idx)
         return cell
 
-    # def add_dimension(self, low: float, high: float) -> None:
-    #    """ """
-    #    new_bounds = np.array([[low, high]], dtype=float)
-    #    self.bounds = np.concatenate([self.bounds, new_bounds], axis=0)
-    #
-    #    new_min_x = np.array([np.inf], dtype=float)
-    #    new_max_x = np.array([-np.inf], dtype=float)
-    #
-    #    self.min_x = np.concatenate([self.min_x, new_min_x])
-    #    self.max_x = np.concatenate([self.max_x, new_max_x])
-    #
-    #    new_mid = np.array([np.nan], dtype=float)
-    #    self.mids = np.concatenate([self.mids, new_mid])
-    #
-    #    self.processor.add_dimension()
-    #
-    #    new_subcells = [None] * (2**self.N)
-    #    new_sub_res = np.empty(2**self.N, dtype=float)
-    #
-    #    for idx, subcell in enumerate(self.subcells):
-    #        idx0 = idx
-    #        idx1 = idx | (1 << (self.N - 1))
-    #        new_subcells[idx0] = subcell
-    #        new_subcells[idx1] = subcell
-    #        if subcell is not None:
-    #            subcell.add_dimension(low, high)
-    #
-    #        res = self.sub_res[idx]
-    #        new_sub_res[idx0] = res
-    #        new_sub_res[idx1] = res
-    #
-    #    self.subcells = new_subcells
-    #    self.sub_res = new_sub_res
-    #    return
+    def add_dimension(
+        self, low: float, high: float, mu: float = 0.0, sigma: float = 100.0
+    ) -> None:
+        """ """
+        new_bounds = np.array([[low, high]], dtype=float)
+        self.bounds = np.concatenate([self.bounds, new_bounds], axis=0)
+
+        new_min_x = np.array([np.inf], dtype=float)
+        new_max_x = np.array([-np.inf], dtype=float)
+
+        self.min_x = np.concatenate([self.min_x, new_min_x])
+        self.max_x = np.concatenate([self.max_x, new_max_x])
+
+        new_mid = np.array([np.nan], dtype=float)
+        self.mids = np.concatenate([self.mids, new_mid])
+
+        self.processor.add_dimension(mu, sigma)
+
+        new_childs = [None] * (2**self.N)
+        new_res = np.empty(2**self.N, dtype=float)
+
+        for idx, child in enumerate(self.childs):
+            idx0 = idx
+            idx1 = idx | (1 << (self.N - 1))
+            new_childs[idx0] = child
+            new_childs[idx1] = child
+            if child:
+                child.add_dimension(low, high)
+
+            res = self.res[idx]
+            new_res[idx0] = res
+            new_res[idx1] = res
+
+        self.childs = new_childs
+        self.res = new_res
+        return
 
     # def remove_dimension(self, idx: int) -> None:
     #    """ """
