@@ -188,7 +188,7 @@ class Cell:
                     mids[dim] = min_x - 1e-12
                 elif np.isfinite(low) and np.isposinf(high):
                     mids[dim] = max_x + 1e-12
-        self.mids[idx] = mids
+        self.mids[idx] = mids[idx]
         return
 
     def _get_child_idx(self, x: np.ndarray) -> int:
@@ -227,7 +227,7 @@ class Cell:
         child.parent = self
         return child
 
-    def _hit(self, x: np.ndarray, hit: bool = True) -> Cell:
+    def _hit(self, x: np.ndarray, hit: bool = True) -> Cell | None:
         """ """
         cell = self._find(x)
         if cell:
@@ -238,10 +238,7 @@ class Cell:
                 cell.res[child_idx] -= 1.0
 
                 mirror_idx = child_idx ^ (1 << (cell.N - 1))
-                if (
-                    0 <= mirror_idx < len(cell.childs)
-                    and cell.childs[mirror_idx] is cell.childs[child_idx]
-                ):
+                if cell.childs[mirror_idx] is cell.childs[child_idx]:
                     cell.res[mirror_idx] = cell.res[child_idx]
 
                 if cell.res[child_idx] <= 0.0:
@@ -285,11 +282,17 @@ class Cell:
         self.res = new_res
         return
 
-    # def remove_dimension(self, idx: int) -> None:
-    #    """ """
-    #    self.bounds = np.delete(self.bounds, idx, axis=0)
-    #    self.min_x = np.delete(self.min_x, idx)
-    #    self.max_x = np.delete(self.max_x, idx)
-    #    self.mids = np.delete(self.mids, idx)
-    #    self.processor.remove_dimension(idx)
-    #    raise NotImplementedError
+    def remove_dimension(self, idx: int) -> None:
+        """ """
+        # self.bounds = np.delete(self.bounds, idx, axis=0)
+        # self.min_x = np.delete(self.min_x, idx)
+        # self.max_x = np.delete(self.max_x, idx)
+        # self.mids = np.delete(self.mids, idx)
+        # self.processor.remove_dimension(idx)
+        #
+        # new_childs = [None] * (2**self.N)
+        # new_res = np.empty(2**self.N, dtype=float)
+        #
+        # for idx, child in enumerate(self.childs):
+        #     child.remove_dimension(idx)
+        raise NotImplementedError

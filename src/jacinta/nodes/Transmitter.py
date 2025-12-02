@@ -23,6 +23,7 @@ class Transmitter:
         size: int,
         min_x: float | np.ndarray | None = None,
         max_x: float | np.ndarray | None = None,
+        eps: float = 1e-12,
     ) -> None:
         """
         Initialize a Transmitter that maps unbounded signals to bounded ranges.
@@ -33,7 +34,13 @@ class Transmitter:
                 np.nan means "no lower bound".
             max_x (float | np.ndarray | None): Upper bounds per dimension.
                 np.nan means "no upper bound".
+            eps (float): Numerical epsilon for stability.
         """
+        # Numerical safety margin used when approaching the boundaries
+        # of the normalized interval (-1, 1). Prevents division by zero
+        # and infinities in the log / artanh transform.
+        self.eps = eps
+
         # Normalize lower bounds to a float array:
         # - None  -> all dimensions unbounded below    -> fill with NaN
         # - float -> same lower bound for all dims     -> broadcast scalar
@@ -78,7 +85,7 @@ class Transmitter:
             Transmitter: A new Transmitter with the same parameters.
         """
         # Reuse the constructor so future changes in __init__ are honored.
-        transmitter = self.__class__(self.N, self.min_x, self.max_x)
+        transmitter = self.__class__(self.N, self.min_x, self.max_x, self.eps)
         return transmitter
 
     def to_dict(self) -> dict[str, any]:
@@ -95,6 +102,7 @@ class Transmitter:
             "min_x": self.min_x.tolist(),
             "max_x": self.max_x.tolist(),
             "has_bounds": self.has_bounds.tolist(),
+            "eps": self.eps,
         }
         return data
 
@@ -114,6 +122,7 @@ class Transmitter:
             size=int(data["size"]),
             min_x=np.array(data["min_x"], dtype=float),
             max_x=np.array(data["max_x"], dtype=float),
+            eps=float(data["eps"]),
         )
         return transmitter
 
@@ -155,7 +164,7 @@ class Transmitter:
             x (np.ndarray): Internal control values in ℝ.
 
         Returns:
-            np.ndarray: External values clamped to [min_x, max_x] where applicable.
+            np.ndarray: External values mapped into [min_x, max_x] where applicable.
         """
         # Work on a copy to avoid mutating the caller's array.
         y = x.copy()
@@ -165,7 +174,6 @@ class Transmitter:
 
         if idx.size > 0:
             # 1) Squash unbounded values in ℝ into (-1, 1) using tanh.
-            #    This is the natural inverse of the artanh used by Receiver.
             x = np.tanh(x[idx])
 
             # 2) Linearly map (-1, 1) -> (0, 1).
@@ -175,6 +183,41 @@ class Transmitter:
             y[idx] = self.min_x[idx] + x * (self.max_x[idx] - self.min_x[idx])
 
         # Unbounded or partially bounded dimensions pass through unchanged.
+        return y
+
+    def process_backward(self, x: np.ndarray) -> np.ndarray:
+        """
+        Transform bounded components of x into unbounded space.
+
+        Args:
+            x (np.ndarray): Input vector in the original space.
+
+        Returns:
+            np.ndarray: Output vector where bounded dims are mapped to ℝ.
+        """
+        # Start from a copy to avoid mutating the caller's array.
+        y = x.copy()
+
+        # Indices of dimensions that should be transformed.
+        idx = np.where(self.has_bounds)[0]
+
+        if idx.size > 0:
+            # 1) Normalize bounded components from [min_x, max_x] to [0, 1].
+            x = (x[idx] - self.min_x[idx]) / (self.max_x[idx] - self.min_x[idx])
+
+            # 2) Linearly map [0, 1] -> [-1, 1].
+            x = (x * 2.0) - 1.0
+
+            # 3) Clamp slightly away from -1 and 1 to avoid log / division
+            #    singularities when applying the artanh-like mapping below.
+            x = np.clip(x, -1.0 + self.eps, 1.0 - self.eps)
+
+            # 4) Map [-1, 1] -> ℝ using the inverse tanh (artanh) formula:
+            #       atanh(z) = 0.5 * log((1 + z) / (1 - z))
+            #    This produces an unbounded representation for bounded inputs.
+            y[idx] = 0.5 * np.log((1.0 + x) / (1.0 - x))
+
+        # Unbounded or partially bounded dimensions are passed through as-is.
         return y
 
     def add_dimension(

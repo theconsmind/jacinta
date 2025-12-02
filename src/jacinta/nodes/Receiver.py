@@ -187,14 +187,43 @@ class Receiver:
 
             # 3) Clamp slightly away from -1 and 1 to avoid log / division
             #    singularities when applying the artanh-like mapping below.
-            x = np.clip(x, -1 + self.eps, 1 - self.eps)
+            x = np.clip(x, -1.0 + self.eps, 1.0 - self.eps)
 
             # 4) Map [-1, 1] -> ℝ using the inverse tanh (artanh) formula:
             #       atanh(z) = 0.5 * log((1 + z) / (1 - z))
             #    This produces an unbounded representation for bounded inputs.
-            y[idx] = 0.5 * np.log((1 + x) / (1 - x))
+            y[idx] = 0.5 * np.log((1.0 + x) / (1.0 - x))
 
         # Unbounded or partially bounded dimensions are passed through as-is.
+        return y
+
+    def process_backward(self, x: np.ndarray) -> np.ndarray:
+        """
+        Map internal unbounded vector x to the bounded external space.
+
+        Args:
+            x (np.ndarray): Internal control values in ℝ.
+
+        Returns:
+            np.ndarray: External values mapped into [min_x, max_x] where applicable.
+        """
+        # Work on a copy to avoid mutating the caller's array.
+        y = x.copy()
+
+        # Indices of dimensions that have both finite bounds.
+        idx = np.where(self.has_bounds)[0]
+
+        if idx.size > 0:
+            # 1) Squash unbounded values in ℝ into (-1, 1) using tanh.
+            x = np.tanh(x[idx])
+
+            # 2) Linearly map (-1, 1) -> (0, 1).
+            x = (x + 1.0) * 0.5
+
+            # 3) Rescale (0, 1) into the original [min_x, max_x] interval.
+            y[idx] = self.min_x[idx] + x * (self.max_x[idx] - self.min_x[idx])
+
+        # Unbounded or partially bounded dimensions pass through unchanged.
         return y
 
     def add_dimension(

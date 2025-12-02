@@ -37,12 +37,10 @@ class Jacinta:
         bounds = np.zeros((size[0], 2), dtype=float)
         bounds[:, 0] = -np.inf
         bounds[:, 1] = +np.inf
-        cell_kwargs: dict[str, any] = {"bounds": bounds, "processor": processor}
+        cell_kwargs = {"bounds": bounds, "processor": processor}
         if cell_params:
             cell_kwargs.update(cell_params)
         self.root = Cell(**cell_kwargs)
-
-        self._last_processor: Processor | None = None
         return
 
     @property
@@ -63,8 +61,6 @@ class Jacinta:
         jacinta.receiver = self.receiver.copy()
         jacinta.transmitter = self.transmitter.copy()
         jacinta.root = self.root.copy()
-        if self._last_processor is not None:
-            jacinta._last_processor = self._last_processor.copy()
         return jacinta
 
     def to_dict(self) -> dict[str, any]:
@@ -104,20 +100,18 @@ class Jacinta:
         jacinta = cls.from_dict(data)
         return jacinta
 
-    def process_forward(self, x: np.ndarray) -> np.ndarray:
+    def process_forward(self, x: np.ndarray, hit: bool = True) -> np.ndarray:
         """ """
         r = self.receiver.process_forward(x)
-        cell = self.root.find(r)
-        p = cell.processor.process_forward()
-        cell.hit(r)
+        p = self.root.process_forward(r, hit)
         t = self.transmitter.process_forward(p)
-        self._last_processor = cell.processor
         return t
 
-    def process_backward(self, r: float) -> None:
+    def process_backward(self, x: np.ndarray, y: np.ndarray, r: float) -> None:
         """ """
-        self._last_processor.process_backward(r)
-        self._last_processor = None
+        x = self.receiver.process_forward(x)
+        y = self.transmitter.process_backward(y)
+        self.root.process_backward(x, y, r)
         return
 
     def add_receiver(
