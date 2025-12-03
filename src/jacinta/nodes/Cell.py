@@ -50,98 +50,106 @@ class Cell:
     def L(self) -> int:
         """ """
         L = 1
-        childs = [child for child in self.childs if child is not None]
+        childs = [child for child in self.childs if child]
         if childs:
             L += max(child.L for child in childs)
         return L
 
-    # def copy(self) -> Cell:
-    #    """ """
-    #    cell = self.__class__(
-    #        self.bounds,
-    #        self.processor,
-    #        self.lev,
-    #        self.max_lev,
-    #        self.lev_k,
-    #        self.min_lr,
-    #        self.lr_k,
-    #    )
-    #    cell.min_x = self.min_x.copy()
-    #    cell.max_x = self.max_x.copy()
-    #    cell.mids = self.mids.copy()
-    #    cell.sub_res = self.sub_res.copy()
-    #    cell.subcells = [
-    #        subcell.copy() if subcell is not None else subcell
-    #        for subcell in self.subcells
-    #    ]
-    #    return cell
+    def copy(self) -> Cell:
+        """ """
+        cell = self.__class__(
+            self.bounds,
+            self.processor,
+            self.lev,
+            self.max_lev,
+            self.lev_k,
+            self.min_lr,
+            self.lr_k,
+        )
+        cell.min_x = self.min_x.copy()
+        cell.max_x = self.max_x.copy()
+        cell.mids = self.mids.copy()
+        cell.res = self.res.copy()
+        cell.childs = [
+            child.copy() if child else child
+            for child in self.childs
+        ]
 
-    # def to_dict(self) -> dict[str, any]:
-    #    """ """
-    #    data = {
-    #        "class": self.__class__.__name__,
-    #        "bounds": self.bounds.tolist(),
-    #        "processor": (
-    #            self.processor.to_dict()
-    #            if self.processor is not None
-    #            else self.processor
-    #        ),
-    #        "lev": self.lev,
-    #        "max_lev": self.max_lev,
-    #        "lev_k": self.lev_k,
-    #        "sub_res": self.sub_res.tolist(),
-    #        "min_lr": self.min_lr,
-    #        "lr_k": self.lr_k,
-    #        "subcells": [
-    #            subcell.to_dict() if subcell is not None else subcell
-    #            for subcell in self.subcells
-    #        ],
-    #        "min_x": self.min_x.tolist(),
-    #        "max_x": self.max_x.tolist(),
-    #        "mids": self.mids.tolist(),
-    #    }
-    #    return data
+        for child in cell.childs:
+            if child:
+                child.parent = cell
+        return cell
 
-    # @classmethod
-    # def from_dict(cls, data: dict[str, any]) -> Cell:
-    #    """ """
-    #    cell = cls(
-    #        bounds=np.array(data["bounds"], dtype=float),
-    #        processor=(
-    #            Processor.from_dict(data["processor"])
-    #            if data["processor"] is not None
-    #            else data["processor"]
-    #        ),
-    #        lev=int(data["lev"]),
-    #        max_lev=int(data["max_lev"]),
-    #        lev_k=float(data["lev_k"]),
-    #        min_lr=float(data["min_lr"]),
-    #        lr_k=float(data["lr_k"]),
-    #    )
-    #    cell.sub_res = np.asarray(data["sub_res"], dtype=float).copy()
-    #    cell.min_x = np.asarray(data["min_x"], dtype=float).copy()
-    #    cell.max_x = np.asarray(data["max_x"], dtype=float).copy()
-    #    cell.mids = np.asarray(data["mids"], dtype=float).copy()
-    #    cell.subcells = [
-    #        cls.from_dict(subcell) if subcell is not None else subcell
-    #        for subcell in data["subcells"]
-    #    ]
-    #    return cell
+    def to_dict(self) -> dict[str, any]:
+        """ """
+        data = {
+            "class": self.__class__.__name__,
+            "bounds": self.bounds.tolist(),
+            "processor": (
+                self.processor.to_dict()
+                if self.processor
+                else self.processor
+            ),
+            "lev": self.lev,
+            "max_lev": self.max_lev,
+            "lev_k": self.lev_k,
+            "min_lr": self.min_lr,
+            "lr_k": self.lr_k,
+            "min_x": self.min_x.tolist(),
+            "max_x": self.max_x.tolist(),
+            "mids": self.mids.tolist(),
+            "res": self.res.tolist(),
+            "childs": [
+                child.to_dict() if child else child
+                for child in self.childs
+            ],
+        }
+        return data
 
-    # def save(self, file_path: str) -> None:
-    #    """ """
-    #    data = self.to_dict()
-    #    with open(file_path, "w", encoding="utf-8") as f:
-    #        json.dump(data, f, indent=2)
-    #    return
+    @classmethod
+    def from_dict(cls, data: dict[str, any]) -> Cell:
+        """ """
+        cell = cls(
+            bounds=np.array(data["bounds"], dtype=float),
+            processor=(
+                Processor.from_dict(data["processor"])
+                if data["processor"]
+                else data["processor"]
+            ),
+            lev=int(data["lev"]),
+            max_lev=int(data["max_lev"]),
+            lev_k=float(data["lev_k"]),
+            min_lr=float(data["min_lr"]),
+            lr_k=float(data["lr_k"]),
+        )
+        cell.min_x = np.asarray(data["min_x"], dtype=float).copy()
+        cell.max_x = np.asarray(data["max_x"], dtype=float).copy()
+        cell.mids = np.asarray(data["mids"], dtype=float).copy()
+        cell.res = np.asarray(data["res"], dtype=float).copy()
+        cell.childs = [
+            cls.from_dict(child) if child else child
+            for child in data["childs"]
+        ]
 
-    # @classmethod
-    # def load(cls, file_path: str) -> Cell:
-    #    """ """
-    #    with open(file_path, encoding="utf-8") as f:
-    #        data = json.load(f)
-    #    cell = cls.from_dict(data)
-    #    return cell
+        for child in cell.childs:
+            if child:
+                child.parent = cell
+        return cell
+
+    def save(self, file_path: str) -> None:
+        """ """
+        data = self.to_dict()
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        return
+
+    @classmethod
+    def load(cls, file_path: str) -> Cell:
+        """ """
+        with open(file_path, encoding="utf-8") as f:
+            data = json.load(f)
+        cell = cls.from_dict(data)
+        return cell
 
     def process_forward(self, x: np.ndarray, hit: bool = True) -> np.ndarray | None:
         """ """
