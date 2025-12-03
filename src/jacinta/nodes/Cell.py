@@ -70,10 +70,7 @@ class Cell:
         cell.max_x = self.max_x.copy()
         cell.mids = self.mids.copy()
         cell.res = self.res.copy()
-        cell.childs = [
-            child.copy() if child else child
-            for child in self.childs
-        ]
+        cell.childs = [child.copy() if child else child for child in self.childs]
 
         for child in cell.childs:
             if child:
@@ -86,9 +83,7 @@ class Cell:
             "class": self.__class__.__name__,
             "bounds": self.bounds.tolist(),
             "processor": (
-                self.processor.to_dict()
-                if self.processor
-                else self.processor
+                self.processor.to_dict() if self.processor else self.processor
             ),
             "lev": self.lev,
             "max_lev": self.max_lev,
@@ -99,10 +94,7 @@ class Cell:
             "max_x": self.max_x.tolist(),
             "mids": self.mids.tolist(),
             "res": self.res.tolist(),
-            "childs": [
-                child.to_dict() if child else child
-                for child in self.childs
-            ],
+            "childs": [child.to_dict() if child else child for child in self.childs],
         }
         return data
 
@@ -127,8 +119,7 @@ class Cell:
         cell.mids = np.asarray(data["mids"], dtype=float).copy()
         cell.res = np.asarray(data["res"], dtype=float).copy()
         cell.childs = [
-            cls.from_dict(child) if child else child
-            for child in data["childs"]
+            cls.from_dict(child) if child else child for child in data["childs"]
         ]
 
         for child in cell.childs:

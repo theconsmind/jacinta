@@ -11,6 +11,7 @@ authors = [
 dependencies = [
     "black>=25.9.0",
     "numpy>=2.3.4",
+    "pre-commit>=4.5.0",
     "ruff>=0.14.2",
 ]
 

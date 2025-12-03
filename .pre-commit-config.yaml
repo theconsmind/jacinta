@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: pep-fix
+        name: pep-fix
+        entry: scripts/pep-fix.sh
+        language: system
+        pass_filenames: false
