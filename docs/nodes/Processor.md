@@ -82,13 +82,13 @@ $$
 This vector indicates the direction in which the sample lies relative to the mean, but using it directly would make the update overly sensitive to scale and orientation. Instead, the Processor projects the deviation through the inverse covariance,
 
 $$
-v_\mu = \Sigma^{-1} \, \mathrm{diff},
+v_\mu = \Sigma^{-1} \mathrm{diff},
 $$
 
 which effectively measures how unexpected the sample is when accounting for the current uncertainty. This transformation results in a direction that naturally reflects the geometry of the distribution. After normalizing this direction to control step size, the mean is updated as
 
 $$
-\mu \leftarrow \mu + \alpha_\mu \, r_{\mathrm{norm}} \, v_\mu.
+\mu \leftarrow \mu + \alpha_\mu r_{\mathrm{norm}} v_\mu.
 $$
 
 This formulation allows the mean to shift decisively toward rewarding regions while maintaining numerical stability.
@@ -98,19 +98,19 @@ This formulation allows the mean to shift decisively toward rewarding regions wh
 The covariance update is designed to adapt the uncertainty of the distribution based on the structure revealed by each sample. The Processor compares the outer product of the deviation vector,
 
 $$
-\mathrm{diff} \, \mathrm{diff}^T,
+\mathrm{diff} \mathrm{diff}^T,
 $$
 
 with the current covariance $\Sigma$. This comparison produces a matrix
 
 $$
-v_\Sigma = \mathrm{diff} \, \mathrm{diff}^T - \Sigma,
+v_\Sigma = \mathrm{diff} \mathrm{diff}^T - \Sigma,
 $$
 
 which indicates whether the observed variation along each direction is larger or smaller than what the distribution currently expects. If certain directions exhibit more variability than anticipated, the covariance increases in those directions. If variability is lower, the covariance decreases. The update
 
 $$
-\Sigma \leftarrow \Sigma + \alpha_\Sigma \, r_{\mathrm{norm}} \, v_\Sigma
+\Sigma \leftarrow \Sigma + \alpha_\Sigma r_{\mathrm{norm}} v_\Sigma
 $$
 
 allows the distribution to reshape itself in a way that reflects the structure of the reward landscape. After the update, symmetry is enforced and minimal variance constraints are applied to ensure that the covariance remains numerically stable and positive definite.
