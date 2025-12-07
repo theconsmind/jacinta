@@ -7,17 +7,7 @@ import numpy as np
 
 
 class Processor:
-    """
-    Processor maintains and updates a stochastic policy over actions
-    represented by a multivariate Gaussian N(mu, Sigma).
-
-    It can:
-        - sample actions from the current Gaussian (process_forward)
-        - update its parameters using a reward signal (process_backward)
-
-    This makes it suitable as Jacinta's "internal decision maker" or
-    search mechanism in continuous spaces.
-    """
+    """ """
 
     def __init__(
         self,
@@ -31,55 +21,106 @@ class Processor:
         r_beta: float = 1e-2,
         eps: float = 1e-12,
     ) -> None:
-        """
-        Initialize a stochastic Processor.
+        """ """
 
-        Args:
-            size (int): Dimensionality of the process.
-            mu (float | np.ndarray): Initial mean vector or scalar mean.
-            sigma (float | np.ndarray): Initial covariance matrix or scalar std.
-            lr_mu (float): Learning rate for mean updates.
-            lr_sigma (float): Learning rate for covariance updates.
-            min_var (float): Minimum variance threshold for stability.
-            r_alpha (float): EMA factor for reward baseline update.
-            r_beta (float): EMA factor for reward scale update.
-            eps (float): Numerical epsilon for stability.
-        """
-        # Mean of the Gaussian:
-        # - scalar -> broadcast to all dimensions
-        # - array  -> copied to avoid external aliasing
-        self.mu = (
-            np.full(size, mu, dtype=float)
-            if np.isscalar(mu)
-            else np.asarray(mu, dtype=float).copy()
-        )
+        assert isinstance(size, (int, np.integer)), "size must be an integer"
+        assert size > 0, "size must be positive"
+        size = int(size)
 
-        # Covariance of the Gaussian:
-        # - scalar sigma -> interpreted as std, converted to sigma^2 * I
-        # - array        -> used as full covariance matrix (copied)
-        self.sigma = (
-            (sigma**2) * np.eye(size, dtype=float)
-            if np.isscalar(sigma)
-            else np.asarray(sigma, dtype=float).copy()
-        )
+        assert isinstance(
+            mu, (int, float, np.integer, np.floating, np.ndarray, list, tuple)
+        ), "mu must be a float or 1D array of floats"
 
-        # Lower bound on per-dimension variance to avoid collapse and
-        # numerical issues (e.g. singular covariance matrices).
-        self.min_var = min_var
-        self.eps = eps
+        if np.isscalar(mu):
+            self.mu = np.full(size, float(mu), dtype=float)
+        else:
+            mu = np.asarray(mu)
+            assert mu.ndim == 1, "mu must be a 1D array"
+            assert mu.size == size, f"mu must have size {size}"
+            assert np.issubdtype(mu.dtype, np.number), "mu must be numeric"
+            self.mu = mu.astype(float, copy=True)
 
-        # Step sizes for gradient-like updates of mean and covariance.
-        self.lr_mu = lr_mu
-        self.lr_sigma = lr_sigma
+        assert isinstance(
+            sigma, (int, float, np.integer, np.floating, np.ndarray, list, tuple)
+        ), "sigma must be a float or array of floats"
 
-        # Reward normalization state:
-        # - r_baseline: running mean of rewards
-        # - r_scale:    running mean of |reward - baseline|
-        self.r_baseline: np.ndarray = np.zeros(1, dtype=float)
-        self.r_scale: np.ndarray = np.zeros(1, dtype=float)
-        self.r_alpha = r_alpha
-        self.r_beta = r_beta
+        if np.isscalar(sigma):
+            sigma = float(sigma)
+            assert sigma >= 0.0, "scalar sigma (std) must be non-negative"
+            self.sigma = (sigma**2) * np.eye(size, dtype=float)
+
+        else:
+            sigma = np.asarray(sigma)
+            assert 1 <= sigma.ndim <= 2, "sigma must be a 1D or 2D array"
+            assert np.issubdtype(sigma.dtype, np.number), "sigma must be numeric"
+            if sigma.ndim == 1:
+                assert sigma.size == size, f"sigma must have size {size}"
+                sigma_diag = sigma.astype(float, copy=True)
+                assert np.all(
+                    sigma_diag >= 0.0
+                ), "1D sigma entries (variances) must be >= 0"
+                self.sigma = np.diag(sigma_diag)
+            else:
+                assert sigma.shape == (
+                    size,
+                    size,
+                ), f"sigma must have shape ({size}, {size})"
+                self.sigma = 0.5 * (sigma + sigma.T).astype(float, copy=False)
+
+        assert isinstance(
+            min_var, (int, float, np.integer, np.floating)
+        ), "min_var must be a float"
+        assert min_var >= 0, "min_var must be non-negative"
+        self.min_var = float(min_var)
+
+        sigma_diag = np.diag(self.sigma)
+        sigma_diag = np.maximum(sigma_diag, self.min_var)
+        np.fill_diagonal(self.sigma, sigma_diag)
+
+        try:
+            np.linalg.cholesky(self.sigma)
+        except np.linalg.LinAlgError as exc:
+            raise AssertionError(
+                "sigma must define a positive definite covariance"
+            ) from exc
+
+        assert isinstance(
+            eps, (int, float, np.integer, np.floating)
+        ), "eps must be a float"
+        assert eps > 0, "eps must be positive"
+        self.eps = float(eps)
+
+        assert isinstance(
+            lr_mu, (int, float, np.integer, np.floating)
+        ), "lr_mu must be a float"
+        assert lr_mu > 0, "lr_mu must be positive"
+        self.lr_mu = float(lr_mu)
+
+        assert isinstance(
+            lr_sigma, (int, float, np.integer, np.floating)
+        ), "lr_sigma must be a float"
+        assert lr_sigma > 0, "lr_sigma must be positive"
+        self.lr_sigma = float(lr_sigma)
+
+        assert isinstance(
+            r_alpha, (int, float, np.integer, np.floating)
+        ), "r_alpha must be a float"
+        assert 0 <= r_alpha <= 1.0, "r_alpha must be in [0, 1]"
+        self.r_alpha = float(r_alpha)
+
+        assert isinstance(
+            r_beta, (int, float, np.integer, np.floating)
+        ), "r_beta must be a float"
+        assert 0 <= r_beta <= 1.0, "r_beta must be in [0, 1]"
+        self.r_beta = float(r_beta)
+
+        self.r_baseline: float = 0.0
+        self.r_scale: float = 1.0
         return
+
+    ################################################################
+    ## Pending Refactor
+    ################################################################
 
     @property
     def N(self) -> int:
