@@ -118,10 +118,6 @@ class Processor:
         self.r_scale: float = 1.0
         return
 
-    ################################################################
-    ## Pending Refactor
-    ################################################################
-
     @property
     def N(self) -> int:
         """
@@ -155,9 +151,13 @@ class Processor:
         )
 
         # Copy reward normalization state.
-        processor.r_baseline = self.r_baseline.copy()
-        processor.r_scale = self.r_scale.copy()
+        processor.r_baseline = self.r_baseline
+        processor.r_scale = self.r_scale
         return processor
+
+    ################################################################
+    ## Pending Refactor
+    ################################################################
 
     def to_dict(self) -> dict[str, Any]:
         """
