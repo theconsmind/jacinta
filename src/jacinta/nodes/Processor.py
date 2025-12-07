@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import numpy as np
 
@@ -49,7 +50,7 @@ class Processor:
         # - array  -> copied to avoid external aliasing
         self.mu = (
             np.full(size, mu, dtype=float)
-            if isinstance(mu, float)
+            if np.isscalar(mu)
             else np.asarray(mu, dtype=float).copy()
         )
 
@@ -58,7 +59,7 @@ class Processor:
         # - array        -> used as full covariance matrix (copied)
         self.sigma = (
             (sigma**2) * np.eye(size, dtype=float)
-            if isinstance(sigma, float)
+            if np.isscalar(sigma)
             else np.asarray(sigma, dtype=float).copy()
         )
 
@@ -74,8 +75,8 @@ class Processor:
         # Reward normalization state:
         # - r_baseline: running mean of rewards
         # - r_scale:    running mean of |reward - baseline|
-        self.r_baseline: float = 0.0
-        self.r_scale: float = 0.0
+        self.r_baseline: np.ndarray = np.zeros(1, dtype=float)
+        self.r_scale: np.ndarray = np.zeros(1, dtype=float)
         self.r_alpha = r_alpha
         self.r_beta = r_beta
         return
@@ -113,16 +114,16 @@ class Processor:
         )
 
         # Copy reward normalization state.
-        processor.r_baseline = self.r_baseline
-        processor.r_scale = self.r_scale
+        processor.r_baseline = self.r_baseline.copy()
+        processor.r_scale = self.r_scale.copy()
         return processor
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serialize Processor state to a dictionary.
 
         Returns:
-            dict[str, any]: Serializable snapshot of the Processor.
+            dict[str, Any]: Serializable snapshot of the Processor.
         """
         # Convert numpy arrays to lists so they can be JSON-encoded.
         data = {
@@ -133,8 +134,8 @@ class Processor:
             "lr_mu": self.lr_mu,
             "lr_sigma": self.lr_sigma,
             "min_var": self.min_var,
-            "r_baseline": self.r_baseline,
-            "r_scale": self.r_scale,
+            "r_baseline": self.r_baseline.tolist(),
+            "r_scale": self.r_scale.tolist(),
             "r_alpha": self.r_alpha,
             "r_beta": self.r_beta,
             "eps": self.eps,
@@ -142,12 +143,12 @@ class Processor:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, any]) -> Processor:
+    def from_dict(cls, data: dict[str, Any]) -> Processor:
         """
         Build a Processor instance from a dict.
 
         Args:
-            data (dict[str, any]): Serialized Processor config.
+            data (dict[str, Any]): Serialized Processor config.
 
         Returns:
             Processor: Reconstructed Processor instance.
@@ -166,8 +167,8 @@ class Processor:
         )
 
         # Restore reward normalization state.
-        processor.r_baseline = float(data["r_baseline"])
-        processor.r_scale = float(data["r_scale"])
+        processor.r_baseline = np.array(data["r_baseline"], dtype=float)
+        processor.r_scale = np.array(data["r_scale"], dtype=float)
         return processor
 
     def save(self, file_path: str) -> None:
@@ -282,14 +283,14 @@ class Processor:
         # New mean components.
         new_mu = (
             np.array([mu], dtype=float)
-            if isinstance(mu, float)
+            if np.isscalar(mu)
             else np.asarray(mu, dtype=float).copy()
         )
 
         # New covariance components.
         new_cov = (
             (sigma**2) * np.eye(new_mu.size, dtype=float)
-            if isinstance(sigma, float)
+            if np.isscalar(sigma)
             else np.asarray(sigma, dtype=float).copy()
         )
 
@@ -336,11 +337,7 @@ class Processor:
             np.ndarray: Stabilized reward suitable for parameter updates.
         """
         # Exponential moving average for reward baseline (center of rewards).
-        self.r_baseline = (
-            (1.0 - self.r_alpha) * self.r_baseline + self.r_alpha * r
-            if self.r_baseline is not None
-            else r
-        )
+        self.r_baseline = (1.0 - self.r_alpha) * self.r_baseline + self.r_alpha * r
 
         # Center reward around the moving baseline.
         r_centered = r - self.r_baseline

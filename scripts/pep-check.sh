@@ -6,9 +6,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 echo ">> Checking with Black (showing diff)..."
-uv run black --check --diff src
+uv run black --check --diff .
 
 echo ">> Checking with Ruff..."
-uv run ruff check src
+uv run ruff check .
 
 echo ">> Done."

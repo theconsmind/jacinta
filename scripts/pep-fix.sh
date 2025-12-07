@@ -6,9 +6,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 echo ">> Formatting with Black..."
-uv run black src
+uv run black .
 
 echo ">> Fixing with Ruff..."
-uv run ruff check src --fix
+uv run ruff check . --fix
 
 echo ">> Done."
