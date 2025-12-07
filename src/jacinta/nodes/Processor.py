@@ -12,7 +12,7 @@ class Processor:
 
     It can:
         - sample actions from the current Gaussian (process_forward)
-        - update its parameters using a scalar reward signal (process_backward)
+        - update its parameters using a reward signal (process_backward)
 
     This makes it suitable as Jacinta's "internal decision maker" or
     search mechanism in continuous spaces.
@@ -200,30 +200,33 @@ class Processor:
         processor = cls.from_dict(data)
         return processor
 
-    def process_forward(self) -> np.ndarray:
+    def process_forward(self, n: int = 1) -> np.ndarray:
         """
         Sample from the current Gaussian distribution.
 
-        Returns:
-            np.ndarray: Sampled vector from N(mu, sigma).
-        """
-        # Standard normal noise in R^N.
-        z = np.random.randn(self.N)
+        Args:
+            n (int): Number of samples.
 
-        # Cholesky factorization: sigma = L L^T, assumes sigma is SPD.
+        Returns:
+            np.ndarray: Array of shape (n, N) with samples from N(mu, sigma).
+        """
+        # Cholesky factorization: sigma = L L.T, assumes sigma is SPD.
         L = np.linalg.cholesky(self.sigma)
 
-        # Reparameterization: y = mu + L z ~ N(mu, sigma).
-        y = self.mu + L @ z
+        # Standard normal noise in R^N.
+        z = np.random.randn(n, self.N)
+
+        # Reparameterization: y = mu + z L.T : z ~ N(0, I).
+        y = self.mu + z @ L.T
         return y
 
-    def process_backward(self, y: np.ndarray, r: float) -> None:
+    def process_backward(self, y: np.ndarray, r: np.ndarray) -> None:
         """
         Update mean and covariance based on a sample and reward signal.
 
         Args:
             y (np.ndarray): Sampled point used to guide the update.
-            r (float): Scalar reward used to scale the update.
+            r (np.ndarray): Reward signal used to scale the update.
         """
         # Normalize reward to stabilize learning across different scales.
         r = self._process_reward(r)
@@ -256,7 +259,7 @@ class Processor:
         # Covariance update (symmetric matrix before post-processing).
         self.sigma += self.lr_sigma * r * v_sigma
 
-        # Enforce exact symmetry numerically: sigma = (sigma + sigma^T) / 2.
+        # Enforce exact symmetry numerically: sigma = (sigma + sigma.T) / 2.
         self.sigma = 0.5 * (self.sigma + self.sigma.T)
 
         # Ensure all variances stay above min_var to keep sigma positive
@@ -266,52 +269,71 @@ class Processor:
         np.fill_diagonal(self.sigma, diag)
         return
 
-    def add_dimension(self, mu: float = 0.0, sigma: float = 100.0) -> None:
+    def add_dimension(
+        self, mu: float | np.ndarray = 0.0, sigma: float | np.ndarray = 100.0
+    ) -> None:
         """
-        Add a new dimension to the process.
+        Add one or multiple dimensions to the process.
 
         Args:
-            mu (float): Mean for the new dimension.
-            sigma (float): Std for the new dimension.
+            mu (float | np.ndarray): Mean(s) for the new dimension(s).
+            sigma (float | np.ndarray): Std or covariance for the new dimension(s).
         """
-        # Extend mean vector with new component.
-        new_mu = np.array([mu], dtype=float)
-        self.mu = np.concatenate([self.mu, new_mu])
+        # New mean components.
+        new_mu = (
+            np.array([mu], dtype=float)
+            if isinstance(mu, float)
+            else np.asarray(mu, dtype=float).copy()
+        )
+
+        # New covariance components.
+        new_cov = (
+            (sigma**2) * np.eye(new_mu.size, dtype=float)
+            if isinstance(sigma, float)
+            else np.asarray(sigma, dtype=float).copy()
+        )
 
         # Create enlarged covariance matrix and copy existing structure.
-        new_sigma = np.zeros((self.N + 1, self.N + 1), dtype=float)
+        new_sigma = np.zeros((self.N + new_mu.size, self.N + new_mu.size), dtype=float)
         new_sigma[: self.N, : self.N] = self.sigma
+        new_sigma[self.N :, self.N :] = new_cov
 
-        # Initialize new dimension as independent with variance sigma^2.
-        new_sigma[self.N, self.N] = sigma**2
+        # Update parameters.
+        self.mu = np.concatenate([self.mu, new_mu])
         self.sigma = new_sigma
         return
 
-    def remove_dimension(self, idx: int) -> None:
+    def remove_dimension(self, idx: int | np.ndarray) -> None:
         """
-        Remove a specific dimension from the process.
+        Remove one or multiple dimensions from the process.
 
         Args:
-            idx (int): Index of the dimension to remove.
+            idx (int | np.ndarray): Index or indices of the dimensions to remove.
         """
-        # Remove component from mean vector.
+        # Normalize indices to a 1D array.
+        idx = (
+            np.array([idx], dtype=int)
+            if isinstance(idx, int)
+            else np.asarray(idx, dtype=int).copy()
+        )
+
+        # Remove components from mean vector.
         self.mu = np.delete(self.mu, idx, axis=0)
 
-        # Remove corresponding row and column from covariance matrix
-        # to keep it consistent with the reduced dimensionality.
+        # Remove corresponding rows and columns from covariance matrix.
         self.sigma = np.delete(self.sigma, idx, axis=0)
         self.sigma = np.delete(self.sigma, idx, axis=1)
         return
 
-    def _process_reward(self, r: float) -> float:
+    def _process_reward(self, r: np.ndarray) -> np.ndarray:
         """
         Process raw reward by centering and normalizing.
 
         Args:
-            r (float): Raw reward value received from environment.
+            r (np.ndarray): Raw reward value received from environment.
 
         Returns:
-            float: Stabilized reward suitable for parameter updates.
+            np.ndarray: Stabilized reward suitable for parameter updates.
         """
         # Exponential moving average for reward baseline (center of rewards).
         self.r_baseline = (
