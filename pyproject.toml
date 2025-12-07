@@ -17,6 +17,8 @@ dependencies = [
 
 [dependency-groups]
 eval = [
+    "imageio>=2.37.2",
+    "imageio-ffmpeg>=0.6.0",
     "ipykernel>=7.1.0",
     "jupyter>=1.1.1",
     "matplotlib>=3.10.7",
