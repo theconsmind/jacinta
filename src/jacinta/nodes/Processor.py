@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Any
 
 import numpy as np
@@ -22,7 +23,6 @@ class Processor:
         eps: float = 1e-12,
     ) -> None:
         """ """
-
         assert isinstance(size, (int, np.integer)), "size must be an integer"
         assert size > 0, "size must be positive"
         size = int(size)
@@ -87,19 +87,19 @@ class Processor:
         assert isinstance(
             eps, (int, float, np.integer, np.floating)
         ), "eps must be a float"
-        assert eps > 0, "eps must be positive"
+        assert eps >= 0, "eps must be non-negative"
         self.eps = float(eps)
 
         assert isinstance(
             lr_mu, (int, float, np.integer, np.floating)
         ), "lr_mu must be a float"
-        assert lr_mu > 0, "lr_mu must be positive"
+        assert lr_mu >= 0, "lr_mu must be non-negative"
         self.lr_mu = float(lr_mu)
 
         assert isinstance(
             lr_sigma, (int, float, np.integer, np.floating)
         ), "lr_sigma must be a float"
-        assert lr_sigma > 0, "lr_sigma must be positive"
+        assert lr_sigma >= 0, "lr_sigma must be non-negative"
         self.lr_sigma = float(lr_sigma)
 
         assert isinstance(
@@ -120,24 +120,12 @@ class Processor:
 
     @property
     def N(self) -> int:
-        """
-        Return the dimensionality of the Processor.
-
-        Returns:
-            int: Number of dimensions.
-        """
-        # Dimensionality is inferred from the length of the mean vector.
+        """ """
         N = self.mu.size
         return N
 
     def copy(self) -> Processor:
-        """
-        Create a deep copy of the current Processor.
-
-        Returns:
-            Processor: A new Processor with the same parameters.
-        """
-        # Reuse constructor to keep behavior consistent with __init__.
+        """ """
         processor = self.__class__(
             self.N,
             self.mu,
@@ -150,23 +138,12 @@ class Processor:
             self.eps,
         )
 
-        # Copy reward normalization state.
         processor.r_baseline = self.r_baseline
         processor.r_scale = self.r_scale
         return processor
 
-    ################################################################
-    ## Pending Refactor
-    ################################################################
-
     def to_dict(self) -> dict[str, Any]:
-        """
-        Serialize Processor state to a dictionary.
-
-        Returns:
-            dict[str, Any]: Serializable snapshot of the Processor.
-        """
-        # Convert numpy arrays to lists so they can be JSON-encoded.
+        """ """
         data = {
             "class": self.__class__.__name__,
             "size": self.N,
@@ -175,26 +152,36 @@ class Processor:
             "lr_mu": self.lr_mu,
             "lr_sigma": self.lr_sigma,
             "min_var": self.min_var,
-            "r_baseline": self.r_baseline.tolist(),
-            "r_scale": self.r_scale.tolist(),
             "r_alpha": self.r_alpha,
             "r_beta": self.r_beta,
             "eps": self.eps,
+            "r_baseline": self.r_baseline,
+            "r_scale": self.r_scale,
         }
         return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Processor:
-        """
-        Build a Processor instance from a dict.
+        """ """
+        assert isinstance(data, dict), "data must be a dictionary"
+        assert data.keys() == {
+            "class",
+            "size",
+            "mu",
+            "sigma",
+            "lr_mu",
+            "lr_sigma",
+            "min_var",
+            "r_alpha",
+            "r_beta",
+            "eps",
+            "r_baseline",
+            "r_scale",
+        }, "data must have keys: class, size, mu, sigma, lr_mu, lr_sigma, min_var, r_alpha, r_beta, eps, r_baseline, r_scale"
 
-        Args:
-            data (dict[str, Any]): Serialized Processor config.
+        assert isinstance(data["class"], str), "class must be a string"
+        assert data["class"] == cls.__name__, f"class must be {cls.__name__}"
 
-        Returns:
-            Processor: Reconstructed Processor instance.
-        """
-        # Rehydrate numpy arrays and delegate to __init__ for validation.
         processor = cls(
             size=int(data["size"]),
             mu=np.array(data["mu"], dtype=float),
@@ -207,19 +194,25 @@ class Processor:
             eps=float(data["eps"]),
         )
 
-        # Restore reward normalization state.
-        processor.r_baseline = np.array(data["r_baseline"], dtype=float)
-        processor.r_scale = np.array(data["r_scale"], dtype=float)
+        assert isinstance(
+            data["r_baseline"], (int, float, np.integer, np.floating)
+        ), "r_baseline must be a float"
+        processor.r_baseline = float(data["r_baseline"])
+
+        assert isinstance(
+            data["r_scale"], (int, float, np.integer, np.floating)
+        ), "r_scale must be a float"
+        assert data["r_scale"] >= 0, "r_scale must be non-negative"
+        processor.r_scale = float(data["r_scale"])
         return processor
 
     def save(self, file_path: str) -> None:
-        """
-        Save Processor state as JSON to given file.
+        """ """
+        assert isinstance(file_path, str), "file_path must be a string"
 
-        Args:
-            file_path (str): Target file path.
-        """
-        # Persist configuration and learning state for later reuse.
+        file_dir = os.path.dirname(file_path)
+        assert os.path.exists(file_dir), f"directory {file_dir} does not exist"
+
         data = self.to_dict()
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
@@ -227,20 +220,18 @@ class Processor:
 
     @classmethod
     def load(cls, file_path: str) -> Processor:
-        """
-        Load a Processor instance from a JSON file.
+        """ """
+        assert isinstance(file_path, str), "file_path must be a string"
+        assert os.path.exists(file_path), f"file {file_path} does not exist"
 
-        Args:
-            file_path (str): Path to the JSON file containing saved state.
-
-        Returns:
-            Processor: Reconstructed Processor instance.
-        """
-        # Simple deserialization path mirroring save().
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
         processor = cls.from_dict(data)
         return processor
+
+    ################################################################
+    ## Pending Refactor
+    ################################################################
 
     def process_forward(self, n: int = 1) -> np.ndarray:
         """
@@ -315,7 +306,7 @@ class Processor:
         self, mu: float | np.ndarray = 0.0, sigma: float | np.ndarray = 100.0
     ) -> None:
         """
-        Add one or multiple dimensions to the process.
+        Add one or multiple dimensions to the Processor.
 
         Args:
             mu (float | np.ndarray): Mean(s) for the new dimension(s).
@@ -347,7 +338,7 @@ class Processor:
 
     def remove_dimension(self, idx: int | np.ndarray) -> None:
         """
-        Remove one or multiple dimensions from the process.
+        Remove one or multiple dimensions from the Processor.
 
         Args:
             idx (int | np.ndarray): Index or indices of the dimensions to remove.
