@@ -288,72 +288,97 @@ class Processor:
         np.fill_diagonal(self.sigma, sigma_diag)
         return
 
-    ################################################################
-    ## Pending Refactor
-    ################################################################
-
     def add_dimension(
         self, mu: float | np.ndarray = 0.0, sigma: float | np.ndarray = 100.0
     ) -> None:
-        """
-        Add one or multiple dimensions to the Processor.
+        """ """
+        assert isinstance(
+            mu, (int, float, np.integer, np.floating, np.ndarray, list, tuple)
+        ), "mu must be a float or 1D array of floats"
 
-        Args:
-            mu (float | np.ndarray): Mean(s) for the new dimension(s).
-            sigma (float | np.ndarray): Std or covariance for the new dimension(s).
-        """
-        # New mean components.
-        new_mu = (
-            np.array([mu], dtype=float)
-            if np.isscalar(mu)
-            else np.asarray(mu, dtype=float).copy()
-        )
+        if np.isscalar(mu):
+            mu = np.full(1, float(mu), dtype=float)
+        else:
+            mu = np.asarray(mu)
+            assert mu.ndim == 1, "mu must be a 1D array"
+            assert mu.size > 0, "mu must have at least one element"
+            assert np.issubdtype(mu.dtype, np.number), "mu must be numeric"
+            mu = mu.astype(float, copy=True)
 
-        # New covariance components.
-        new_cov = (
-            (sigma**2) * np.eye(new_mu.size, dtype=float)
-            if np.isscalar(sigma)
-            else np.asarray(sigma, dtype=float).copy()
-        )
+        assert isinstance(
+            sigma, (int, float, np.integer, np.floating, np.ndarray, list, tuple)
+        ), "sigma must be a float or array of floats"
 
-        # Create enlarged covariance matrix and copy existing structure.
-        new_sigma = np.zeros((self.N + new_mu.size, self.N + new_mu.size), dtype=float)
+        if np.isscalar(sigma):
+            sigma = float(sigma)
+            assert sigma >= 0.0, "scalar sigma (std) must be non-negative"
+            sigma = (sigma**2) * np.eye(mu.size, dtype=float)
+
+        else:
+            sigma = np.asarray(sigma)
+            assert 1 <= sigma.ndim <= 2, "sigma must be a 1D or 2D array"
+            assert np.issubdtype(sigma.dtype, np.number), "sigma must be numeric"
+            if sigma.ndim == 1:
+                assert sigma.size == mu.size, f"sigma must have size {mu.size}"
+                sigma_diag = sigma.astype(float, copy=True)
+                assert np.all(
+                    sigma_diag >= 0.0
+                ), "1D sigma entries (variances) must be >= 0"
+                sigma = np.diag(sigma_diag)
+            else:
+                assert sigma.shape == (
+                    mu.size,
+                    mu.size,
+                ), f"sigma must have shape ({mu.size}, {mu.size})"
+                sigma = 0.5 * (sigma + sigma.T).astype(float, copy=False)
+
+        sigma_diag = np.diag(sigma)
+        sigma_diag = np.maximum(sigma_diag, self.min_var)
+        np.fill_diagonal(sigma, sigma_diag)
+
+        try:
+            np.linalg.cholesky(sigma)
+        except np.linalg.LinAlgError as exc:
+            raise AssertionError(
+                "sigma must define a positive definite covariance"
+            ) from exc
+
+        new_sigma = np.zeros((self.N + mu.size, self.N + mu.size), dtype=float)
         new_sigma[: self.N, : self.N] = self.sigma
-        new_sigma[self.N :, self.N :] = new_cov
+        new_sigma[self.N :, self.N :] = sigma
 
-        # Update parameters.
-        self.mu = np.concatenate([self.mu, new_mu])
+        self.mu = np.concatenate([self.mu, mu])
         self.sigma = new_sigma
         return
 
-    ################################################################
-    ## Pending Refactor
-    ################################################################
-
     def remove_dimension(self, idx: int | np.ndarray) -> None:
-        """
-        Remove one or multiple dimensions from the Processor.
+        """ """
+        assert isinstance(
+            idx, (int, np.integer, np.ndarray, list, tuple)
+        ), "idx must be an integer or array of integers"
 
-        Args:
-            idx (int | np.ndarray): Index or indices of the dimensions to remove.
-        """
-        # Normalize indices to a 1D array.
-        idx = (
-            np.array([idx], dtype=int)
-            if isinstance(idx, int)
-            else np.asarray(idx, dtype=int).copy()
-        )
+        if np.isscalar(idx):
+            idx = np.array([idx], dtype=int)
+        else:
+            idx = np.asarray(idx)
+            assert idx.ndim == 1, "idx must be a 1D array"
+            assert np.issubdtype(idx.dtype, np.integer), "idx must be an integer array"
 
-        # Remove components from mean vector.
+        assert idx.size > 0, "idx must have at least one element"
+        assert idx.size < self.N, f"idx must have less than {self.N} elements"
+
+        idx[idx < 0] += self.N
+
+        assert np.all(idx >= 0), "idx must be non-negative"
+        assert np.all(idx < self.N), f"idx must be less than {self.N}"
+
+        idx = np.unique(idx)
+
         self.mu = np.delete(self.mu, idx, axis=0)
 
-        # Remove corresponding rows and columns from covariance matrix.
         self.sigma = np.delete(self.sigma, idx, axis=0)
         self.sigma = np.delete(self.sigma, idx, axis=1)
         return
-
-    ################################################################
-    ################################################################
 
     def _process_reward(self, r: float) -> np.ndarray:
         """ """
