@@ -87,7 +87,7 @@ class Processor:
         assert isinstance(
             eps, (int, float, np.integer, np.floating)
         ), "eps must be a float"
-        assert eps >= 0, "eps must be non-negative"
+        assert eps > 0, "eps must be positive"
         self.eps = float(eps)
 
         assert isinstance(
@@ -211,7 +211,8 @@ class Processor:
         assert isinstance(file_path, str), "file_path must be a string"
 
         file_dir = os.path.dirname(file_path)
-        assert os.path.exists(file_dir), f"directory {file_dir} does not exist"
+        if file_dir:
+            assert os.path.exists(file_dir), f"directory {file_dir} does not exist"
 
         data = self.to_dict()
         with open(file_path, "w", encoding="utf-8") as f:
@@ -222,7 +223,7 @@ class Processor:
     def load(cls, file_path: str) -> Processor:
         """ """
         assert isinstance(file_path, str), "file_path must be a string"
-        assert os.path.exists(file_path), f"file {file_path} does not exist"
+        assert os.path.isfile(file_path), f"file {file_path} does not exist"
 
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
@@ -380,7 +381,7 @@ class Processor:
         self.sigma = np.delete(self.sigma, idx, axis=1)
         return
 
-    def _process_reward(self, r: float) -> np.ndarray:
+    def _process_reward(self, r: float) -> float:
         """ """
         self.r_baseline = (1.0 - self.r_alpha) * self.r_baseline + self.r_alpha * r
 
