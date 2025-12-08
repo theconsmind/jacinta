@@ -49,14 +49,19 @@ class Processor:
             eps (float): Numerical epsilon for stability (division, norms).
         """
         # Validate and normalize dimensionality.
-        assert isinstance(size, (int, np.integer)), "size must be an integer"
-        assert size > 0, "size must be positive"
+        if not isinstance(size, (int, np.integer)):
+            raise TypeError("size must be an integer")
+        if size <= 0:
+            raise ValueError("size must be positive")
         size = int(size)
 
         # Validate and initialize mean.
-        assert isinstance(
+        if not isinstance(
             mu, (int, float, np.integer, np.floating, np.ndarray, list, tuple)
-        ), "mu must be a float or 1D array of floats"
+        ):
+            raise TypeError(
+                "mu must be a numeric scalar or a 1D array-like of numerics"
+            )
 
         if np.isscalar(mu):
             # Scalar mean, broadcast to all dimensions.
@@ -64,47 +69,52 @@ class Processor:
         else:
             # 1D array mean, must match size.
             mu = np.asarray(mu)
-            assert mu.ndim == 1, "mu must be a 1D array"
-            assert mu.size == size, f"mu must have size {size}"
-            assert np.issubdtype(mu.dtype, np.number), "mu must be numeric"
+            if mu.ndim != 1:
+                raise ValueError("mu must be a 1D array")
+            if mu.size != size:
+                raise ValueError(f"mu must have size {size}")
+            if not np.issubdtype(mu.dtype, np.number):
+                raise TypeError("mu must be numeric")
             self.mu = mu.astype(float, copy=True)
 
         # Validate and initialize covariance.
-        assert isinstance(
+        if not isinstance(
             sigma, (int, float, np.integer, np.floating, np.ndarray, list, tuple)
-        ), "sigma must be a float or array of floats"
+        ):
+            raise TypeError("sigma must be a numeric scalar or a numeric array-like")
 
         if np.isscalar(sigma):
             # Scalar sigma interpreted as global variance, Sigma = sigma * I.
             sigma = float(sigma)
-            assert sigma >= 0.0, "scalar sigma (variance) must be non-negative"
+            if sigma < 0.0:
+                raise ValueError("scalar sigma (variance) must be non-negative")
             self.sigma = sigma * np.eye(size, dtype=float)
         else:
             # Array sigma can be 1D (variances) or 2D (full covariance).
             sigma = np.asarray(sigma)
-            assert 1 <= sigma.ndim <= 2, "sigma must be a 1D or 2D array"
-            assert np.issubdtype(sigma.dtype, np.number), "sigma must be numeric"
+            if not (1 <= sigma.ndim <= 2):
+                raise ValueError("sigma must be a 1D or 2D array")
+            if not np.issubdtype(sigma.dtype, np.number):
+                raise TypeError("sigma must be numeric")
             if sigma.ndim == 1:
                 # Per-dimension variances on the diagonal, no correlations.
-                assert sigma.size == size, f"sigma must have size {size}"
+                if sigma.size != size:
+                    raise ValueError(f"sigma must have size {size}")
                 sigma_diag = sigma.astype(float, copy=True)
-                assert np.all(
-                    sigma_diag >= 0.0
-                ), "1D sigma entries (variances) must be >= 0"
+                if not np.all(sigma_diag >= 0.0):
+                    raise ValueError("1D sigma entries (variances) must be >= 0")
                 self.sigma = np.diag(sigma_diag)
             else:
                 # Full covariance matrix, symmetrized for numerical stability.
-                assert sigma.shape == (
-                    size,
-                    size,
-                ), f"sigma must have shape ({size}, {size})"
+                if sigma.shape != (size, size):
+                    raise ValueError(f"sigma must have shape ({size}, {size})")
                 self.sigma = 0.5 * (sigma + sigma.T).astype(float, copy=False)
 
         # Validate and store minimum variance.
-        assert isinstance(
-            min_var, (int, float, np.integer, np.floating)
-        ), "min_var must be a float"
-        assert min_var >= 0, "min_var must be non-negative"
+        if not isinstance(min_var, (int, float, np.integer, np.floating)):
+            raise TypeError("min_var must be a float")
+        if min_var < 0:
+            raise ValueError("min_var must be non-negative")
         self.min_var = float(min_var)
 
         # Enforce minimum variance on the covariance diagonal.
@@ -112,45 +122,40 @@ class Processor:
         sigma_diag = np.maximum(sigma_diag, self.min_var)
         np.fill_diagonal(self.sigma, sigma_diag)
 
-        # Ensure covariance is positive definite (required by Cholesky).
-        try:
-            np.linalg.cholesky(self.sigma)
-        except np.linalg.LinAlgError as exc:
-            raise AssertionError(
-                "sigma must define a positive definite covariance"
-            ) from exc
+        # Ensure covariance is positive definite (or project it if needed).
+        self.sigma = self._project_to_spd(self.sigma)
 
         # Validate and store epsilon.
-        assert isinstance(
-            eps, (int, float, np.integer, np.floating)
-        ), "eps must be a float"
-        assert eps > 0, "eps must be positive"
+        if not isinstance(eps, (int, float, np.integer, np.floating)):
+            raise TypeError("eps must be a float")
+        if eps <= 0:
+            raise ValueError("eps must be positive")
         self.eps = float(eps)
 
         # Validate and store learning rates.
-        assert isinstance(
-            lr_mu, (int, float, np.integer, np.floating)
-        ), "lr_mu must be a float"
-        assert lr_mu >= 0, "lr_mu must be non-negative"
+        if not isinstance(lr_mu, (int, float, np.integer, np.floating)):
+            raise TypeError("lr_mu must be a float")
+        if lr_mu < 0:
+            raise ValueError("lr_mu must be non-negative")
         self.lr_mu = float(lr_mu)
 
-        assert isinstance(
-            lr_sigma, (int, float, np.integer, np.floating)
-        ), "lr_sigma must be a float"
-        assert lr_sigma >= 0, "lr_sigma must be non-negative"
+        if not isinstance(lr_sigma, (int, float, np.integer, np.floating)):
+            raise TypeError("lr_sigma must be a float")
+        if lr_sigma < 0:
+            raise ValueError("lr_sigma must be non-negative")
         self.lr_sigma = float(lr_sigma)
 
         # Validate and store reward EMA factors.
-        assert isinstance(
-            r_alpha, (int, float, np.integer, np.floating)
-        ), "r_alpha must be a float"
-        assert 0 <= r_alpha <= 1.0, "r_alpha must be in [0, 1]"
+        if not isinstance(r_alpha, (int, float, np.integer, np.floating)):
+            raise TypeError("r_alpha must be a float")
+        if not (0 <= r_alpha <= 1.0):
+            raise ValueError("r_alpha must be in [0, 1]")
         self.r_alpha = float(r_alpha)
 
-        assert isinstance(
-            r_beta, (int, float, np.integer, np.floating)
-        ), "r_beta must be a float"
-        assert 0 <= r_beta <= 1.0, "r_beta must be in [0, 1]"
+        if not isinstance(r_beta, (int, float, np.integer, np.floating)):
+            raise TypeError("r_beta must be a float")
+        if not (0 <= r_beta <= 1.0):
+            raise ValueError("r_beta must be in [0, 1]")
         self.r_beta = float(r_beta)
 
         # Reward normalization state (scalar EMA statistics).
@@ -231,8 +236,9 @@ class Processor:
             Processor: Reconstructed Processor instance.
         """
         # Validate the outer container and required keys.
-        assert isinstance(data, dict), "data must be a dictionary"
-        assert data.keys() == {
+        if not isinstance(data, dict):
+            raise TypeError("data must be a dictionary")
+        required_keys = {
             "class",
             "size",
             "mu",
@@ -245,11 +251,19 @@ class Processor:
             "eps",
             "r_baseline",
             "r_scale",
-        }, "data must have keys: class, size, mu, sigma, lr_mu, lr_sigma, min_var, r_alpha, r_beta, eps, r_baseline, r_scale"
+        }
+        if set(data.keys()) != required_keys:
+            raise ValueError(
+                "data must have exactly the keys: "
+                "class, size, mu, sigma, lr_mu, lr_sigma, "
+                "min_var, r_alpha, r_beta, eps, r_baseline, r_scale"
+            )
 
         # Ensure class name matches the current class.
-        assert isinstance(data["class"], str), "class must be a string"
-        assert data["class"] == cls.__name__, f"class must be {cls.__name__}"
+        if not isinstance(data["class"], str):
+            raise TypeError("data['class'] must be a string")
+        if data["class"] != cls.__name__:
+            raise ValueError(f"data['class'] must be {cls.__name__}")
 
         # Delegate parameter validation to __init__.
         processor = cls(
@@ -265,15 +279,14 @@ class Processor:
         )
 
         # Restore reward normalization scalars.
-        assert isinstance(
-            data["r_baseline"], (int, float, np.integer, np.floating)
-        ), "r_baseline must be a float"
+        if not isinstance(data["r_baseline"], (int, float, np.integer, np.floating)):
+            raise TypeError("r_baseline must be numeric")
         processor.r_baseline = float(data["r_baseline"])
 
-        assert isinstance(
-            data["r_scale"], (int, float, np.integer, np.floating)
-        ), "r_scale must be a float"
-        assert data["r_scale"] >= 0, "r_scale must be non-negative"
+        if not isinstance(data["r_scale"], (int, float, np.integer, np.floating)):
+            raise TypeError("r_scale must be numeric")
+        if data["r_scale"] < 0:
+            raise ValueError("r_scale must be non-negative")
         processor.r_scale = float(data["r_scale"])
         return processor
 
@@ -285,12 +298,13 @@ class Processor:
             file_path (str): Target JSON file path.
         """
         # Validate file path type.
-        assert isinstance(file_path, str), "file_path must be a string"
+        if not isinstance(file_path, str):
+            raise TypeError("file_path must be a string")
 
         # Validate directory if present (empty means current directory).
         file_dir = os.path.dirname(file_path)
-        if file_dir:
-            assert os.path.exists(file_dir), f"directory {file_dir} does not exist"
+        if file_dir and not os.path.isdir(file_dir):
+            raise FileNotFoundError(f"directory {file_dir} does not exist")
 
         # Serialize and write JSON to disk.
         data = self.to_dict()
@@ -310,8 +324,10 @@ class Processor:
             Processor: Reconstructed Processor instance.
         """
         # Validate file path and existence.
-        assert isinstance(file_path, str), "file_path must be a string"
-        assert os.path.isfile(file_path), f"file {file_path} does not exist"
+        if not isinstance(file_path, str):
+            raise TypeError("file_path must be a string")
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"file {file_path} does not exist")
 
         # Read JSON and delegate to from_dict.
         with open(file_path, encoding="utf-8") as f:
@@ -330,8 +346,10 @@ class Processor:
             np.ndarray: Array of shape (n, N) with samples from N(mu, sigma).
         """
         # Validate and normalize number of samples.
-        assert isinstance(n, (int, np.integer)), "n must be an integer"
-        assert n >= 0, "n must be non-negative"
+        if not isinstance(n, (int, np.integer)):
+            raise TypeError("n must be an integer")
+        if n < 0:
+            raise ValueError("n must be non-negative")
         n = int(n)
 
         # Cholesky factorization: sigma = L L^T, requires sigma to be SPD.
@@ -353,23 +371,31 @@ class Processor:
             r (np.ndarray): Batch of rewards, shape (batch_size,).
         """
         # Validate array types.
-        assert isinstance(y, np.ndarray), "y must be a numpy array"
-        assert isinstance(r, np.ndarray), "r must be a numpy array"
+        if not isinstance(y, np.ndarray):
+            raise TypeError("y must be a numpy array")
+        if not isinstance(r, np.ndarray):
+            raise TypeError("r must be a numpy array")
 
         # Validate shapes: y is 2D, r is 1D.
-        assert y.ndim == 2, "y must be a 2D array"
-        assert r.ndim == 1, "r must be a 1D array"
+        if y.ndim != 2:
+            raise ValueError("y must be a 2D array")
+        if r.ndim != 1:
+            raise ValueError("r must be a 1D array")
 
         # Validate dimensions: second axis of y must match N.
-        assert y.shape[1] == self.N, f"y must have shape (n, {self.N})"
+        if y.shape[1] != self.N:
+            raise ValueError(f"y must have shape (n, {self.N})")
         # Validate batch size consistency.
-        assert r.size == y.shape[0], "r and y must have the same batch size"
+        if r.size != y.shape[0]:
+            raise ValueError("r and y must have the same batch size")
 
         # Ensure numeric, float arrays for computations.
-        assert np.issubdtype(y.dtype, np.number), "y must be a floating array"
+        if not np.issubdtype(y.dtype, np.number):
+            raise TypeError("y must be a numeric array")
         y = y.astype(float, copy=True)
 
-        assert np.issubdtype(r.dtype, np.number), "r must be a floating array"
+        if not np.issubdtype(r.dtype, np.number):
+            raise TypeError("r must be a numeric array")
         r = r.astype(float, copy=True)
 
         # Apply single-sample update for each (y_i, r_i) pair.
@@ -420,6 +446,9 @@ class Processor:
         sigma_diag = np.diag(self.sigma)
         sigma_diag = np.maximum(sigma_diag, self.min_var)
         np.fill_diagonal(self.sigma, sigma_diag)
+
+        # Project updated covariance back to SPD if needed.
+        self.sigma = self._project_to_spd(self.sigma)
         return
 
     def add_dimension(
@@ -438,9 +467,12 @@ class Processor:
                 - 2D array: full covariance matrix for new block
         """
         # Validate and normalize new mean components.
-        assert isinstance(
+        if not isinstance(
             mu, (int, float, np.integer, np.floating, np.ndarray, list, tuple)
-        ), "mu must be a float or 1D array of floats"
+        ):
+            raise TypeError(
+                "mu must be a numeric scalar or a 1D array-like of numerics"
+            )
 
         if np.isscalar(mu):
             # Single new dimension with scalar mean.
@@ -448,39 +480,44 @@ class Processor:
         else:
             # Multiple new dimensions from a 1D array.
             mu = np.asarray(mu)
-            assert mu.ndim == 1, "mu must be a 1D array"
-            assert mu.size > 0, "mu must have at least one element"
-            assert np.issubdtype(mu.dtype, np.number), "mu must be numeric"
+            if mu.ndim != 1:
+                raise ValueError("mu must be a 1D array")
+            if mu.size <= 0:
+                raise ValueError("mu must have at least one element")
+            if not np.issubdtype(mu.dtype, np.number):
+                raise TypeError("mu must be numeric")
             mu = mu.astype(float, copy=True)
 
         # Validate and normalize new covariance block.
-        assert isinstance(
+        if not isinstance(
             sigma, (int, float, np.integer, np.floating, np.ndarray, list, tuple)
-        ), "sigma must be a float or array of floats"
+        ):
+            raise TypeError("sigma must be a numeric scalar or a numeric array-like")
 
         if np.isscalar(sigma):
             # Scalar sigma interpreted as global variance for new dimensions.
             sigma = float(sigma)
-            assert sigma >= 0.0, "scalar sigma (variance) must be non-negative"
+            if sigma < 0.0:
+                raise ValueError("scalar sigma (variance) must be non-negative")
             sigma = sigma * np.eye(mu.size, dtype=float)
         else:
             sigma = np.asarray(sigma)
-            assert 1 <= sigma.ndim <= 2, "sigma must be a 1D or 2D array"
-            assert np.issubdtype(sigma.dtype, np.number), "sigma must be numeric"
+            if not (1 <= sigma.ndim <= 2):
+                raise ValueError("sigma must be a 1D or 2D array")
+            if not np.issubdtype(sigma.dtype, np.number):
+                raise TypeError("sigma must be numeric")
             if sigma.ndim == 1:
                 # 1D sigma interpreted as variances on the diagonal.
-                assert sigma.size == mu.size, f"sigma must have size {mu.size}"
+                if sigma.size != mu.size:
+                    raise ValueError(f"sigma must have size {mu.size}")
                 sigma_diag = sigma.astype(float, copy=True)
-                assert np.all(
-                    sigma_diag >= 0.0
-                ), "1D sigma entries (variances) must be >= 0"
+                if not np.all(sigma_diag >= 0.0):
+                    raise ValueError("1D sigma entries (variances) must be >= 0")
                 sigma = np.diag(sigma_diag)
             else:
                 # 2D full covariance for the new block.
-                assert sigma.shape == (
-                    mu.size,
-                    mu.size,
-                ), f"sigma must have shape ({mu.size}, {mu.size})"
+                if sigma.shape != (mu.size, mu.size):
+                    raise ValueError(f"sigma must have shape ({mu.size}, {mu.size})")
                 sigma = 0.5 * (sigma + sigma.T).astype(float, copy=False)
 
         # Enforce minimum variance on the new block diagonal.
@@ -488,13 +525,8 @@ class Processor:
         sigma_diag = np.maximum(sigma_diag, self.min_var)
         np.fill_diagonal(sigma, sigma_diag)
 
-        # Ensure the new covariance block is positive definite.
-        try:
-            np.linalg.cholesky(sigma)
-        except np.linalg.LinAlgError as exc:
-            raise AssertionError(
-                "sigma must define a positive definite covariance"
-            ) from exc
+        # Ensure the new covariance block is positive definite (project if needed).
+        sigma = self._project_to_spd(sigma)
 
         # Create enlarged covariance matrix with block-diagonal structure.
         new_sigma = np.zeros((self.N + mu.size, self.N + mu.size), dtype=float)
@@ -515,9 +547,8 @@ class Processor:
                 Negative indices are supported (Python-style).
         """
         # Validate index container type.
-        assert isinstance(
-            idx, (int, np.integer, np.ndarray, list, tuple)
-        ), "idx must be an integer or array of integers"
+        if not isinstance(idx, (int, np.integer, np.ndarray, list, tuple)):
+            raise TypeError("idx must be an integer or a 1D array-like of integers")
 
         if np.isscalar(idx):
             # Single index case.
@@ -525,19 +556,27 @@ class Processor:
         else:
             # Multiple indices case.
             idx = np.asarray(idx)
-            assert idx.ndim == 1, "idx must be a 1D array"
-            assert np.issubdtype(idx.dtype, np.integer), "idx must be an integer array"
+            if idx.ndim != 1:
+                raise ValueError("idx must be a 1D array")
+            if not np.issubdtype(idx.dtype, np.integer):
+                raise TypeError("idx must contain integer indices")
 
         # Disallow empty index sets and removing all dimensions.
-        assert idx.size > 0, "idx must have at least one element"
-        assert idx.size < self.N, f"idx must have less than {self.N} elements"
+        if idx.size <= 0:
+            raise ValueError("idx must have at least one element")
+        if idx.size >= self.N:
+            raise ValueError(
+                f"idx must have less than {self.N} elements (cannot remove all dimensions)"
+            )
 
         # Normalize negative indices relative to current dimensionality.
         idx[idx < 0] += self.N
 
         # Ensure indices are within valid range.
-        assert np.all(idx >= 0), "idx must be non-negative"
-        assert np.all(idx < self.N), f"idx must be less than {self.N}"
+        if not np.all(idx >= 0):
+            raise ValueError("all indices in idx must be >= 0")
+        if not np.all(idx < self.N):
+            raise ValueError(f"all indices in idx must be < {self.N}")
 
         # Remove duplicate indices and sort them.
         idx = np.unique(idx)
@@ -558,6 +597,8 @@ class Processor:
         Returns:
             float: Normalized reward with approximately unit scale.
         """
+        r = float(r)
+
         # EMA update for reward baseline.
         self.r_baseline = (1.0 - self.r_alpha) * self.r_baseline + self.r_alpha * r
 
@@ -572,3 +613,39 @@ class Processor:
         # Normalize reward using scale and epsilon for stability.
         r_norm = r_centered / (self.r_scale + self.eps)
         return r_norm
+
+    def _project_to_spd(self, sigma: np.ndarray) -> np.ndarray:
+        """
+        Project a symmetric matrix onto the space of SPD matrices.
+
+        Args:
+            sigma (np.ndarray): Symmetric covariance candidate.
+
+        Returns:
+            np.ndarray: Symmetric positive definite covariance matrix.
+        """
+        # Symmetrize explicitly to avoid asymmetries from numerical noise.
+        sigma = 0.5 * (sigma + sigma.T)
+
+        # Fast path: try Cholesky first.
+        try:
+            np.linalg.cholesky(sigma)
+        except np.linalg.LinAlgError:
+            # Eigen-decomposition and eigenvalue clipping.
+            eigvals, eigvecs = np.linalg.eigh(sigma)
+            # Clamp eigenvalues to at least min_var for positive definiteness.
+            eigvals_clamped = np.maximum(eigvals, self.min_var)
+            sigma = eigvecs @ np.diag(eigvals_clamped) @ eigvecs.T
+
+            # Re-symmetrize to clean numerical noise.
+            sigma = 0.5 * (sigma + sigma.T)
+
+            # Final check: if this still fails, raise a hard error.
+            try:
+                np.linalg.cholesky(sigma)
+            except np.linalg.LinAlgError as exc:
+                raise RuntimeError(
+                    "Failed to project sigma to a positive definite covariance"
+                ) from exc
+
+        return sigma
