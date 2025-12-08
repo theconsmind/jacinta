@@ -229,78 +229,68 @@ class Processor:
         processor = cls.from_dict(data)
         return processor
 
-    ################################################################
-    ## Pending Refactor
-    ################################################################
-
     def process_forward(self, n: int = 1) -> np.ndarray:
-        """
-        Sample from the current Gaussian distribution.
+        """ """
+        assert isinstance(n, (int, np.integer)), "n must be an integer"
+        assert n >= 0, "n must be non-negative"
+        n = int(n)
 
-        Args:
-            n (int): Number of samples.
-
-        Returns:
-            np.ndarray: Array of shape (n, N) with samples from N(mu, sigma).
-        """
-        # Cholesky factorization: sigma = L L.T, assumes sigma is SPD.
         L = np.linalg.cholesky(self.sigma)
 
-        # Standard normal noise in R^N.
         z = np.random.randn(n, self.N)
 
-        # Reparameterization: y = mu + z L.T : z ~ N(0, I).
         y = self.mu + z @ L.T
         return y
 
     def process_backward(self, y: np.ndarray, r: np.ndarray) -> None:
-        """
-        Update mean and covariance based on a sample and reward signal.
+        """ """
+        assert isinstance(y, np.ndarray), "y must be a numpy array"
+        assert isinstance(r, np.ndarray), "r must be a numpy array"
 
-        Args:
-            y (np.ndarray): Sampled point used to guide the update.
-            r (np.ndarray): Reward signal used to scale the update.
-        """
-        # Normalize reward to stabilize learning across different scales.
+        assert y.ndim == 2, "y must be a 2D array"
+        assert r.ndim == 1, "r must be a 1D array"
+
+        assert y.shape[1] == self.N, f"y must have shape (n, {self.N})"
+        assert r.size == y.shape[0], "r and y must have the same batch size"
+
+        assert np.issubdtype(y.dtype, np.number), "y must be a floating array"
+        y = y.astype(float, copy=True)
+
+        assert np.issubdtype(r.dtype, np.number), "r must be a floating array"
+        r = r.astype(float, copy=True)
+
+        for yi, ri in zip(y, r, strict=True):
+            self._process_backward(yi, ri)
+        return
+
+    def _process_backward(self, y: np.ndarray, r: float) -> None:
+        """ """
         r = self._process_reward(r)
 
-        # Deviation of sample from current mean.
         diff = y - self.mu
 
-        # Direction for mean update:
-        # solve sigma * v_mu = diff  -> v_mu = sigma^{-1} diff
-        # fall back to pseudo-inverse if sigma is near-singular.
         try:
             v_mu = np.linalg.solve(self.sigma, diff)
         except np.linalg.LinAlgError:
             v_mu = np.linalg.pinv(self.sigma) @ diff
 
-        # Normalize direction to unit length to decouple update magnitude
-        # from the norm of diff / sigma.
         v_mu /= np.linalg.norm(v_mu) + self.eps
-
-        # Gradient-like mean update scaled by normalized reward.
         self.mu += self.lr_mu * r * v_mu
 
-        # Direction for covariance update:
-        # push sigma towards outer(diff, diff) (natural policy gradient–like).
         v_sigma = np.outer(diff, diff) - self.sigma
-
-        # Normalize matrix update to prevent excessively large steps.
         v_sigma /= np.linalg.norm(v_sigma) + self.eps
-
-        # Covariance update (symmetric matrix before post-processing).
         self.sigma += self.lr_sigma * r * v_sigma
 
-        # Enforce exact symmetry numerically: sigma = (sigma + sigma.T) / 2.
         self.sigma = 0.5 * (self.sigma + self.sigma.T)
 
-        # Ensure all variances stay above min_var to keep sigma positive
-        # definite (or at least well-conditioned).
-        diag = np.diag(self.sigma)
-        diag = np.maximum(diag, self.min_var)
-        np.fill_diagonal(self.sigma, diag)
+        sigma_diag = np.diag(self.sigma)
+        sigma_diag = np.maximum(sigma_diag, self.min_var)
+        np.fill_diagonal(self.sigma, sigma_diag)
         return
+
+    ################################################################
+    ## Pending Refactor
+    ################################################################
 
     def add_dimension(
         self, mu: float | np.ndarray = 0.0, sigma: float | np.ndarray = 100.0
@@ -336,6 +326,10 @@ class Processor:
         self.sigma = new_sigma
         return
 
+    ################################################################
+    ## Pending Refactor
+    ################################################################
+
     def remove_dimension(self, idx: int | np.ndarray) -> None:
         """
         Remove one or multiple dimensions from the Processor.
@@ -358,28 +352,18 @@ class Processor:
         self.sigma = np.delete(self.sigma, idx, axis=1)
         return
 
-    def _process_reward(self, r: np.ndarray) -> np.ndarray:
-        """
-        Process raw reward by centering and normalizing.
+    ################################################################
+    ################################################################
 
-        Args:
-            r (np.ndarray): Raw reward value received from environment.
-
-        Returns:
-            np.ndarray: Stabilized reward suitable for parameter updates.
-        """
-        # Exponential moving average for reward baseline (center of rewards).
+    def _process_reward(self, r: float) -> np.ndarray:
+        """ """
         self.r_baseline = (1.0 - self.r_alpha) * self.r_baseline + self.r_alpha * r
 
-        # Center reward around the moving baseline.
         r_centered = r - self.r_baseline
 
-        # Exponential moving average of absolute centered reward,
-        # used as a scale (like a running standard deviation).
         self.r_scale = (1.0 - self.r_beta) * self.r_scale + self.r_beta * abs(
             r_centered
         )
 
-        # Normalize reward to have roughly unit scale; eps prevents division by 0.
         r_norm = r_centered / (self.r_scale + self.eps)
         return r_norm
