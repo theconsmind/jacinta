@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jacinta"
+version = "0.0.0"
+description = "Jacinta"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { file = "LICENSE" }
+authors = [
+  { name = "The Conscious Mind", email = "contact@theconsmind.com" }
+]
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ffmpeg>=1.4",
+    "matplotlib>=3.10.8",
+    "pre-commit>=4.5.1",
+    "ruff>=0.15.10",
+    "tqdm>=4.67.3",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+fix = true
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
