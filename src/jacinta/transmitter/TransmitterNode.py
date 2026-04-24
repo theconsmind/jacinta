@@ -15,6 +15,7 @@ class TransmitterNode:
         hits_left (int): The number of hits left to split the node.
         mass (float): The probability of the node being selected.
         depth (int): The depth of the node.
+        learning_rate (float): The learning rate of the node.
     """
 
     __slots__ = (
@@ -27,6 +28,7 @@ class TransmitterNode:
         "_hits_left",
         "_mass",
         "_depth",
+        "_learning_rate",
     )
 
     def __init__(
@@ -40,6 +42,7 @@ class TransmitterNode:
         hits_left: int,
         mass: float,
         depth: int,
+        learning_rate: float,
     ) -> None:
         """
         Initialize the TransmitterNode.
@@ -54,6 +57,7 @@ class TransmitterNode:
             hits_left (int): The number of hits left to split the node.
             mass (float): The probability of the node being selected.
             depth (int): The depth of the node.
+            learning_rate (float): The learning rate of the node.
         """
         # left & right validations
         if not isinstance(left, (float, int)):
@@ -95,6 +99,11 @@ class TransmitterNode:
             raise TypeError("depth must be an int.")
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
+        # learning_rate validations
+        if not isinstance(learning_rate, (float, int)):
+            raise TypeError("learning_rate must be a float.")
+        if learning_rate <= 0:
+            raise ValueError("learning_rate must be greater than 0.")
         # initializations
         self._left = float(left)
         self._right = float(right)
@@ -105,6 +114,7 @@ class TransmitterNode:
         self._hits_left = hits_left
         self._mass = float(mass)
         self._depth = depth
+        self._learning_rate = float(learning_rate)
         return
 
     @property
@@ -147,6 +157,21 @@ class TransmitterNode:
         """
         return self._left_child_id
 
+    @left_child_id.setter
+    def left_child_id(self, value: int) -> None:
+        """
+        Set the ID of the left child node.
+
+        Args:
+            value (int): The ID of the left child node.
+        """
+        if not isinstance(value, int):
+            raise TypeError("left_child_id must be an int.")
+        if value < -1:
+            raise ValueError("left_child_id must be greater than or equal to -1.")
+        self._left_child_id = value
+        return
+
     @property
     def right_child_id(self) -> int:
         """
@@ -156,6 +181,21 @@ class TransmitterNode:
             int: The ID of the right child node.
         """
         return self._right_child_id
+
+    @right_child_id.setter
+    def right_child_id(self, value: int) -> None:
+        """
+        Set the ID of the right child node.
+
+        Args:
+            value (int): The ID of the right child node.
+        """
+        if not isinstance(value, int):
+            raise TypeError("right_child_id must be an int.")
+        if value < -1:
+            raise ValueError("right_child_id must be greater than or equal to -1.")
+        self._right_child_id = value
+        return
 
     @property
     def weight(self) -> float:
@@ -167,6 +207,21 @@ class TransmitterNode:
         """
         return self._weight
 
+    @weight.setter
+    def weight(self, value: float) -> None:
+        """
+        Set the weight of the node.
+
+        Args:
+            value (float): The weight of the node.
+        """
+        if not isinstance(value, (float, int)):
+            raise TypeError("weight must be a float.")
+        if value <= 0:
+            raise ValueError("weight must be greater than 0.")
+        self._weight = float(value)
+        return
+
     @property
     def hits_left(self) -> int:
         """
@@ -176,6 +231,21 @@ class TransmitterNode:
             int: The number of hits left to split the node.
         """
         return self._hits_left
+
+    @hits_left.setter
+    def hits_left(self, value: int) -> None:
+        """
+        Set the number of hits left to split the node.
+
+        Args:
+            value (int): The number of hits left to split the node.
+        """
+        if not isinstance(value, int):
+            raise TypeError("hits_left must be an int.")
+        if value < 0:
+            raise ValueError("hits_left must be greater than or equal to 0.")
+        self._hits_left = value
+        return
 
     @property
     def mass(self) -> float:
@@ -187,6 +257,21 @@ class TransmitterNode:
         """
         return self._mass
 
+    @mass.setter
+    def mass(self, value: float) -> None:
+        """
+        Set the probability of the node being selected.
+
+        Args:
+            value (float): The probability of the node being selected.
+        """
+        if not isinstance(value, (float, int)):
+            raise TypeError("mass must be a float.")
+        if value <= 0:
+            raise ValueError("mass must be greater than 0.")
+        self._mass = float(value)
+        return
+
     @property
     def depth(self) -> int:
         """
@@ -196,6 +281,16 @@ class TransmitterNode:
             int: The depth of the node.
         """
         return self._depth
+
+    @property
+    def learning_rate(self) -> float:
+        """
+        Get the learning rate of the node.
+
+        Returns:
+            float: The learning rate of the node.
+        """
+        return self._learning_rate
 
     @property
     def is_leaf(self) -> bool:

@@ -5,6 +5,7 @@ import random
 
 from .TransmitterNode import TransmitterNode
 from .TransmitterSample import TransmitterSample
+from .TransmitterScheduler import TransmitterScheduler
 
 
 class Transmitter:
@@ -15,9 +16,10 @@ class Transmitter:
     Attributes:
         min_value (float): The minimum value of the range.
         max_value (float): The maximum value of the range.
-        initial_hits (int): The number of hits left to split the root node.
-        hits_growth_rate (float): The rate at which the number of hits grows.
-        learning_rate (float): The learning rate of the Transmitter.
+        hits_scheduler (TransmitterScheduler): The scheduler for the number of hits left
+            to split any node.
+        learning_rate_scheduler (TransmitterScheduler): The scheduler for the learning
+            rate.
         min_weight (float): The minimum weight of a node.
         max_weight (float): The maximum weight of a node.
         min_interval_width (float): The minimum width of an interval.
@@ -33,9 +35,12 @@ class Transmitter:
         min_value: float,
         max_value: float,
         *,
-        initial_hits: int = 1,
-        hits_growth_rate: float = 1.1,
-        learning_rate: float = 0.01,
+        hits_start: int = 1,
+        hits_end: int = 1_000_000_000,
+        hits_steps: int = 1_000_000_000,
+        learning_rate_start: float = 0.01,
+        learning_rate_end: float = 0.01,
+        learning_rate_steps: int = 1,
         min_weight: float = 1e-9,
         max_weight: float = 1e9,
         min_interval_width: float = 1e-9,
@@ -48,14 +53,28 @@ class Transmitter:
         Args:
             min_value (float): The minimum value of the range.
             max_value (float): The maximum value of the range.
-            initial_hits (int): The number of hits left to split the root node.
-            hits_growth_rate (float): The rate at which the number of hits grows.
-            learning_rate (float): The learning rate of the Transmitter.
+            hits_start (int): The initial number of hits left to split any node.
+                Defaults to 1.
+            hits_end (int): The final number of hits left to split any node.
+                Defaults to 1_000_000_000.
+            hits_steps (int): The number of steps for the hits update.
+                Defaults to 1_000_000_000.
+            learning_rate_start (float): The initial learning rate.
+                Defaults to 0.01.
+            learning_rate_end (float): The final learning rate.
+                Defaults to 0.01.
+            learning_rate_steps (int): The number of steps for the learning rate update.
+                Defaults to 1.
             min_weight (float): The minimum weight of a node.
+                Defaults to 1e-9.
             max_weight (float): The maximum weight of a node.
+                Defaults to 1e9.
             min_interval_width (float): The minimum width of an interval.
+                Defaults to 1e-9.
             max_depth (int | None): The maximum depth of the Transmitter tree.
+                Defaults to None.
             seed (int | None): The seed for the random number generator.
+                Defaults to None.
         """
         # min_value & max_value validations
         if not isinstance(min_value, (float, int)):
@@ -64,21 +83,32 @@ class Transmitter:
             raise TypeError("max_value must be a float.")
         if min_value >= max_value:
             raise ValueError("min_value must be lower than max_value.")
-        # initial_hits validations
-        if not isinstance(initial_hits, int):
-            raise TypeError("initial_hits must be an int.")
-        if initial_hits <= 0:
-            raise ValueError("initial_hits must be greater than 0.")
-        # hits_growth_rate validations
-        if not isinstance(hits_growth_rate, (float, int)):
-            raise TypeError("hits_growth_rate must be a float.")
-        if hits_growth_rate <= 0:
-            raise ValueError("hits_growth_rate must be greater than 0.")
+        # hits validations
+        if not isinstance(hits_start, int):
+            raise TypeError("hits_start must be an int.")
+        if hits_start <= 0:
+            raise ValueError("hits_start must be greater than 0.")
+        if not isinstance(hits_end, int):
+            raise TypeError("hits_end must be an int.")
+        if hits_end <= 0:
+            raise ValueError("hits_end must be greater than 0.")
+        if not isinstance(hits_steps, int):
+            raise TypeError("hits_steps must be an int.")
+        if hits_steps <= 0:
+            raise ValueError("hits_steps must be greater than 0.")
         # learning_rate validations
-        if not isinstance(learning_rate, (float, int)):
-            raise TypeError("learning_rate must be a float.")
-        if learning_rate <= 0:
-            raise ValueError("learning_rate must be greater than 0.")
+        if not isinstance(learning_rate_start, (float, int)):
+            raise TypeError("learning_rate_start must be a float.")
+        if learning_rate_start <= 0:
+            raise ValueError("learning_rate_start must be greater than 0.")
+        if not isinstance(learning_rate_end, (float, int)):
+            raise TypeError("learning_rate_end must be a float.")
+        if learning_rate_end <= 0:
+            raise ValueError("learning_rate_end must be greater than 0.")
+        if not isinstance(learning_rate_steps, int):
+            raise TypeError("learning_rate_steps must be an int.")
+        if learning_rate_steps <= 0:
+            raise ValueError("learning_rate_steps must be greater than 0.")
         # min_weight & max_weight validations
         if not isinstance(min_weight, (float, int)):
             raise TypeError("min_weight must be a float.")
@@ -104,9 +134,12 @@ class Transmitter:
             if not isinstance(seed, int):
                 raise TypeError("seed must be an int.")
         # initializations
-        self.initial_hits = initial_hits
-        self.hits_growth_rate = float(hits_growth_rate)
-        self.learning_rate = float(learning_rate)
+        self.hits_scheduler = TransmitterScheduler(hits_start, hits_end, hits_steps)
+        self.learning_rate_scheduler = TransmitterScheduler(
+            float(learning_rate_start),
+            float(learning_rate_end),
+            learning_rate_steps,
+        )
         self.min_weight = float(min_weight)
         self.max_weight = float(max_weight)
         self.min_interval_width = float(min_interval_width)
@@ -115,6 +148,7 @@ class Transmitter:
         # tree represented as a list of node indices (not pointers)
         self.nodes: list[TransmitterNode] = []
         # root node
+        root_depth = 0
         root_weight = 1.0
         root = TransmitterNode(
             left=float(min_value),
@@ -123,9 +157,10 @@ class Transmitter:
             left_child_id=-1,
             right_child_id=-1,
             weight=root_weight,
-            hits_left=initial_hits,
+            hits_left=int(self.hits_scheduler.value(root_depth)),
             mass=root_weight * (float(max_value) - float(min_value)),
-            depth=0,
+            depth=root_depth,
+            learning_rate=self.learning_rate_scheduler.value(root_depth),
         )
         self.nodes.append(root)
         self.root_id = 0
@@ -137,6 +172,7 @@ class Transmitter:
 
         Args:
             bias (float): The bias applied to the sampling process.
+                Defaults to 0.0.
 
         Returns:
             TransmitterSample: The sample generated by the Transmitter.
@@ -200,7 +236,7 @@ class Transmitter:
             node = self.nodes[node_id]
         # update weight & mass
         node.weight = self._clip_weight(
-            node.weight * math.exp(self.learning_rate * float(feedback))
+            node.weight * math.exp(node.learning_rate * float(feedback))
         )
         self._propagate_mass_up(node_id)
         # split if needed
@@ -302,9 +338,6 @@ class Transmitter:
         right_child_id = left_child_id + 1
         child_weight = node.weight
         child_depth = node.depth + 1
-        child_hits_left = math.ceil(
-            self.initial_hits * (child_depth + 1) ** self.hits_growth_rate
-        )
         # create child nodes
         left_child_node = TransmitterNode(
             left=node.left,
@@ -313,9 +346,10 @@ class Transmitter:
             left_child_id=-1,
             right_child_id=-1,
             weight=child_weight,
-            hits_left=child_hits_left,
+            hits_left=int(self.hits_scheduler.value(child_depth)),
             mass=child_weight * (node_mid - node.left),
             depth=child_depth,
+            learning_rate=self.learning_rate_scheduler.value(child_depth),
         )
         right_child_node = TransmitterNode(
             left=node_mid,
@@ -324,9 +358,10 @@ class Transmitter:
             left_child_id=-1,
             right_child_id=-1,
             weight=child_weight,
-            hits_left=child_hits_left,
+            hits_left=int(self.hits_scheduler.value(child_depth)),
             mass=child_weight * (node.right - node_mid),
             depth=child_depth,
+            learning_rate=self.learning_rate_scheduler.value(child_depth),
         )
         self.nodes.append(left_child_node)
         self.nodes.append(right_child_node)

@@ -1,4 +1,5 @@
 # Additional ignores
+.DS_Store
 playground
 
 # Byte-compiled / optimized / DLL files
