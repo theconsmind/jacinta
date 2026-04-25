@@ -23,7 +23,10 @@ class Transmitter:
         min_weight (float): The minimum weight of a node.
         max_weight (float): The maximum weight of a node.
         min_interval_width (float): The minimum width of an interval.
+        bias_beta_scale (float): The scale factor used to adjust the bias.
         max_depth (int | None): The maximum depth of the Transmitter tree.
+        eps (float): The epsilon value used to avoid numerical issues with small and
+            large values.
         seed (int | None): The seed for the random number generator.
         rng (random.Random): The random number generator.
         nodes (list[TransmitterNode]): The list of nodes in the Transmitter tree.
@@ -44,7 +47,9 @@ class Transmitter:
         min_weight: float = 1e-9,
         max_weight: float = 1e9,
         min_interval_width: float = 1e-9,
+        bias_beta_scale: float = 10.0,
         max_depth: int | None = None,
+        eps: float = 1e-300,
         seed: int | None = None,
     ) -> None:
         """
@@ -71,8 +76,13 @@ class Transmitter:
                 Defaults to 1e9.
             min_interval_width (float): The minimum width of an interval.
                 Defaults to 1e-9.
+            bias_beta_scale (float): The scale factor used to adjust the bias.
+                Defaults to 10.0.
             max_depth (int | None): The maximum depth of the Transmitter tree.
                 Defaults to None.
+            eps (float): The epsilon value used to avoid numerical issues with small
+                and large values.
+                Defaults to 1e-300.
             seed (int | None): The seed for the random number generator.
                 Defaults to None.
         """
@@ -123,12 +133,26 @@ class Transmitter:
             raise TypeError("min_interval_width must be a float.")
         if min_interval_width <= 0:
             raise ValueError("min_interval_width must be greater than 0.")
+        if min_interval_width >= max_value - min_value:
+            raise ValueError(
+                "min_interval_width must be lower than max_value - min_value."
+            )
+        # bias validations
+        if not isinstance(bias_beta_scale, (float, int)):
+            raise TypeError("bias_beta_scale must be a float.")
+        if bias_beta_scale <= 0:
+            raise ValueError("bias_beta_scale must be greater than 0.")
         # max_depth validations
         if max_depth is not None:
             if not isinstance(max_depth, int):
                 raise TypeError("max_depth must be an int.")
             if max_depth <= 0:
                 raise ValueError("max_depth must be greater than 0.")
+        # eps validation
+        if not isinstance(eps, (float, int)):
+            raise TypeError("eps must be a float.")
+        if eps <= 0:
+            raise ValueError("eps must be greater than 0.")
         # seed validations
         if seed is not None:
             if not isinstance(seed, int):
@@ -143,7 +167,9 @@ class Transmitter:
         self.min_weight = float(min_weight)
         self.max_weight = float(max_weight)
         self.min_interval_width = float(min_interval_width)
+        self.bias_beta_scale = float(bias_beta_scale)
         self.max_depth = max_depth
+        self.eps = float(eps)
         self.rng = random.Random(seed)
         # tree represented as a list of node indices (not pointers)
         self.nodes: list[TransmitterNode] = []
@@ -158,7 +184,7 @@ class Transmitter:
             right_child_id=-1,
             weight=root_weight,
             hits_left=int(self.hits_scheduler.value(root_depth)),
-            mass=root_weight * (float(max_value) - float(min_value)),
+            mass=max(root_weight * (float(max_value) - float(min_value)), self.eps),
             depth=root_depth,
             learning_rate=self.learning_rate_scheduler.value(root_depth),
         )
@@ -182,10 +208,8 @@ class Transmitter:
             raise TypeError("bias must be a float")
         if not (-1.0 <= bias <= 1.0):
             raise ValueError("bias must be in [-1, 1]")
-        # normalized bias in ]0, 1[
-        bias_eps = 1e-9
-        bias = max(min(float(bias), 1.0 - bias_eps), -1.0 + bias_eps)
-        bias = 1.0 + math.tan(math.pi * 0.5 * bias)
+        # compute bias beta
+        bias_beta = 1.0 + float(bias) * self.bias_beta_scale
         # sample a value from the root's mass
         node_id = self.root_id
         node = self.nodes[node_id]
@@ -193,14 +217,19 @@ class Transmitter:
             # if node is a leaf, sample a uniform value from the leaf's interval
             if node.is_leaf:
                 value = self.rng.uniform(node.left, node.right)
-                sample = TransmitterSample(
-                    value=value,
-                    node_id=node_id,
-                )
+                sample = TransmitterSample(value=value, node_id=node_id)
                 break
+            # transform the search space into logs to avoid numerical issues with
+            # small and large masses
+            left_mass = math.log(max(self.nodes[node.left_child_id].mass, self.eps))
+            right_mass = math.log(max(self.nodes[node.right_child_id].mass, self.eps))
             # bias the search toward the left or right child
-            left_biased_mass = self.nodes[node.left_child_id].mass ** bias
-            right_biased_mass = self.nodes[node.right_child_id].mass ** bias
+            left_biased_mass = bias_beta * left_mass
+            right_biased_mass = bias_beta * right_mass
+            # normalize the biased masses to avoid numerical issues (underflow/overflow)
+            m = max(left_biased_mass, right_biased_mass)
+            left_biased_mass = math.exp(left_biased_mass - m)
+            right_biased_mass = math.exp(right_biased_mass - m)
             node_biased_mass = left_biased_mass + right_biased_mass
             # decide which child to go to
             r = self.rng.random() * node_biased_mass
@@ -292,11 +321,12 @@ class Transmitter:
             node = self.nodes[node_id]
             # update the mass of the current node
             if node.is_leaf:
-                node.mass = node.weight * node.length
+                node.mass = max(node.weight * node.length, self.eps)
             else:
-                node.mass = (
+                node.mass = max(
                     self.nodes[node.left_child_id].mass
-                    + self.nodes[node.right_child_id].mass
+                    + self.nodes[node.right_child_id].mass,
+                    self.eps,
                 )
             node_id = self.nodes[node_id].parent_id
         return
@@ -333,7 +363,7 @@ class Transmitter:
         node = self.nodes[node_id]
         if not node.is_leaf:
             raise ValueError("node_id must be a leaf node.")
-        node_mid = (node.left + node.right) * 0.5
+        node_mid = node.left + (node.right - node.left) * 0.5
         left_child_id = len(self.nodes)
         right_child_id = left_child_id + 1
         child_weight = node.weight
@@ -347,7 +377,7 @@ class Transmitter:
             right_child_id=-1,
             weight=child_weight,
             hits_left=int(self.hits_scheduler.value(child_depth)),
-            mass=child_weight * (node_mid - node.left),
+            mass=max(child_weight * (node_mid - node.left), self.eps),
             depth=child_depth,
             learning_rate=self.learning_rate_scheduler.value(child_depth),
         )
@@ -359,7 +389,7 @@ class Transmitter:
             right_child_id=-1,
             weight=child_weight,
             hits_left=int(self.hits_scheduler.value(child_depth)),
-            mass=child_weight * (node.right - node_mid),
+            mass=max(child_weight * (node.right - node_mid), self.eps),
             depth=child_depth,
             learning_rate=self.learning_rate_scheduler.value(child_depth),
         )
