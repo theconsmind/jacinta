@@ -101,7 +101,11 @@ class TransmitterSample:
         Returns:
             dict[str, Any]: The dictionary representation of the sample.
         """
-        result = {"value": self._value, "node_id": self._node_id}
+        result = {
+            "type": self.__class__.__name__,
+            "value": self._value,
+            "node_id": self._node_id,
+        }
         return result
 
     @classmethod
@@ -118,6 +122,10 @@ class TransmitterSample:
         # data validations
         if not isinstance(data, dict):
             raise TypeError("data must be a dict.")
+        if "type" not in data:
+            raise KeyError("data must contain the key 'type'.")
+        if data["type"] != cls.__name__:
+            raise ValueError(f"data['type'] must be a {cls.__name__}.")
         if "value" not in data:
             raise KeyError("data must contain the key 'value'.")
         if "node_id" not in data:
@@ -156,6 +164,9 @@ class TransmitterSample:
 
         Args:
             path (str | Path): The path to the file.
+
+        Returns:
+            TransmitterSample: The TransmitterSample instance.
         """
         # path validations
         if not isinstance(path, (str, Path)):

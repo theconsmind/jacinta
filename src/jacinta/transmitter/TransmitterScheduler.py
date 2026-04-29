@@ -1,96 +1,200 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+from typing import Any
+
+from .TransmitterScheduleStrategy import TransmitterScheduleStrategy
+
 
 class TransmitterScheduler:
     """
-    The TransmitterScheduler defines a depth-based schedule for a parameter
-    that transitions from an initial value to a final value over a fixed number
-    of levels.
+    A TransmitterScheduler represents a callable scheduler that maps a node depth to
+    a value using a schedule strategy.
 
     Attributes:
-        start (float): The initial value of the parameter.
-        end (float): The final value of the parameter.
-        steps (int): The number of levels over which the parameter transitions.
+        strategy (TransmitterScheduleStrategy): The schedule strategy to use.
     """
 
-    __slots__ = ("_start", "_end", "_steps")
+    __slots__ = ("_strategy", "_frozen")
 
-    def __init__(self, start: float, end: float, steps: int) -> None:
+    def __init__(self, strategy: TransmitterScheduleStrategy) -> None:
         """
         Initialize the TransmitterScheduler.
 
         Args:
-            start (float): The initial value of the parameter.
-            end (float): The final value of the parameter.
-            steps (int): The number of levels over which the parameter transitions.
+            strategy (TransmitterScheduleStrategy): The schedule strategy to use.
         """
-        # start validations
-        if not isinstance(start, (float, int)):
-            raise TypeError("start must be a float.")
-        if start <= 0:
-            raise ValueError("start must be greater than 0.")
-        # end validations
-        if not isinstance(end, (float, int)):
-            raise TypeError("end must be a float.")
-        if end <= 0:
-            raise ValueError("end must be greater than 0.")
-        # steps validations
-        if not isinstance(steps, int):
-            raise TypeError("steps must be an int.")
-        if steps <= 0:
-            raise ValueError("steps must be greater than 0.")
+        # strategy validations
+        if not isinstance(strategy, TransmitterScheduleStrategy):
+            raise TypeError(
+                "strategy must be an instance of TransmitterScheduleStrategy."
+            )
         # initializations
-        self._start = float(start)
-        self._end = float(end)
-        self._steps = steps
+        super().__setattr__("_frozen", False)
+        self._strategy = strategy
+        super().__setattr__("_frozen", True)
         return
 
-    @property
-    def start(self) -> float:
+    def __repr__(self) -> str:
         """
-        Get the initial value of the parameter.
+        Get the representation of the scheduler.
 
         Returns:
-            float: The initial value of the parameter.
+            str: The representation of the scheduler.
         """
-        return self._start
+        result = f"TransmitterScheduler(strategy={self._strategy!r})"
+        return result
 
-    @property
-    def end(self) -> float:
+    def __call__(self, depth: int) -> float:
         """
-        Get the final value of the parameter.
-
-        Returns:
-            float: The final value of the parameter.
-        """
-        return self._end
-
-    @property
-    def steps(self) -> int:
-        """
-        Get the number of levels over which the parameter transitions.
-
-        Returns:
-            int: The number of levels over which the parameter transitions.
-        """
-        return self._steps
-
-    def value(self, depth: int) -> float:
-        """
-        Get the parameter value for a given depth.
+        Get the schedule value based on the node depth.
 
         Args:
-            depth (int): The depth in the Transmitter tree.
+            depth (int): The depth of the node.
 
         Returns:
-            float: The value of the parameter for the given depth.
+            float: The schedule value based on the node depth.
         """
         # depth validations
         if not isinstance(depth, int):
             raise TypeError("depth must be an int.")
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
-        # compute the value based on the depth
-        depth = depth if depth <= self._steps else self._steps
-        value = self._start * (self._end / self._start) ** (depth / self._steps)
-        return value
+        # get the value based on the depth
+        result = self._strategy(depth)
+        return result
+
+    @property
+    def strategy(self) -> TransmitterScheduleStrategy:
+        """
+        Get the schedule strategy of the scheduler.
+
+        Returns:
+            TransmitterScheduleStrategy: The schedule strategy of the scheduler.
+        """
+        return self._strategy
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Check if two TransmitterSchedulers are equal.
+
+        Args:
+            other (object): The object to compare with.
+
+        Returns:
+            bool: True if the schedulers are equal, False otherwise.
+        """
+        if not isinstance(other, TransmitterScheduler):
+            return NotImplemented
+        result = self._strategy == other._strategy
+        return result
+
+    def __hash__(self) -> int:
+        """
+        Get the hash of the scheduler.
+
+        Returns:
+            int: The hash of the scheduler.
+        """
+        result = hash(self._strategy)
+        return result
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Get the dictionary representation of the scheduler.
+
+        Returns:
+            dict[str, Any]: The dictionary representation of the scheduler.
+        """
+        result = {
+            "type": self.__class__.__name__,
+            "strategy": self._strategy.to_dict(),
+        }
+        return result
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TransmitterScheduler:
+        """
+        Create a TransmitterScheduler from a dictionary.
+
+        Args:
+            data (dict[str, Any]): The dictionary representation of the scheduler.
+
+        Returns:
+            TransmitterScheduler: The TransmitterScheduler instance.
+        """
+        # data validations
+        if not isinstance(data, dict):
+            raise TypeError("data must be a dict.")
+        if "type" not in data:
+            raise KeyError("data must contain the key 'type'.")
+        if data["type"] != cls.__name__:
+            raise ValueError(f"data['type'] must be a {cls.__name__}.")
+        if "strategy" not in data:
+            raise KeyError("data must contain the key 'strategy'.")
+        # initializations
+        result = cls(TransmitterScheduleStrategy.from_dict(data["strategy"]))
+        return result
+
+    def save(self, path: str | Path, overwrite: bool = False) -> None:
+        """
+        Save the scheduler to a json file.
+
+        Args:
+            path (str | Path): The path to the file.
+            overwrite (bool): Whether to overwrite the file if it exists.
+        """
+        # path validations
+        if not isinstance(path, (str, Path)):
+            raise TypeError("path must be a string or a Path.")
+        # file validations
+        path = Path(path)
+        if path.suffix != ".json":
+            raise ValueError("path must have a .json extension.")
+        if not overwrite and path.exists():
+            raise FileExistsError(f"path already exists: {path}")
+        # file creation
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, ensure_ascii=False, indent=4)
+        return
+
+    @classmethod
+    def load(cls, path: str | Path) -> TransmitterScheduler:
+        """
+        Load the scheduler from a json file.
+
+        Args:
+            path (str | Path): The path to the file.
+
+        Returns:
+            TransmitterScheduler: The TransmitterScheduler instance.
+        """
+        # path validations
+        if not isinstance(path, (str, Path)):
+            raise TypeError("path must be a string or a Path.")
+        # file validations
+        path = Path(path)
+        if path.suffix != ".json":
+            raise ValueError("path must have a .json extension.")
+        if not path.exists():
+            raise FileNotFoundError(f"path does not exist: {path}")
+        # file loading
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        result = cls.from_dict(data)
+        return result
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """
+        Set an attribute of the scheduler.
+
+        Args:
+            name (str): The name of the attribute.
+            value (Any): The value of the attribute.
+        """
+        if getattr(self, "_frozen", False):
+            raise AttributeError(f"{self.__class__.__name__} is immutable")
+        super().__setattr__(name, value)
+        return
