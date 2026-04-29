@@ -4,32 +4,30 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .TransmitterScheduleStrategy import TransmitterScheduleStrategy
+from .ScheduleStrategy import ScheduleStrategy
 
 
-class TransmitterScheduler:
+class Scheduler:
     """
-    A TransmitterScheduler represents a callable scheduler that maps a node depth to
+    A Scheduler represents a callable scheduler that maps a node depth to
     a value using a schedule strategy.
 
     Attributes:
-        strategy (TransmitterScheduleStrategy): The schedule strategy to use.
+        strategy (ScheduleStrategy): The schedule strategy to use.
     """
 
     __slots__ = ("_strategy", "_frozen")
 
-    def __init__(self, strategy: TransmitterScheduleStrategy) -> None:
+    def __init__(self, strategy: ScheduleStrategy) -> None:
         """
-        Initialize the TransmitterScheduler.
+        Initialize the Scheduler.
 
         Args:
-            strategy (TransmitterScheduleStrategy): The schedule strategy to use.
+            strategy (ScheduleStrategy): The schedule strategy to use.
         """
         # strategy validations
-        if not isinstance(strategy, TransmitterScheduleStrategy):
-            raise TypeError(
-                "strategy must be an instance of TransmitterScheduleStrategy."
-            )
+        if not isinstance(strategy, ScheduleStrategy):
+            raise TypeError("strategy must be an instance of ScheduleStrategy.")
         # initializations
         super().__setattr__("_frozen", False)
         self._strategy = strategy
@@ -43,7 +41,7 @@ class TransmitterScheduler:
         Returns:
             str: The representation of the scheduler.
         """
-        result = f"TransmitterScheduler(strategy={self._strategy!r})"
+        result = f"Scheduler(strategy={self._strategy!r})"
         return result
 
     def __call__(self, depth: int) -> float:
@@ -66,18 +64,18 @@ class TransmitterScheduler:
         return result
 
     @property
-    def strategy(self) -> TransmitterScheduleStrategy:
+    def strategy(self) -> ScheduleStrategy:
         """
         Get the schedule strategy of the scheduler.
 
         Returns:
-            TransmitterScheduleStrategy: The schedule strategy of the scheduler.
+            ScheduleStrategy: The schedule strategy of the scheduler.
         """
         return self._strategy
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two TransmitterSchedulers are equal.
+        Check if two Schedulers are equal.
 
         Args:
             other (object): The object to compare with.
@@ -85,7 +83,7 @@ class TransmitterScheduler:
         Returns:
             bool: True if the schedulers are equal, False otherwise.
         """
-        if not isinstance(other, TransmitterScheduler):
+        if not isinstance(other, Scheduler):
             return NotImplemented
         result = self._strategy == other._strategy
         return result
@@ -114,15 +112,15 @@ class TransmitterScheduler:
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> TransmitterScheduler:
+    def from_dict(cls, data: dict[str, Any]) -> Scheduler:
         """
-        Create a TransmitterScheduler from a dictionary.
+        Create a Scheduler from a dictionary.
 
         Args:
             data (dict[str, Any]): The dictionary representation of the scheduler.
 
         Returns:
-            TransmitterScheduler: The TransmitterScheduler instance.
+            Scheduler: The Scheduler instance.
         """
         # data validations
         if not isinstance(data, dict):
@@ -134,7 +132,7 @@ class TransmitterScheduler:
         if "strategy" not in data:
             raise KeyError("data must contain the key 'strategy'.")
         # initializations
-        result = cls(TransmitterScheduleStrategy.from_dict(data["strategy"]))
+        result = cls(ScheduleStrategy.from_dict(data["strategy"]))
         return result
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
@@ -161,7 +159,7 @@ class TransmitterScheduler:
         return
 
     @classmethod
-    def load(cls, path: str | Path) -> TransmitterScheduler:
+    def load(cls, path: str | Path) -> Scheduler:
         """
         Load the scheduler from a json file.
 
@@ -169,7 +167,7 @@ class TransmitterScheduler:
             path (str | Path): The path to the file.
 
         Returns:
-            TransmitterScheduler: The TransmitterScheduler instance.
+            Scheduler: The Scheduler instance.
         """
         # path validations
         if not isinstance(path, (str, Path)):

@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Any
 
 
-class TransmitterScheduleStrategy(ABC):
+class ScheduleStrategy(ABC):
     """
-    A TransmitterScheduleStrategy represents a callable strategy that maps a node depth
+    A ScheduleStrategy represents a callable strategy that maps a node depth
     to a value.
     """
 
@@ -30,7 +30,7 @@ class TransmitterScheduleStrategy(ABC):
     @abstractmethod
     def __eq__(self, other: object) -> bool:
         """
-        Check if two TransmitterScheduleStrategies are equal.
+        Check if two ScheduleStrategies are equal.
 
         Args:
             other (object): The object to compare with.
@@ -62,15 +62,15 @@ class TransmitterScheduleStrategy(ABC):
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, data: dict[str, Any]) -> TransmitterScheduleStrategy:
+    def from_dict(cls, data: dict[str, Any]) -> ScheduleStrategy:
         """
-        Create a TransmitterScheduleStrategy from a dictionary.
+        Create a ScheduleStrategy from a dictionary.
 
         Args:
             data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            TransmitterScheduleStrategy: The TransmitterScheduleStrategy instance.
+            ScheduleStrategy: The ScheduleStrategy instance.
         """
         ...
 
@@ -98,7 +98,7 @@ class TransmitterScheduleStrategy(ABC):
         return
 
     @classmethod
-    def load(cls, path: str | Path) -> TransmitterScheduleStrategy:
+    def load(cls, path: str | Path) -> ScheduleStrategy:
         """
         Load the strategy from a json file.
 
@@ -106,7 +106,7 @@ class TransmitterScheduleStrategy(ABC):
             path (str | Path): The path to the file.
 
         Returns:
-            TransmitterScheduleStrategy: The TransmitterScheduleStrategy instance.
+            ScheduleStrategy: The ScheduleStrategy instance.
         """
         # path validations
         if not isinstance(path, (str, Path)):
