@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+import json
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any
+
+
+class TransmitterScheduleStrategy(ABC):
+    """
+    A TransmitterScheduleStrategy represents a callable strategy that maps a node depth
+    to a value.
+    """
+
+    __slots__ = "_frozen"
+
+    @abstractmethod
+    def __call__(self, depth: int) -> float:
+        """
+        Get the strategy value based on the node depth.
+
+         Args:
+             depth (int): The depth of the node.
+
+         Returns:
+             float: The strategy value based on the node depth.
+        """
+        ...
+
+    @abstractmethod
+    def __eq__(self, other: object) -> bool:
+        """
+        Check if two TransmitterScheduleStrategies are equal.
+
+        Args:
+            other (object): The object to compare with.
+
+        Returns:
+            bool: True if the strategies are equal, False otherwise.
+        """
+        ...
+
+    @abstractmethod
+    def __hash__(self) -> int:
+        """
+        Get the hash of the strategy.
+
+        Returns:
+            int: The hash of the strategy.
+        """
+        ...
+
+    @abstractmethod
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Get the dictionary representation of the strategy.
+
+        Returns:
+            dict[str, Any]: The dictionary representation of the strategy.
+        """
+        ...
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, data: dict[str, Any]) -> TransmitterScheduleStrategy:
+        """
+        Create a TransmitterScheduleStrategy from a dictionary.
+
+        Args:
+            data (dict[str, Any]): The dictionary representation of the strategy.
+
+        Returns:
+            TransmitterScheduleStrategy: The TransmitterScheduleStrategy instance.
+        """
+        ...
+
+    def save(self, path: str | Path, overwrite: bool = False) -> None:
+        """
+        Save the strategy to a json file.
+
+        Args:
+            path (str | Path): The path to the file.
+            overwrite (bool): Whether to overwrite the file if it exists.
+        """
+        # path validations
+        if not isinstance(path, (str, Path)):
+            raise TypeError("path must be a string or a Path.")
+        # file validations
+        path = Path(path)
+        if path.suffix != ".json":
+            raise ValueError("path must have a .json extension.")
+        if not overwrite and path.exists():
+            raise FileExistsError(f"path already exists: {path}")
+        # file creation
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, ensure_ascii=False, indent=4)
+        return
+
+    @classmethod
+    def load(cls, path: str | Path) -> TransmitterScheduleStrategy:
+        """
+        Load the strategy from a json file.
+
+        Args:
+            path (str | Path): The path to the file.
+
+        Returns:
+            TransmitterScheduleStrategy: The TransmitterScheduleStrategy instance.
+        """
+        # path validations
+        if not isinstance(path, (str, Path)):
+            raise TypeError("path must be a string or a Path.")
+        # file validations
+        path = Path(path)
+        if path.suffix != ".json":
+            raise ValueError("path must have a .json extension.")
+        if not path.exists():
+            raise FileNotFoundError(f"path does not exist: {path}")
+        # file loading
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        result = cls.from_dict(data)
+        return result
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """
+        Set an attribute of the strategy.
+
+        Args:
+            name (str): The name of the attribute.
+            value (Any): The value of the attribute.
+        """
+        if getattr(self, "_frozen", False):
+            raise AttributeError(f"{self.__class__.__name__} is immutable")
+        super().__setattr__(name, value)
+        return
