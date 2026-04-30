@@ -41,7 +41,7 @@ class Scheduler:
         Returns:
             str: The representation of the scheduler.
         """
-        result = f"Scheduler(strategy={self._strategy!r})"
+        result = f"{self.__class__.__name__}(strategy={self._strategy!r})"
         return result
 
     def __call__(self, depth: int) -> float:
@@ -83,8 +83,10 @@ class Scheduler:
         Returns:
             bool: True if the schedulers are equal, False otherwise.
         """
+        # type validations
         if not isinstance(other, Scheduler):
             return NotImplemented
+        # equality check
         result = self._strategy == other._strategy
         return result
 
@@ -192,7 +194,9 @@ class Scheduler:
             name (str): The name of the attribute.
             value (Any): The value of the attribute.
         """
+        # freeze check
         if getattr(self, "_frozen", False):
             raise AttributeError(f"{self.__class__.__name__} is immutable")
+        # set the attribute
         super().__setattr__(name, value)
         return

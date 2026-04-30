@@ -12,7 +12,7 @@ class ScheduleStrategy(ABC):
     to a value.
     """
 
-    __slots__ = "_frozen"
+    __slots__ = ("_frozen",)
 
     @abstractmethod
     def __call__(self, depth: int) -> float:
@@ -131,7 +131,9 @@ class ScheduleStrategy(ABC):
             name (str): The name of the attribute.
             value (Any): The value of the attribute.
         """
+        # freeze check
         if getattr(self, "_frozen", False):
             raise AttributeError(f"{self.__class__.__name__} is immutable")
+        # set the attribute
         super().__setattr__(name, value)
         return

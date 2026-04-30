@@ -34,8 +34,8 @@ class TransmitterSample:
             raise ValueError("node_id must be greater than or equal to 0.")
         # initializations
         super().__setattr__("_frozen", False)
-        super().__setattr__("_value", float(value))
-        super().__setattr__("_node_id", node_id)
+        self._value = float(value)
+        self._node_id = node_id
         super().__setattr__("_frozen", True)
         return
 
@@ -46,7 +46,10 @@ class TransmitterSample:
         Returns:
             str: The representation of the sample.
         """
-        result = f"TransmitterSample(value={self._value!r}, node_id={self._node_id!r})"
+        result = (
+            f"{self.__class__.__name__}"
+            f"(value={self._value!r}, node_id={self._node_id!r})"
+        )
         return result
 
     @property
@@ -79,8 +82,10 @@ class TransmitterSample:
         Returns:
             bool: True if the samples are equal, False otherwise.
         """
+        # type validations
         if not isinstance(other, TransmitterSample):
             return NotImplemented
+        # equality check
         result = self._value == other._value and self._node_id == other._node_id
         return result
 
@@ -191,7 +196,9 @@ class TransmitterSample:
             name (str): The name of the attribute.
             value (Any): The value of the attribute.
         """
+        # freeze check
         if getattr(self, "_frozen", False):
             raise AttributeError(f"{self.__class__.__name__} is immutable")
+        # set the attribute
         super().__setattr__(name, value)
         return
