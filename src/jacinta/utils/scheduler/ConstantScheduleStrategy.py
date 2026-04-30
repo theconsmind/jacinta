@@ -17,7 +17,7 @@ class ConstantScheduleStrategy(ScheduleStrategy):
 
     def __init__(self, value: float) -> None:
         """
-        Create a ConstantScheduleStrategy.
+        Initialize a ConstantScheduleStrategy.
 
         Args:
             value (float): The value of the strategy.
@@ -59,6 +59,16 @@ class ConstantScheduleStrategy(ScheduleStrategy):
         # get the value based on the depth
         result = self._value
         return result
+
+    @property
+    def value(self) -> float:
+        """
+        Get the value of the strategy.
+
+        Returns:
+            float: The value of the strategy.
+        """
+        return self._value
 
     def __eq__(self, other: object) -> bool:
         """
