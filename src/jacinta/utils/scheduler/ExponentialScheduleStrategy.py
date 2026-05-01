@@ -1,58 +1,59 @@
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from .ScheduleStrategy import ScheduleStrategy
 
 
-class LinearScheduleStrategy(ScheduleStrategy):
+class ExponentialScheduleStrategy(ScheduleStrategy):
     """
-    A ScheduleStrategy that returns a linear value for a given node depth.
+    A ScheduleStrategy that returns an exponential value for a given node depth.
 
     Attributes:
-        slope (float): The slope of the linear function.
-        intercept (float): The intercept of the linear function.
+        scale (float): The scale of the exponential function.
+        rate (float): The rate of the exponential function.
         min_value (float | None): The minimum value of the strategy.
         max_value (float | None): The maximum value of the strategy.
     """
 
-    __slots__ = ("_slope", "_intercept", "_min_value", "_max_value")
+    __slots__ = ("_scale", "_rate", "_min_value", "_max_value")
 
     def __init__(
         self,
-        slope: float,
-        intercept: float,
+        scale: float,
+        rate: float,
         *,
         min_value: float | None = None,
         max_value: float | None = None,
     ) -> None:
         """
-        Initialize a LinearScheduleStrategy.
+        Initialize an ExponentialScheduleStrategy.
 
         Args:
-            slope (float): The slope of the linear function.
-            intercept (float): The intercept of the linear function.
+            scale (float): The scale of the exponential function.
+            rate (float): The rate of the exponential function.
             min_value (float | None): The minimum value of the strategy.
             max_value (float | None): The maximum value of the strategy.
         """
-        # slope validations
-        if not isinstance(slope, (float, int)):
-            raise TypeError("slope must be a float.")
-        # intercept validations
-        if not isinstance(intercept, (float, int)):
-            raise TypeError("intercept must be a float.")
+        # scale validations
+        if not isinstance(scale, (float, int)):
+            raise TypeError("scale must be a float.")
+        # rate validations
+        if not isinstance(rate, (float, int)):
+            raise TypeError("rate must be a float.")
         # min_value validations
         if min_value is not None and not isinstance(min_value, (float, int)):
-            raise TypeError("min_value must be a float or None.")
+            raise TypeError("min_value must be a float.")
         # max_value validations
         if max_value is not None and not isinstance(max_value, (float, int)):
-            raise TypeError("max_value must be a float or None.")
+            raise TypeError("max_value must be a float.")
         if min_value is not None and max_value is not None and min_value > max_value:
             raise ValueError("min_value must be less than or equal to max_value.")
         # initializations
         super().__setattr__("_frozen", False)
-        self._slope = float(slope)
-        self._intercept = float(intercept)
+        self._scale = float(scale)
+        self._rate = float(rate)
         self._min_value = float(min_value) if min_value is not None else None
         self._max_value = float(max_value) if max_value is not None else None
         super().__setattr__("_frozen", True)
@@ -67,7 +68,7 @@ class LinearScheduleStrategy(ScheduleStrategy):
         """
         result = (
             f"{self.__class__.__name__}"
-            f"(slope={self._slope!r}, intercept={self._intercept!r}, "
+            f"(scale={self._scale!r}, rate={self._rate!r}, "
             f"min_value={self._min_value!r}, max_value={self._max_value!r})"
         )
         return result
@@ -88,7 +89,7 @@ class LinearScheduleStrategy(ScheduleStrategy):
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
         # get the value based on the depth
-        result = self._slope * depth + self._intercept
+        result = self._scale * math.exp(self._rate * depth)
         # apply min and max values
         if self._min_value is not None:
             result = max(result, self._min_value)
@@ -97,24 +98,24 @@ class LinearScheduleStrategy(ScheduleStrategy):
         return result
 
     @property
-    def slope(self) -> float:
+    def scale(self) -> float:
         """
-        Get the slope of the strategy.
+        Get the scale of the strategy.
 
         Returns:
-            float: The slope of the strategy.
+            float: The scale of the strategy.
         """
-        return self._slope
+        return self._scale
 
     @property
-    def intercept(self) -> float:
+    def rate(self) -> float:
         """
-        Get the intercept of the strategy.
+        Get the rate of the strategy.
 
         Returns:
-            float: The intercept of the strategy.
+            float: The rate of the strategy.
         """
-        return self._intercept
+        return self._rate
 
     @property
     def min_value(self) -> float | None:
@@ -138,7 +139,7 @@ class LinearScheduleStrategy(ScheduleStrategy):
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two LinearScheduleStrategies are equal.
+        Check if two ExponentialScheduleStrategies are equal.
 
         Args:
             other (object): The object to compare with.
@@ -147,12 +148,12 @@ class LinearScheduleStrategy(ScheduleStrategy):
             bool: True if the strategies are equal, False otherwise.
         """
         # type validations
-        if not isinstance(other, LinearScheduleStrategy):
+        if not isinstance(other, ExponentialScheduleStrategy):
             return NotImplemented
         # equality check
         result = (
-            self._slope == other._slope
-            and self._intercept == other._intercept
+            self._scale == other._scale
+            and self._rate == other._rate
             and self._min_value == other._min_value
             and self._max_value == other._max_value
         )
@@ -167,8 +168,8 @@ class LinearScheduleStrategy(ScheduleStrategy):
         """
         result = hash(
             (
-                self._slope,
-                self._intercept,
+                self._scale,
+                self._rate,
                 self._min_value,
                 self._max_value,
             )
@@ -184,23 +185,23 @@ class LinearScheduleStrategy(ScheduleStrategy):
         """
         result = {
             "type": self.__class__.__name__,
-            "slope": self._slope,
-            "intercept": self._intercept,
+            "scale": self._scale,
+            "rate": self._rate,
             "min_value": self._min_value,
             "max_value": self._max_value,
         }
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> LinearScheduleStrategy:
+    def from_dict(cls, data: dict[str, Any]) -> ExponentialScheduleStrategy:
         """
-        Create a LinearScheduleStrategy from a dictionary.
+        Create an ExponentialScheduleStrategy from a dictionary.
 
         Args:
             data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            LinearScheduleStrategy: The LinearScheduleStrategy instance.
+            ExponentialScheduleStrategy: The ExponentialScheduleStrategy instance.
         """
         # data validations
         if not isinstance(data, dict):
@@ -209,18 +210,18 @@ class LinearScheduleStrategy(ScheduleStrategy):
             raise KeyError("data must contain the key 'type'.")
         if data["type"] != cls.__name__:
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
-        if "slope" not in data:
-            raise KeyError("data must contain the key 'slope'.")
-        if "intercept" not in data:
-            raise KeyError("data must contain the key 'intercept'.")
+        if "scale" not in data:
+            raise KeyError("data must contain the key 'scale'.")
+        if "rate" not in data:
+            raise KeyError("data must contain the key 'rate'.")
         if "min_value" not in data:
             raise KeyError("data must contain the key 'min_value'.")
         if "max_value" not in data:
             raise KeyError("data must contain the key 'max_value'.")
         # initializations
         result = cls(
-            data["slope"],
-            data["intercept"],
+            data["scale"],
+            data["rate"],
             min_value=data["min_value"],
             max_value=data["max_value"],
         )

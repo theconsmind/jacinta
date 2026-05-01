@@ -111,7 +111,7 @@ class ConstantScheduleStrategy(ScheduleStrategy):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ScheduleStrategy:
+    def from_dict(cls, data: dict[str, Any]) -> ConstantScheduleStrategy:
         """
         Create a ConstantScheduleStrategy from a dictionary.
 
