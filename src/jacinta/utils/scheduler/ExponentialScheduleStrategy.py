@@ -13,16 +13,18 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
     Attributes:
         scale (float): The scale of the exponential function.
         rate (float): The rate of the exponential function.
+        intercept (float): The intercept of the exponential function.
         min_value (float | None): The minimum value of the strategy.
         max_value (float | None): The maximum value of the strategy.
     """
 
-    __slots__ = ("_scale", "_rate", "_min_value", "_max_value")
+    __slots__ = ("_scale", "_rate", "_intercept", "_min_value", "_max_value")
 
     def __init__(
         self,
         scale: float,
         rate: float,
+        intercept: float,
         *,
         min_value: float | None = None,
         max_value: float | None = None,
@@ -33,6 +35,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         Args:
             scale (float): The scale of the exponential function.
             rate (float): The rate of the exponential function.
+            intercept (float): The intercept of the exponential function.
             min_value (float | None): The minimum value of the strategy.
             max_value (float | None): The maximum value of the strategy.
         """
@@ -42,6 +45,9 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         # rate validations
         if not isinstance(rate, (float, int)):
             raise TypeError("rate must be a float.")
+        # intercept validations
+        if not isinstance(intercept, (float, int)):
+            raise TypeError("intercept must be a float.")
         # min_value validations
         if min_value is not None and not isinstance(min_value, (float, int)):
             raise TypeError("min_value must be a float.")
@@ -54,6 +60,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         super().__setattr__("_frozen", False)
         self._scale = float(scale)
         self._rate = float(rate)
+        self._intercept = float(intercept)
         self._min_value = float(min_value) if min_value is not None else None
         self._max_value = float(max_value) if max_value is not None else None
         super().__setattr__("_frozen", True)
@@ -69,6 +76,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         result = (
             f"{self.__class__.__name__}"
             f"(scale={self._scale!r}, rate={self._rate!r}, "
+            f"intercept={self._intercept!r}, "
             f"min_value={self._min_value!r}, max_value={self._max_value!r})"
         )
         return result
@@ -89,7 +97,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
         # get the value based on the depth
-        result = self._scale * math.exp(self._rate * depth)
+        result = self._scale * math.exp(self._rate * depth) + self._intercept
         # apply min and max values
         if self._min_value is not None:
             result = max(result, self._min_value)
@@ -116,6 +124,16 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
             float: The rate of the strategy.
         """
         return self._rate
+
+    @property
+    def intercept(self) -> float:
+        """
+        Get the intercept of the strategy.
+
+        Returns:
+            float: The intercept of the strategy.
+        """
+        return self._intercept
 
     @property
     def min_value(self) -> float | None:
@@ -154,6 +172,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         result = (
             self._scale == other._scale
             and self._rate == other._rate
+            and self._intercept == other._intercept
             and self._min_value == other._min_value
             and self._max_value == other._max_value
         )
@@ -170,6 +189,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
             (
                 self._scale,
                 self._rate,
+                self._intercept,
                 self._min_value,
                 self._max_value,
             )
@@ -187,6 +207,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
             "type": self.__class__.__name__,
             "scale": self._scale,
             "rate": self._rate,
+            "intercept": self._intercept,
             "min_value": self._min_value,
             "max_value": self._max_value,
         }
@@ -214,6 +235,8 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
             raise KeyError("data must contain the key 'scale'.")
         if "rate" not in data:
             raise KeyError("data must contain the key 'rate'.")
+        if "intercept" not in data:
+            raise KeyError("data must contain the key 'intercept'.")
         if "min_value" not in data:
             raise KeyError("data must contain the key 'min_value'.")
         if "max_value" not in data:
@@ -222,6 +245,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         result = cls(
             data["scale"],
             data["rate"],
+            data["intercept"],
             min_value=data["min_value"],
             max_value=data["max_value"],
         )

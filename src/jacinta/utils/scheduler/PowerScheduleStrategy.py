@@ -6,23 +6,32 @@ from typing import Any
 from .ScheduleStrategy import ScheduleStrategy
 
 
-class LogarithmicScheduleStrategy(ScheduleStrategy):
+class PowerScheduleStrategy(ScheduleStrategy):
     """
-    A ScheduleStrategy that returns a logarithmic value for a given node depth.
+    A ScheduleStrategy that returns a power value for a given node depth.
 
     Attributes:
-        scale (float): The scale of the logarithmic function.
-        offset (float): The offset of the logarithmic function.
-        intercept (float): The intercept of the logarithmic function.
+        scale (float): The scale of the power function.
+        exponent (float): The exponent of the power function.
+        offset (float): The offset of the power function.
+        intercept (float): The intercept of the power function.
         min_value (float | None): The minimum value of the strategy.
         max_value (float | None): The maximum value of the strategy.
     """
 
-    __slots__ = ("_scale", "_offset", "_intercept", "_min_value", "_max_value")
+    __slots__ = (
+        "_scale",
+        "_exponent",
+        "_offset",
+        "_intercept",
+        "_min_value",
+        "_max_value",
+    )
 
     def __init__(
         self,
         scale: float,
+        exponent: float,
         offset: float,
         intercept: float,
         *,
@@ -30,18 +39,22 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         max_value: float | None = None,
     ) -> None:
         """
-        Initialize an LogarithmicScheduleStrategy.
+        Initialize a PowerScheduleStrategy.
 
         Args:
-            scale (float): The scale of the logarithmic function.
-            offset (float): The offset of the logarithmic function.
-            intercept (float): The intercept of the logarithmic function.
+            scale (float): The scale of the power function.
+            exponent (float): The exponent of the power function.
+            offset (float): The offset of the power function.
+            intercept (float): The intercept of the power function.
             min_value (float | None): The minimum value of the strategy.
             max_value (float | None): The maximum value of the strategy.
         """
         # scale validations
         if not isinstance(scale, (float, int)):
             raise TypeError("scale must be a float.")
+        # exponent validations
+        if not isinstance(exponent, (float, int)):
+            raise TypeError("exponent must be a float.")
         # offset validations
         if not isinstance(offset, (float, int)):
             raise TypeError("offset must be a float.")
@@ -50,15 +63,16 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
             raise TypeError("intercept must be a float.")
         # min_value validations
         if min_value is not None and not isinstance(min_value, (float, int)):
-            raise TypeError("min_value must be a float.")
+            raise TypeError("min_value must be a float or None.")
         # max_value validations
         if max_value is not None and not isinstance(max_value, (float, int)):
-            raise TypeError("max_value must be a float.")
+            raise TypeError("max_value must be a float or None.")
         if min_value is not None and max_value is not None and min_value > max_value:
             raise ValueError("min_value must be less than or equal to max_value.")
         # initializations
         super().__setattr__("_frozen", False)
         self._scale = float(scale)
+        self._exponent = float(exponent)
         self._offset = float(offset)
         self._intercept = float(intercept)
         self._min_value = float(min_value) if min_value is not None else None
@@ -75,8 +89,8 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         """
         result = (
             f"{self.__class__.__name__}"
-            f"(scale={self._scale!r}, offset={self._offset!r}, "
-            f"intercept={self._intercept!r}, "
+            f"(scale={self._scale!r}, exponent={self._exponent!r}, "
+            f"offset={self._offset!r}, intercept={self._intercept!r}, "
             f"min_value={self._min_value!r}, max_value={self._max_value!r})"
         )
         return result
@@ -97,7 +111,10 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
         # get the value based on the depth
-        result = self._scale * math.log(depth + self._offset) + self._intercept
+        result = (
+            self._scale * math.pow(depth + self._offset, self._exponent)
+            + self._intercept
+        )
         # apply min and max values
         if self._min_value is not None:
             result = max(result, self._min_value)
@@ -114,6 +131,16 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
             float: The scale of the strategy.
         """
         return self._scale
+
+    @property
+    def exponent(self) -> float:
+        """
+        Get the exponent of the strategy.
+
+        Returns:
+            float: The exponent of the strategy.
+        """
+        return self._exponent
 
     @property
     def offset(self) -> float:
@@ -157,7 +184,7 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two LogarithmicScheduleStrategies are equal.
+        Check if two PowerScheduleStrategies are equal.
 
         Args:
             other (object): The object to compare with.
@@ -166,11 +193,12 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
             bool: True if the strategies are equal, False otherwise.
         """
         # type validations
-        if not isinstance(other, LogarithmicScheduleStrategy):
+        if not isinstance(other, PowerScheduleStrategy):
             return NotImplemented
         # equality check
         result = (
             self._scale == other._scale
+            and self._exponent == other._exponent
             and self._offset == other._offset
             and self._intercept == other._intercept
             and self._min_value == other._min_value
@@ -188,6 +216,7 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         result = hash(
             (
                 self._scale,
+                self._exponent,
                 self._offset,
                 self._intercept,
                 self._min_value,
@@ -206,6 +235,7 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         result = {
             "type": self.__class__.__name__,
             "scale": self._scale,
+            "exponent": self._exponent,
             "offset": self._offset,
             "intercept": self._intercept,
             "min_value": self._min_value,
@@ -214,15 +244,15 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> LogarithmicScheduleStrategy:
+    def from_dict(cls, data: dict[str, Any]) -> PowerScheduleStrategy:
         """
-        Create an LogarithmicScheduleStrategy from a dictionary.
+        Create a PowerScheduleStrategy from a dictionary.
 
         Args:
             data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            LogarithmicScheduleStrategy: The LogarithmicScheduleStrategy instance.
+            PowerScheduleStrategy: The PowerScheduleStrategy instance.
         """
         # data validations
         if not isinstance(data, dict):
@@ -233,6 +263,8 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
         if "scale" not in data:
             raise KeyError("data must contain the key 'scale'.")
+        if "exponent" not in data:
+            raise KeyError("data must contain the key 'exponent'.")
         if "offset" not in data:
             raise KeyError("data must contain the key 'offset'.")
         if "intercept" not in data:
@@ -244,6 +276,7 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         # initializations
         result = cls(
             data["scale"],
+            data["exponent"],
             data["offset"],
             data["intercept"],
             min_value=data["min_value"],
