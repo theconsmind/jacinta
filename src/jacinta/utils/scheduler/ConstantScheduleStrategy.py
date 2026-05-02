@@ -94,7 +94,7 @@ class ConstantScheduleStrategy(ScheduleStrategy):
         Returns:
             int: The hash of the strategy.
         """
-        result = hash(self._value)
+        result = hash((self._value,))
         return result
 
     def to_dict(self) -> dict[str, Any]:

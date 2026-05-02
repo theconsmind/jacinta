@@ -50,10 +50,10 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
             raise TypeError("intercept must be a float.")
         # min_value validations
         if min_value is not None and not isinstance(min_value, (float, int)):
-            raise TypeError("min_value must be a float.")
+            raise TypeError("min_value must be a float or None.")
         # max_value validations
         if max_value is not None and not isinstance(max_value, (float, int)):
-            raise TypeError("max_value must be a float.")
+            raise TypeError("max_value must be a float or None.")
         if min_value is not None and max_value is not None and min_value > max_value:
             raise ValueError("min_value must be less than or equal to max_value.")
         # initializations

@@ -97,7 +97,7 @@ class Scheduler:
         Returns:
             int: The hash of the scheduler.
         """
-        result = hash(self._strategy)
+        result = hash((self._strategy,))
         return result
 
     def to_dict(self) -> dict[str, Any]:

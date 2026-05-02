@@ -72,7 +72,22 @@ class ScheduleStrategy(ABC):
         Returns:
             ScheduleStrategy: The ScheduleStrategy instance.
         """
-        ...
+        # data validations
+        if not isinstance(data, dict):
+            raise TypeError("data must be a dict.")
+        if "type" not in data:
+            raise KeyError("data must contain the key 'type'.")
+        if not isinstance(data["type"], str):
+            raise TypeError("data['type'] must be a string.")
+        # find the subclass
+        result = None
+        for subclass in cls.__subclasses__():
+            if subclass.__name__ == data["type"]:
+                result = subclass.from_dict(data)
+                break
+        if result is None:
+            raise ValueError(f"Strategy type '{data['type']}' not found.")
+        return result
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
