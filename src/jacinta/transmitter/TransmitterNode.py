@@ -1,21 +1,24 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+from typing import Any
+
 
 class TransmitterNode:
     """
     A TransmitterNode represents a node in the Transmitter tree.
 
     Attributes:
-        left (float): The left bound of the interval.
-        right (float): The right bound of the interval.
+        left (float): The closed left bound of the node's interval.
+        right (float): The open right bound of the node's interval.
         parent_id (int): The ID of the parent node.
         left_child_id (int): The ID of the left child node.
         right_child_id (int): The ID of the right child node.
         weight (float): The weight of the node.
-        hits_left (int): The number of hits left to split the node.
         mass (float): The probability of the node being selected.
         depth (int): The depth of the node.
-        learning_rate (float): The learning rate of the node.
+        hits_left (int): The number of hits left to split the node.
     """
 
     __slots__ = (
@@ -25,10 +28,10 @@ class TransmitterNode:
         "_left_child_id",
         "_right_child_id",
         "_weight",
-        "_hits_left",
         "_mass",
         "_depth",
-        "_learning_rate",
+        "_hits_left",
+        "_frozen",
     )
 
     def __init__(
@@ -39,25 +42,23 @@ class TransmitterNode:
         left_child_id: int,
         right_child_id: int,
         weight: float,
-        hits_left: int,
         mass: float,
         depth: int,
-        learning_rate: float,
+        hits_left: int,
     ) -> None:
         """
-        Initialize the TransmitterNode.
+        Initialize a TransmitterNode.
 
         Args:
-            left (float): The left bound of the interval.
-            right (float): The right bound of the interval.
+            left (float): The closed left bound of the node's interval.
+            right (float): The open right bound of the node's interval.
             parent_id (int): The ID of the parent node.
             left_child_id (int): The ID of the left child node.
             right_child_id (int): The ID of the right child node.
             weight (float): The weight of the node.
-            hits_left (int): The number of hits left to split the node.
             mass (float): The probability of the node being selected.
             depth (int): The depth of the node.
-            learning_rate (float): The learning rate of the node.
+            hits_left (int): The number of hits left to split the node.
         """
         # left & right validations
         if not isinstance(left, (float, int)):
@@ -84,11 +85,6 @@ class TransmitterNode:
             raise TypeError("weight must be a float.")
         if weight <= 0:
             raise ValueError("weight must be greater than 0.")
-        # hits_left validations
-        if not isinstance(hits_left, int):
-            raise TypeError("hits_left must be an int.")
-        if hits_left < 0:
-            raise ValueError("hits_left must be greater than or equal to 0.")
         # mass validations
         if not isinstance(mass, (float, int)):
             raise TypeError("mass must be a float.")
@@ -99,41 +95,62 @@ class TransmitterNode:
             raise TypeError("depth must be an int.")
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
-        # learning_rate validations
-        if not isinstance(learning_rate, (float, int)):
-            raise TypeError("learning_rate must be a float.")
-        if learning_rate <= 0:
-            raise ValueError("learning_rate must be greater than 0.")
+        # hits_left validations
+        if not isinstance(hits_left, int):
+            raise TypeError("hits_left must be an int.")
+        if hits_left < 0:
+            raise ValueError("hits_left must be greater than or equal to 0.")
         # initializations
+        super().__setattr__("_frozen", False)
         self._left = float(left)
         self._right = float(right)
         self._parent_id = parent_id
         self._left_child_id = left_child_id
         self._right_child_id = right_child_id
         self._weight = float(weight)
-        self._hits_left = hits_left
         self._mass = float(mass)
         self._depth = depth
-        self._learning_rate = float(learning_rate)
+        self._hits_left = hits_left
+        super().__setattr__("_frozen", True)
         return
+
+    def __repr__(self) -> str:
+        """
+        Get the representation of the node.
+
+        Returns:
+            str: The representation of the node.
+        """
+        result = (
+            f"{self.__class__.__name__}"
+            f"(left={self._left!r}, right={self._right!r}, "
+            f"parent_id={self._parent_id!r}, "
+            f"left_child_id={self._left_child_id!r}, "
+            f"right_child_id={self._right_child_id!r}, "
+            f"weight={self._weight!r}, "
+            f"mass={self._mass!r}, "
+            f"depth={self._depth!r}, "
+            f"hits_left={self._hits_left!r})"
+        )
+        return result
 
     @property
     def left(self) -> float:
         """
-        Get the left bound of the interval.
+        Get the closed left bound of the node's interval.
 
         Returns:
-            float: The left bound of the interval.
+            float: The closed left bound of the node's interval.
         """
         return self._left
 
     @property
     def right(self) -> float:
         """
-        Get the right bound of the interval.
+        Get the open right bound of the node's interval.
 
         Returns:
-            float: The right bound of the interval.
+            float: The open right bound of the node's interval.
         """
         return self._right
 
@@ -165,11 +182,17 @@ class TransmitterNode:
         Args:
             value (int): The ID of the left child node.
         """
+        if self._left_child_id != -1:
+            raise AttributeError("left_child_id already set.")
+        # value validations
         if not isinstance(value, int):
             raise TypeError("left_child_id must be an int.")
         if value < -1:
             raise ValueError("left_child_id must be greater than or equal to -1.")
+        # update value
+        super().__setattr__("_frozen", False)
         self._left_child_id = value
+        super().__setattr__("_frozen", True)
         return
 
     @property
@@ -190,11 +213,17 @@ class TransmitterNode:
         Args:
             value (int): The ID of the right child node.
         """
+        if self._right_child_id != -1:
+            raise AttributeError("right_child_id already set.")
+        # value validations
         if not isinstance(value, int):
             raise TypeError("right_child_id must be an int.")
         if value < -1:
             raise ValueError("right_child_id must be greater than or equal to -1.")
+        # update value
+        super().__setattr__("_frozen", False)
         self._right_child_id = value
+        super().__setattr__("_frozen", True)
         return
 
     @property
@@ -215,36 +244,15 @@ class TransmitterNode:
         Args:
             value (float): The weight of the node.
         """
+        # value validations
         if not isinstance(value, (float, int)):
             raise TypeError("weight must be a float.")
         if value <= 0:
             raise ValueError("weight must be greater than 0.")
+        # update value
+        super().__setattr__("_frozen", False)
         self._weight = float(value)
-        return
-
-    @property
-    def hits_left(self) -> int:
-        """
-        Get the number of hits left to split the node.
-
-        Returns:
-            int: The number of hits left to split the node.
-        """
-        return self._hits_left
-
-    @hits_left.setter
-    def hits_left(self, value: int) -> None:
-        """
-        Set the number of hits left to split the node.
-
-        Args:
-            value (int): The number of hits left to split the node.
-        """
-        if not isinstance(value, int):
-            raise TypeError("hits_left must be an int.")
-        if value < 0:
-            raise ValueError("hits_left must be greater than or equal to 0.")
-        self._hits_left = value
+        super().__setattr__("_frozen", True)
         return
 
     @property
@@ -265,11 +273,15 @@ class TransmitterNode:
         Args:
             value (float): The probability of the node being selected.
         """
+        # value validations
         if not isinstance(value, (float, int)):
             raise TypeError("mass must be a float.")
         if value <= 0:
             raise ValueError("mass must be greater than 0.")
+        # update value
+        super().__setattr__("_frozen", False)
         self._mass = float(value)
+        super().__setattr__("_frozen", True)
         return
 
     @property
@@ -283,14 +295,33 @@ class TransmitterNode:
         return self._depth
 
     @property
-    def learning_rate(self) -> float:
+    def hits_left(self) -> int:
         """
-        Get the learning rate of the node.
+        Get the number of hits left to split the node.
 
         Returns:
-            float: The learning rate of the node.
+            int: The number of hits left to split the node.
         """
-        return self._learning_rate
+        return self._hits_left
+
+    @hits_left.setter
+    def hits_left(self, value: int) -> None:
+        """
+        Set the number of hits left to split the node.
+
+        Args:
+            value (int): The number of hits left to split the node.
+        """
+        # value validations
+        if not isinstance(value, int):
+            raise TypeError("hits_left must be an int.")
+        if value < 0:
+            raise ValueError("hits_left must be greater than or equal to 0.")
+        # update value
+        super().__setattr__("_frozen", False)
+        self._hits_left = value
+        super().__setattr__("_frozen", True)
+        return
 
     @property
     def is_leaf(self) -> bool:
@@ -306,10 +337,194 @@ class TransmitterNode:
     @property
     def length(self) -> float:
         """
-        Get the length of the interval.
+        Get the length of the node's interval.
 
         Returns:
-            float: The length of the interval.
+            float: The length of the node's interval.
         """
         result = self._right - self._left
         return result
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Check if two TransmitterNodes are equal.
+
+        Args:
+            other (object): The object to compare with.
+
+        Returns:
+            bool: True if the nodes are equal, False otherwise.
+        """
+        # type validations
+        if not isinstance(other, TransmitterNode):
+            return NotImplemented
+        # equality check
+        result = (
+            self._left == other._left
+            and self._right == other._right
+            and self._parent_id == other._parent_id
+            and self._left_child_id == other._left_child_id
+            and self._right_child_id == other._right_child_id
+            and self._weight == other._weight
+            and self._mass == other._mass
+            and self._depth == other._depth
+            and self._hits_left == other._hits_left
+        )
+        return result
+
+    def __hash__(self) -> int:
+        """
+        Get the hash of the node.
+
+        Returns:
+            int: The hash of the node.
+        """
+        result = hash(
+            (
+                self._left,
+                self._right,
+                self._parent_id,
+                self._left_child_id,
+                self._right_child_id,
+                self._weight,
+                self._mass,
+                self._depth,
+                self._hits_left,
+            )
+        )
+        return result
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Get the dictionary representation of the node.
+
+        Returns:
+            dict[str, Any]: The dictionary representation of the node.
+        """
+        result = {
+            "type": self.__class__.__name__,
+            "left": self._left,
+            "right": self._right,
+            "parent_id": self._parent_id,
+            "left_child_id": self._left_child_id,
+            "right_child_id": self._right_child_id,
+            "weight": self._weight,
+            "mass": self._mass,
+            "depth": self._depth,
+            "hits_left": self._hits_left,
+        }
+        return result
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TransmitterNode:
+        """
+        Create a TransmitterNode from a dictionary.
+
+        Args:
+            data (dict[str, Any]): The dictionary representation of the node.
+
+        Returns:
+            TransmitterNode: The TransmitterNode instance.
+        """
+        # data validations
+        if not isinstance(data, dict):
+            raise TypeError("data must be a dict.")
+        if "type" not in data:
+            raise KeyError("data must contain the key 'type'.")
+        if data["type"] != cls.__name__:
+            raise ValueError(f"data['type'] must be a {cls.__name__}.")
+        if "left" not in data:
+            raise KeyError("data must contain the key 'left'.")
+        if "right" not in data:
+            raise KeyError("data must contain the key 'right'.")
+        if "parent_id" not in data:
+            raise KeyError("data must contain the key 'parent_id'.")
+        if "left_child_id" not in data:
+            raise KeyError("data must contain the key 'left_child_id'.")
+        if "right_child_id" not in data:
+            raise KeyError("data must contain the key 'right_child_id'.")
+        if "weight" not in data:
+            raise KeyError("data must contain the key 'weight'.")
+        if "mass" not in data:
+            raise KeyError("data must contain the key 'mass'.")
+        if "depth" not in data:
+            raise KeyError("data must contain the key 'depth'.")
+        if "hits_left" not in data:
+            raise KeyError("data must contain the key 'hits_left'.")
+        # initializations
+        result = cls(
+            data["left"],
+            data["right"],
+            data["parent_id"],
+            data["left_child_id"],
+            data["right_child_id"],
+            data["weight"],
+            data["mass"],
+            data["depth"],
+            data["hits_left"],
+        )
+        return result
+
+    def save(self, path: str | Path, overwrite: bool = False) -> None:
+        """
+        Save the node to a json file.
+
+        Args:
+            path (str | Path): The path to the file.
+            overwrite (bool): Whether to overwrite the file if it exists.
+        """
+        # path validations
+        if not isinstance(path, (str, Path)):
+            raise TypeError("path must be a string or a Path.")
+        # file validations
+        path = Path(path)
+        if path.suffix != ".json":
+            raise ValueError("path must have a .json extension.")
+        if not overwrite and path.exists():
+            raise FileExistsError(f"path already exists: {path}")
+        # file creation
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, ensure_ascii=False, indent=4)
+        return
+
+    @classmethod
+    def load(cls, path: str | Path) -> TransmitterNode:
+        """
+        Load the node from a json file.
+
+        Args:
+            path (str | Path): The path to the file.
+
+        Returns:
+            TransmitterNode: The TransmitterNode instance.
+        """
+        # path validations
+        if not isinstance(path, (str, Path)):
+            raise TypeError("path must be a string or a Path.")
+        # file validations
+        path = Path(path)
+        if path.suffix != ".json":
+            raise ValueError("path must have a .json extension.")
+        if not path.exists():
+            raise FileNotFoundError(f"path does not exist: {path}")
+        # file loading
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        result = cls.from_dict(data)
+        return result
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """
+        Set an attribute of the node.
+
+        Args:
+            name (str): The name of the attribute.
+            value (Any): The value of the attribute.
+        """
+        # freeze check
+        if getattr(self, "_frozen", False):
+            raise AttributeError(f"{self.__class__.__name__} is immutable")
+        # set the attribute
+        super().__setattr__(name, value)
+        return
