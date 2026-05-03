@@ -44,17 +44,18 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
                     "All second elements of segments must be ScheduleStrategies."
                 )
         # segment depths validations
-        self._depths = [segment[0] for segment in segments]
-        if self._depths[0] != 0:
+        depths = [segment[0] for segment in segments]
+        if depths[0] != 0:
             raise ValueError("The first depth must be 0.")
-        for idx in range(len(self._depths) - 1):
-            if self._depths[idx] >= self._depths[idx + 1]:
+        for idx in range(len(depths) - 1):
+            if depths[idx] >= depths[idx + 1]:
                 raise ValueError(
                     "segments must be sorted by depth and depths must be unique."
                 )
         # initializations
         super().__setattr__("_frozen", False)
         self._segments = [tuple(segment) for segment in segments]
+        self._depths = depths
         super().__setattr__("_frozen", True)
         return
 
@@ -90,14 +91,14 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         return result
 
     @property
-    def segments(self) -> list[tuple[int, ScheduleStrategy]]:
+    def segments(self) -> tuple[tuple[int, ScheduleStrategy]]:
         """
         Get the segments of the strategy.
 
         Returns:
-            list[tuple[int, ScheduleStrategy]]: The segments of the strategy.
+            tuple[tuple[int, ScheduleStrategy]]: The segments of the strategy.
         """
-        return self._segments
+        return tuple(self._segments)
 
     def __eq__(self, other: object) -> bool:
         """

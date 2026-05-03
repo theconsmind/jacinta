@@ -99,14 +99,14 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         return result
 
     @property
-    def coefficients(self) -> list[float]:
+    def coefficients(self) -> tuple[float]:
         """
         Get the coefficients of the strategy.
 
         Returns:
-            list[float]: The coefficients of the strategy.
+            tuple[float]: The coefficients of the strategy.
         """
-        return self._coefficients
+        return tuple(self._coefficients)
 
     @property
     def min_value(self) -> float | None:

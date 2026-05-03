@@ -372,28 +372,6 @@ class TransmitterNode:
         )
         return result
 
-    def __hash__(self) -> int:
-        """
-        Get the hash of the node.
-
-        Returns:
-            int: The hash of the node.
-        """
-        result = hash(
-            (
-                self._left,
-                self._right,
-                self._parent_id,
-                self._left_child_id,
-                self._right_child_id,
-                self._weight,
-                self._mass,
-                self._depth,
-                self._hits_left,
-            )
-        )
-        return result
-
     def to_dict(self) -> dict[str, Any]:
         """
         Get the dictionary representation of the node.
