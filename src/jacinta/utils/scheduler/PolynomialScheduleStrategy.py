@@ -11,7 +11,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
     A ScheduleStrategy that returns a polynomial value for a given node depth.
 
     Attributes:
-        coefficients (list[float]): The coefficients of the polynomial function.
+        coefficients (tuple[float]): The coefficients of the polynomial function.
         min_value (float | None): The minimum value of the strategy.
         max_value (float | None): The maximum value of the strategy.
     """
@@ -20,7 +20,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     def __init__(
         self,
-        coefficients: list[float],
+        coefficients: tuple[float],
         *,
         min_value: float | None = None,
         max_value: float | None = None,
@@ -29,13 +29,13 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         Initialize a PolynomialScheduleStrategy.
 
         Args:
-            coefficients (list[float]): The coefficients of the polynomial function.
+            coefficients (tuple[float]): The coefficients of the polynomial function.
             min_value (float | None): The minimum value of the strategy.
             max_value (float | None): The maximum value of the strategy.
         """
         # coefficients validations
-        if not isinstance(coefficients, (list, tuple)):
-            raise TypeError("coefficients must be a list.")
+        if not isinstance(coefficients, (tuple, list)):
+            raise TypeError("coefficients must be a tuple.")
         if len(coefficients) == 0:
             raise ValueError("coefficients must not be empty.")
         for coefficient in coefficients:
@@ -51,7 +51,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
             raise ValueError("min_value must be less than or equal to max_value.")
         # initializations
         super().__setattr__("_frozen", False)
-        self._coefficients = [float(coefficient) for coefficient in coefficients]
+        self._coefficients = tuple(float(coefficient) for coefficient in coefficients)
         self._min_value = float(min_value) if min_value is not None else None
         self._max_value = float(max_value) if max_value is not None else None
         super().__setattr__("_frozen", True)
@@ -106,7 +106,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         Returns:
             tuple[float]: The coefficients of the strategy.
         """
-        return tuple(self._coefficients)
+        return self._coefficients
 
     @property
     def min_value(self) -> float | None:
@@ -158,7 +158,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         """
         result = hash(
             (
-                tuple(self._coefficients),
+                self._coefficients,
                 self._min_value,
                 self._max_value,
             )

@@ -12,24 +12,25 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
     of node depths.
 
     Attributes:
-        segments (list[tuple[int, ScheduleStrategy]]): The segments of the strategy.
+        segments (tuple[tuple[int, ScheduleStrategy]]): The segments of the strategy.
     """
 
     __slots__ = ("_segments", "_depths")
 
     def __init__(
         self,
-        segments: list[tuple[int, ScheduleStrategy]],
+        segments: tuple[tuple[int, ScheduleStrategy]],
     ) -> None:
         """
         Initialize a PiecewiseScheduleStrategy.
 
         Args:
-            segments (list[tuple[int, ScheduleStrategy]]): The segments of the strategy.
+            segments (tuple[tuple[int, ScheduleStrategy]]): The segments
+                of the strategy.
         """
         # segments validations
-        if not isinstance(segments, (list, tuple)):
-            raise TypeError("segments must be a list.")
+        if not isinstance(segments, (tuple, list)):
+            raise TypeError("segments must be a tuple.")
         if len(segments) == 0:
             raise ValueError("segments must not be empty.")
         for segment in segments:
@@ -44,7 +45,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
                     "All second elements of segments must be ScheduleStrategies."
                 )
         # segment depths validations
-        depths = [segment[0] for segment in segments]
+        depths = tuple(segment[0] for segment in segments)
         if depths[0] != 0:
             raise ValueError("The first depth must be 0.")
         for idx in range(len(depths) - 1):
@@ -54,7 +55,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
                 )
         # initializations
         super().__setattr__("_frozen", False)
-        self._segments = [tuple(segment) for segment in segments]
+        self._segments = tuple(tuple(segment) for segment in segments)
         self._depths = depths
         super().__setattr__("_frozen", True)
         return
@@ -98,7 +99,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         Returns:
             tuple[tuple[int, ScheduleStrategy]]: The segments of the strategy.
         """
-        return tuple(self._segments)
+        return self._segments
 
     def __eq__(self, other: object) -> bool:
         """
@@ -124,7 +125,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         Returns:
             int: The hash of the strategy.
         """
-        result = hash((tuple(self._segments),))
+        result = hash((self._segments,))
         return result
 
     def to_dict(self) -> dict[str, Any]:
@@ -134,7 +135,9 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         Returns:
             dict[str, Any]: The dictionary representation of the strategy.
         """
-        segments = [(depth, strategy.to_dict()) for depth, strategy in self._segments]
+        segments = tuple(
+            (depth, strategy.to_dict()) for depth, strategy in self._segments
+        )
         result = {
             "type": self.__class__.__name__,
             "segments": segments,
@@ -162,9 +165,9 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         if "segments" not in data:
             raise KeyError("data must contain the key 'segments'.")
         # initializations
-        segments = [
+        segments = tuple(
             (depth, ScheduleStrategy.from_dict(strategy_data))
             for depth, strategy_data in data["segments"]
-        ]
+        )
         result = cls(segments)
         return result
