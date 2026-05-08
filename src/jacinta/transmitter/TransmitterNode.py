@@ -15,8 +15,8 @@ class TransmitterNode:
         parent_id (int): The ID of the parent node.
         left_child_id (int): The ID of the left child node.
         right_child_id (int): The ID of the right child node.
-        weight (float): The weight of the node.
-        mass (float): The probability of the node being selected.
+        log_weight (float): The logarithmic weight of the node.
+        log_mass (float): The logarithmic probability of the node being selected.
         depth (int): The depth of the node.
         hits_left (int): The number of hits left to split the node.
     """
@@ -27,8 +27,8 @@ class TransmitterNode:
         "_parent_id",
         "_left_child_id",
         "_right_child_id",
-        "_weight",
-        "_mass",
+        "_log_weight",
+        "_log_mass",
         "_depth",
         "_hits_left",
         "_frozen",
@@ -41,8 +41,8 @@ class TransmitterNode:
         parent_id: int,
         left_child_id: int,
         right_child_id: int,
-        weight: float,
-        mass: float,
+        log_weight: float,
+        log_mass: float,
         depth: int,
         hits_left: int,
     ) -> None:
@@ -55,8 +55,8 @@ class TransmitterNode:
             parent_id (int): The ID of the parent node.
             left_child_id (int): The ID of the left child node.
             right_child_id (int): The ID of the right child node.
-            weight (float): The weight of the node.
-            mass (float): The probability of the node being selected.
+            log_weight (float): The logarithmic weight of the node.
+            log_mass (float): The logarithmic probability of the node being selected.
             depth (int): The depth of the node.
             hits_left (int): The number of hits left to split the node.
         """
@@ -80,16 +80,12 @@ class TransmitterNode:
             raise TypeError("right_child_id must be an int.")
         if right_child_id < -1:
             raise ValueError("right_child_id must be greater than or equal to -1.")
-        # weight validations
-        if not isinstance(weight, (float, int)):
-            raise TypeError("weight must be a float.")
-        if weight <= 0:
-            raise ValueError("weight must be greater than 0.")
-        # mass validations
-        if not isinstance(mass, (float, int)):
-            raise TypeError("mass must be a float.")
-        if mass <= 0:
-            raise ValueError("mass must be greater than 0.")
+        # log_weight validations
+        if not isinstance(log_weight, (float, int)):
+            raise TypeError("log_weight must be a float.")
+        # log_mass validations
+        if not isinstance(log_mass, (float, int)):
+            raise TypeError("log_mass must be a float.")
         # depth validations
         if not isinstance(depth, int):
             raise TypeError("depth must be an int.")
@@ -107,8 +103,8 @@ class TransmitterNode:
         self._parent_id = parent_id
         self._left_child_id = left_child_id
         self._right_child_id = right_child_id
-        self._weight = float(weight)
-        self._mass = float(mass)
+        self._log_weight = float(log_weight)
+        self._log_mass = float(log_mass)
         self._depth = depth
         self._hits_left = hits_left
         super().__setattr__("_frozen", True)
@@ -127,8 +123,8 @@ class TransmitterNode:
             f"parent_id={self._parent_id!r}, "
             f"left_child_id={self._left_child_id!r}, "
             f"right_child_id={self._right_child_id!r}, "
-            f"weight={self._weight!r}, "
-            f"mass={self._mass!r}, "
+            f"log_weight={self._log_weight!r}, "
+            f"log_mass={self._log_mass!r}, "
             f"depth={self._depth!r}, "
             f"hits_left={self._hits_left!r})"
         )
@@ -227,60 +223,56 @@ class TransmitterNode:
         return
 
     @property
-    def weight(self) -> float:
+    def log_weight(self) -> float:
         """
-        Get the weight of the node.
+        Get the logarithmic weight of the node.
 
         Returns:
-            float: The weight of the node.
+            float: The logarithmic weight of the node.
         """
-        return self._weight
+        return self._log_weight
 
-    @weight.setter
-    def weight(self, value: float) -> None:
+    @log_weight.setter
+    def log_weight(self, value: float) -> None:
         """
-        Set the weight of the node.
+        Set the logarithmic weight of the node.
 
         Args:
-            value (float): The weight of the node.
+            value (float): The logarithmic weight of the node.
         """
         # value validations
         if not isinstance(value, (float, int)):
-            raise TypeError("weight must be a float.")
-        if value <= 0:
-            raise ValueError("weight must be greater than 0.")
+            raise TypeError("log_weight must be a float.")
         # update value
         super().__setattr__("_frozen", False)
-        self._weight = float(value)
+        self._log_weight = float(value)
         super().__setattr__("_frozen", True)
         return
 
     @property
-    def mass(self) -> float:
+    def log_mass(self) -> float:
         """
-        Get the probability of the node being selected.
+        Get the logarithmic probability of the node being selected.
 
         Returns:
-            float: The probability of the node being selected.
+            float: The logarithmic probability of the node being selected.
         """
-        return self._mass
+        return self._log_mass
 
-    @mass.setter
-    def mass(self, value: float) -> None:
+    @log_mass.setter
+    def log_mass(self, value: float) -> None:
         """
-        Set the probability of the node being selected.
+        Set the logarithmic probability of the node being selected.
 
         Args:
-            value (float): The probability of the node being selected.
+            value (float): The logarithmic probability of the node being selected.
         """
         # value validations
         if not isinstance(value, (float, int)):
-            raise TypeError("mass must be a float.")
-        if value <= 0:
-            raise ValueError("mass must be greater than 0.")
+            raise TypeError("log_mass must be a float.")
         # update value
         super().__setattr__("_frozen", False)
-        self._mass = float(value)
+        self._log_mass = float(value)
         super().__setattr__("_frozen", True)
         return
 
@@ -365,8 +357,8 @@ class TransmitterNode:
             and self._parent_id == other._parent_id
             and self._left_child_id == other._left_child_id
             and self._right_child_id == other._right_child_id
-            and self._weight == other._weight
-            and self._mass == other._mass
+            and self._log_weight == other._log_weight
+            and self._log_mass == other._log_mass
             and self._depth == other._depth
             and self._hits_left == other._hits_left
         )
@@ -386,8 +378,8 @@ class TransmitterNode:
             "parent_id": self._parent_id,
             "left_child_id": self._left_child_id,
             "right_child_id": self._right_child_id,
-            "weight": self._weight,
-            "mass": self._mass,
+            "log_weight": self._log_weight,
+            "log_mass": self._log_mass,
             "depth": self._depth,
             "hits_left": self._hits_left,
         }
@@ -421,10 +413,10 @@ class TransmitterNode:
             raise KeyError("data must contain the key 'left_child_id'.")
         if "right_child_id" not in data:
             raise KeyError("data must contain the key 'right_child_id'.")
-        if "weight" not in data:
-            raise KeyError("data must contain the key 'weight'.")
-        if "mass" not in data:
-            raise KeyError("data must contain the key 'mass'.")
+        if "log_weight" not in data:
+            raise KeyError("data must contain the key 'log_weight'.")
+        if "log_mass" not in data:
+            raise KeyError("data must contain the key 'log_mass'.")
         if "depth" not in data:
             raise KeyError("data must contain the key 'depth'.")
         if "hits_left" not in data:
@@ -436,8 +428,8 @@ class TransmitterNode:
             data["parent_id"],
             data["left_child_id"],
             data["right_child_id"],
-            data["weight"],
-            data["mass"],
+            data["log_weight"],
+            data["log_mass"],
             data["depth"],
             data["hits_left"],
         )

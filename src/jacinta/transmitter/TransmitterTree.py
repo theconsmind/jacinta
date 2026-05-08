@@ -132,7 +132,7 @@ class TransmitterTree:
         if not (-1.0 <= bias <= 1.0):
             raise ValueError("bias must be in [-1, 1]")
         # generate samples
-        result = self._forward_structure(self._transmitters, bias)
+        result = self._forward_structure(self._transmitters, float(bias))
         return result
 
     def backward(
@@ -157,7 +157,7 @@ class TransmitterTree:
         if not (-1.0 <= feedback <= 1.0):
             raise ValueError("feedback must be in [-1, 1]")
         # backpropagate the feedback
-        self._backward_structure(self._transmitters, samples, feedback)
+        self._backward_structure(self._transmitters, samples, float(feedback))
         return
 
     def to_dict(self) -> dict[str, Any]:
