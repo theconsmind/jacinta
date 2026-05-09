@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 
 class TransmitterNode:
@@ -498,3 +498,46 @@ class TransmitterNode:
         # set the attribute
         super().__setattr__(name, value)
         return
+
+
+class TransmitterNodeView(Protocol):
+    """
+    A TransmitterNodeView is a read-only interface for a TransmitterNode.
+    """
+
+    @property
+    def left(self) -> float: ...
+
+    @property
+    def right(self) -> float: ...
+
+    @property
+    def parent_id(self) -> int: ...
+
+    @property
+    def left_child_id(self) -> int: ...
+
+    @property
+    def right_child_id(self) -> int: ...
+
+    @property
+    def log_weight(self) -> float: ...
+
+    @property
+    def log_mass(self) -> float: ...
+
+    @property
+    def depth(self) -> int: ...
+
+    @property
+    def hits_left(self) -> int: ...
+
+    @property
+    def is_leaf(self) -> bool: ...
+
+    @property
+    def length(self) -> float: ...
+
+    def to_dict(self) -> dict[str, Any]: ...
+
+    def save(self, path: str | Path, overwrite: bool = False) -> None: ...
