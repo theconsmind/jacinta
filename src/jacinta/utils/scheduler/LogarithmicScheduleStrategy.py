@@ -25,7 +25,6 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         scale: float,
         offset: float,
         intercept: float,
-        *,
         min_value: float | None = None,
         max_value: float | None = None,
     ) -> None:
@@ -246,7 +245,7 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
             data["scale"],
             data["offset"],
             data["intercept"],
-            min_value=data["min_value"],
-            max_value=data["max_value"],
+            data["min_value"],
+            data["max_value"],
         )
         return result

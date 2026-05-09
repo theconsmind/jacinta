@@ -34,7 +34,6 @@ class PowerScheduleStrategy(ScheduleStrategy):
         exponent: float,
         offset: float,
         intercept: float,
-        *,
         min_value: float | None = None,
         max_value: float | None = None,
     ) -> None:
@@ -279,7 +278,7 @@ class PowerScheduleStrategy(ScheduleStrategy):
             data["exponent"],
             data["offset"],
             data["intercept"],
-            min_value=data["min_value"],
-            max_value=data["max_value"],
+            data["min_value"],
+            data["max_value"],
         )
         return result

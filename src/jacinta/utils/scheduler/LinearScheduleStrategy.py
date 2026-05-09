@@ -22,7 +22,6 @@ class LinearScheduleStrategy(ScheduleStrategy):
         self,
         slope: float,
         intercept: float,
-        *,
         min_value: float | None = None,
         max_value: float | None = None,
     ) -> None:
@@ -221,7 +220,7 @@ class LinearScheduleStrategy(ScheduleStrategy):
         result = cls(
             data["slope"],
             data["intercept"],
-            min_value=data["min_value"],
-            max_value=data["max_value"],
+            data["min_value"],
+            data["max_value"],
         )
         return result

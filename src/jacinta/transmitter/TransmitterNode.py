@@ -451,7 +451,7 @@ class TransmitterNode:
         if path.suffix != ".json":
             raise ValueError("path must have a .json extension.")
         if not overwrite and path.exists():
-            raise FileExistsError(f"path already exists: {path}")
+            raise FileExistsError(f"path already exists: {path}.")
         # file creation
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8") as f:
@@ -477,7 +477,7 @@ class TransmitterNode:
         if path.suffix != ".json":
             raise ValueError("path must have a .json extension.")
         if not path.exists():
-            raise FileNotFoundError(f"path does not exist: {path}")
+            raise FileNotFoundError(f"path does not exist: {path}.")
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
@@ -494,7 +494,7 @@ class TransmitterNode:
         """
         # freeze check
         if getattr(self, "_frozen", False):
-            raise AttributeError(f"{self.__class__.__name__} is immutable")
+            raise AttributeError(f"{self.__class__.__name__} is immutable.")
         # set the attribute
         super().__setattr__(name, value)
         return

@@ -21,7 +21,6 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
     def __init__(
         self,
         coefficients: tuple[float],
-        *,
         min_value: float | None = None,
         max_value: float | None = None,
     ) -> None:
@@ -207,7 +206,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         # initializations
         result = cls(
             data["coefficients"],
-            min_value=data["min_value"],
-            max_value=data["max_value"],
+            data["min_value"],
+            data["max_value"],
         )
         return result

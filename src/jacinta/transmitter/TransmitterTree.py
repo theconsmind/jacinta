@@ -128,9 +128,9 @@ class TransmitterTree:
         """
         # bias validations
         if not isinstance(bias, (float, int)):
-            raise TypeError("bias must be a float")
+            raise TypeError("bias must be a float.")
         if not (-1.0 <= bias <= 1.0):
-            raise ValueError("bias must be in [-1, 1]")
+            raise ValueError("bias must be in [-1, 1].")
         # generate samples
         result = self._forward_structure(self._transmitters, float(bias))
         return result
@@ -153,9 +153,9 @@ class TransmitterTree:
             raise TypeError("samples is not a valid sample structure for the tree.")
         # feedback validations
         if not isinstance(feedback, (float, int)):
-            raise TypeError("feedback must be a float")
+            raise TypeError("feedback must be a float.")
         if not (-1.0 <= feedback <= 1.0):
-            raise ValueError("feedback must be in [-1, 1]")
+            raise ValueError("feedback must be in [-1, 1].")
         # backpropagate the feedback
         self._backward_structure(self._transmitters, samples, float(feedback))
         return
@@ -213,7 +213,7 @@ class TransmitterTree:
         if path.suffix != ".json":
             raise ValueError("path must have a .json extension.")
         if not overwrite and path.exists():
-            raise FileExistsError(f"path already exists: {path}")
+            raise FileExistsError(f"path already exists: {path}.")
         # file creation
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8") as f:
@@ -239,7 +239,7 @@ class TransmitterTree:
         if path.suffix != ".json":
             raise ValueError("path must have a .json extension.")
         if not path.exists():
-            raise FileNotFoundError(f"path does not exist: {path}")
+            raise FileNotFoundError(f"path does not exist: {path}.")
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
@@ -446,7 +446,7 @@ class TransmitterTree:
         """
         # freeze check
         if getattr(self, "_frozen", False):
-            raise AttributeError(f"{self.__class__.__name__} is immutable")
+            raise AttributeError(f"{self.__class__.__name__} is immutable.")
         # set the attribute
         super().__setattr__(name, value)
         return
