@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import random
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -326,6 +327,16 @@ class Transmitter:
         if self._should_split(node_id):
             self._split_leaf(node_id)
         return
+
+    def copy(self) -> Transmitter:
+        """
+        Get a copy of the Transmitter.
+
+        Returns:
+            Transmitter: A copy of the Transmitter.
+        """
+        result = deepcopy(self)
+        return result
 
     def to_dict(self) -> dict[str, Any]:
         """

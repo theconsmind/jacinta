@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -97,6 +98,16 @@ class TransmitterSample:
             int: The hash of the sample.
         """
         result = hash((self._value, self._node_id))
+        return result
+
+    def copy(self) -> TransmitterSample:
+        """
+        Get a copy of the sample.
+
+        Returns:
+            TransmitterSample: A copy of the sample.
+        """
+        result = deepcopy(self)
         return result
 
     def to_dict(self) -> dict[str, Any]:

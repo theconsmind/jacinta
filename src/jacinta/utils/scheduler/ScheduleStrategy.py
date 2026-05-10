@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +50,16 @@ class ScheduleStrategy(ABC):
             int: The hash of the strategy.
         """
         ...
+
+    def copy(self) -> ScheduleStrategy:
+        """
+        Get a copy of the strategy.
+
+        Returns:
+            ScheduleStrategy: A copy of the strategy.
+        """
+        result = deepcopy(self)
+        return result
 
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:

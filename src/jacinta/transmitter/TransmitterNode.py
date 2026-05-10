@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -364,6 +365,16 @@ class TransmitterNode:
         )
         return result
 
+    def copy(self) -> TransmitterNode:
+        """
+        Get a copy of the node.
+
+        Returns:
+            TransmitterNode: A copy of the node.
+        """
+        result = deepcopy(self)
+        return result
+
     def to_dict(self) -> dict[str, Any]:
         """
         Get the dictionary representation of the node.
@@ -505,6 +516,8 @@ class TransmitterNodeView(Protocol):
     A TransmitterNodeView is a read-only interface for a TransmitterNode.
     """
 
+    def __repr__(self) -> str: ...
+
     @property
     def left(self) -> float: ...
 
@@ -537,6 +550,8 @@ class TransmitterNodeView(Protocol):
 
     @property
     def length(self) -> float: ...
+
+    def __eq__(self, other: object) -> bool: ...
 
     def to_dict(self) -> dict[str, Any]: ...
 

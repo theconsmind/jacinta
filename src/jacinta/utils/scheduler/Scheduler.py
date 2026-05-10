@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -98,6 +99,16 @@ class Scheduler:
             int: The hash of the scheduler.
         """
         result = hash((self._strategy,))
+        return result
+
+    def copy(self) -> Scheduler:
+        """
+        Get a copy of the scheduler.
+
+        Returns:
+            Scheduler: A copy of the scheduler.
+        """
+        result = deepcopy(self)
         return result
 
     def to_dict(self) -> dict[str, Any]:

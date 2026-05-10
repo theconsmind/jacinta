@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -159,6 +160,16 @@ class TransmitterTree:
         # backpropagate the feedback
         self._backward_structure(self._transmitters, samples, float(feedback))
         return
+
+    def copy(self) -> TransmitterTree:
+        """
+        Get a copy of the tree.
+
+        Returns:
+            TransmitterTree: A copy of the tree.
+        """
+        result = deepcopy(self)
+        return result
 
     def to_dict(self) -> dict[str, Any]:
         """
