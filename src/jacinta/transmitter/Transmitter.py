@@ -32,6 +32,8 @@ class Transmitter:
     """
 
     __slots__ = (
+        "_min_value",
+        "_max_value",
         "_learning_rate_scheduler",
         "_hits_scheduler",
         "_bias_beta_scale",
@@ -96,9 +98,10 @@ class Transmitter:
                 raise TypeError("min_interval_width must be a float.")
             if min_interval_width <= 0.0:
                 raise ValueError("min_interval_width must be greater than 0.0.")
-            if min_interval_width >= max_value - min_value:
+            if min_interval_width > max_value - min_value:
                 raise ValueError(
-                    "min_interval_width must be lower than max_value - min_value."
+                    "min_interval_width must be lower than or equal to "
+                    "max_value - min_value."
                 )
         # max_depth validations
         if max_depth is not None:
@@ -112,6 +115,8 @@ class Transmitter:
                 raise TypeError("seed must be an int.")
         # initializations
         super().__setattr__("_frozen", False)
+        self._min_value = float(min_value)
+        self._max_value = float(max_value)
         self._learning_rate_scheduler = learning_rate_scheduler
         self._hits_scheduler = hits_scheduler
         self._bias_beta_scale = float(bias_beta_scale)
@@ -149,6 +154,8 @@ class Transmitter:
         """
         result = (
             f"{self.__class__.__name__}("
+            f"min_value={self._min_value!r}, "
+            f"max_value={self._max_value!r}, "
             f"learning_rate_scheduler={self._learning_rate_scheduler!r}, "
             f"hits_scheduler={self._hits_scheduler!r}, "
             f"bias_beta_scale={self._bias_beta_scale!r}, "
@@ -157,6 +164,26 @@ class Transmitter:
             f"nodes={self._nodes!r})"
         )
         return result
+
+    @property
+    def min_value(self) -> float:
+        """
+        Get the minimum value of the Transmitter.
+
+        Returns:
+            float: The minimum value of the Transmitter.
+        """
+        return self._min_value
+
+    @property
+    def max_value(self) -> float:
+        """
+        Get the maximum value of the Transmitter.
+
+        Returns:
+            float: The maximum value of the Transmitter.
+        """
+        return self._max_value
 
     @property
     def learning_rate_scheduler(self) -> Scheduler:
@@ -233,7 +260,9 @@ class Transmitter:
             return NotImplemented
         # equality check
         result = (
-            self._learning_rate_scheduler == other._learning_rate_scheduler
+            self._min_value == other._min_value
+            and self._max_value == other._max_value
+            and self._learning_rate_scheduler == other._learning_rate_scheduler
             and self._hits_scheduler == other._hits_scheduler
             and self._bias_beta_scale == other._bias_beta_scale
             and self._min_interval_width == other._min_interval_width
@@ -268,6 +297,8 @@ class Transmitter:
             # if node is a leaf, sample a uniform value from the leaf's interval
             if node.is_leaf:
                 value = self._rng.uniform(node.left, node.right)
+                while value == node.right:
+                    value = self._rng.uniform(node.left, node.right)
                 sample = TransmitterSample(value=value, node_id=node_id)
                 break
             # bias the search
@@ -347,6 +378,8 @@ class Transmitter:
         """
         result = {
             "type": self.__class__.__name__,
+            "min_value": self._min_value,
+            "max_value": self._max_value,
             "learning_rate_scheduler": self._learning_rate_scheduler.to_dict(),
             "hits_scheduler": self._hits_scheduler.to_dict(),
             "bias_beta_scale": self._bias_beta_scale,
@@ -375,6 +408,10 @@ class Transmitter:
             raise KeyError("data must contain the key 'type'.")
         if data["type"] != cls.__name__:
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
+        if "min_value" not in data:
+            raise KeyError("data must contain the key 'min_value'.")
+        if "max_value" not in data:
+            raise KeyError("data must contain the key 'max_value'.")
         if "learning_rate_scheduler" not in data:
             raise KeyError("data must contain the key 'learning_rate_scheduler'.")
         if "hits_scheduler" not in data:
@@ -391,8 +428,8 @@ class Transmitter:
             raise KeyError("data must contain the key 'nodes'.")
         # initializations
         result = cls(
-            0.0,
-            1.0,
+            data["min_value"],
+            data["max_value"],
             Scheduler.from_dict(data["learning_rate_scheduler"]),
             Scheduler.from_dict(data["hits_scheduler"]),
             data["bias_beta_scale"],
@@ -401,9 +438,9 @@ class Transmitter:
         )
         # overwrite the tree
         object.__setattr__(result, "_frozen", False)
-        rng_state = list(data["rng"])
-        rng_state[1] = list(rng_state[1])
-        result._rng.setstate(rng_state)
+        rng_state = data["rng"]
+        rng_state[1] = tuple(rng_state[1])
+        result._rng.setstate(tuple(rng_state))
         result._nodes = [
             TransmitterNode.from_dict(node_data) for node_data in data["nodes"]
         ]
