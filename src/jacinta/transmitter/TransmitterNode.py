@@ -503,11 +503,18 @@ class TransmitterNode:
             name (str): The name of the attribute.
             value (Any): The value of the attribute.
         """
-        # freeze check
-        if getattr(self, "_frozen", False):
-            raise AttributeError(f"{self.__class__.__name__} is immutable.")
-        # set the attribute
-        super().__setattr__(name, value)
+        # if attribute is a property with a setter, delegate the immutable check to it
+        descriptor = getattr(type(self), name, None)
+        if isinstance(descriptor, property):
+            if descriptor.fset is None:
+                raise AttributeError(f"{self.__class__.__name__} is immutable.")
+            descriptor.fset(self, value)
+        else:
+            # freeze check
+            if getattr(self, "_frozen", False):
+                raise AttributeError(f"{self.__class__.__name__} is immutable.")
+            # set the attribute
+            super().__setattr__(name, value)
         return
 
 
