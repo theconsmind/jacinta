@@ -16,11 +16,10 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-    "ffmpeg>=1.4",
+    "ipykernel>=7.2.0",
     "matplotlib>=3.10.8",
     "pre-commit>=4.5.1",
     "ruff>=0.15.10",
-    "tqdm>=4.67.3",
 ]
 
 [tool.setuptools.packages.find]
