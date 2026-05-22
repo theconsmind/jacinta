@@ -23,7 +23,7 @@ class Transmitter:
         learning_rate_scheduler (Scheduler): The scheduler for the learning rate.
         hits_scheduler (Scheduler): The scheduler for the number of hits needed
             to split a node.
-        bias_beta_scale (float): The intensity factor of the bias.
+        bias_scheduler (Scheduler): The scheduler for the bias scale.
         min_interval_width (float | None): The minimum width of an interval.
         max_depth (int | None): The maximum depth of the tree.
         rng (random.Random): The random number generator.
@@ -36,7 +36,7 @@ class Transmitter:
         "_max_value",
         "_learning_rate_scheduler",
         "_hits_scheduler",
-        "_bias_beta_scale",
+        "_bias_scheduler",
         "_min_interval_width",
         "_max_depth",
         "_rng",
@@ -51,7 +51,7 @@ class Transmitter:
         max_value: float,
         learning_rate_scheduler: Scheduler,
         hits_scheduler: Scheduler,
-        bias_beta_scale: float = 10.0,
+        bias_scheduler: Scheduler,
         min_interval_width: float | None = None,
         max_depth: int | None = None,
         seed: int | None = None,
@@ -65,8 +65,7 @@ class Transmitter:
             learning_rate_scheduler (Scheduler): The scheduler for the learning rate.
             hits_scheduler (Scheduler): The scheduler for the number of hits needed
                 to split a node.
-            bias_beta_scale (float): The intensity factor of the bias.
-                Defaults to 10.0.
+            bias_scheduler (Scheduler): The scheduler for the bias scale.
             min_interval_width (float | None): The minimum width of an interval.
                 Defaults to None.
             max_depth (int | None): The maximum depth of the tree.
@@ -87,11 +86,9 @@ class Transmitter:
         # hits_scheduler validations
         if not isinstance(hits_scheduler, Scheduler):
             raise TypeError("hits_scheduler must be a Scheduler.")
-        # bias_beta_scale validations
-        if not isinstance(bias_beta_scale, (float, int)):
-            raise TypeError("bias_beta_scale must be a float.")
-        if bias_beta_scale < 0.0:
-            raise ValueError("bias_beta_scale must be greater than or equal to 0.0.")
+        # bias_scheduler validations
+        if not isinstance(bias_scheduler, Scheduler):
+            raise TypeError("bias_scheduler must be a Scheduler.")
         # min_interval_width validations
         if min_interval_width is not None:
             if not isinstance(min_interval_width, (float, int)):
@@ -119,7 +116,7 @@ class Transmitter:
         self._max_value = float(max_value)
         self._learning_rate_scheduler = learning_rate_scheduler
         self._hits_scheduler = hits_scheduler
-        self._bias_beta_scale = float(bias_beta_scale)
+        self._bias_scheduler = bias_scheduler
         self._min_interval_width = (
             float(min_interval_width) if min_interval_width is not None else None
         )
@@ -158,7 +155,7 @@ class Transmitter:
             f"max_value={self._max_value!r}, "
             f"learning_rate_scheduler={self._learning_rate_scheduler!r}, "
             f"hits_scheduler={self._hits_scheduler!r}, "
-            f"bias_beta_scale={self._bias_beta_scale!r}, "
+            f"bias_scheduler={self._bias_scheduler!r}, "
             f"min_interval_width={self._min_interval_width!r}, "
             f"max_depth={self._max_depth!r}, "
             f"nodes={self._nodes!r})"
@@ -206,14 +203,14 @@ class Transmitter:
         return self._hits_scheduler
 
     @property
-    def bias_beta_scale(self) -> float:
+    def bias_scheduler(self) -> Scheduler:
         """
-        Get the intensity factor of the bias.
+        Get the scheduler for the bias scale.
 
         Returns:
-            float: The intensity factor of the bias.
+            Scheduler: The scheduler for the bias scale.
         """
-        return self._bias_beta_scale
+        return self._bias_scheduler
 
     @property
     def min_interval_width(self) -> float | None:
@@ -264,7 +261,7 @@ class Transmitter:
             and self._max_value == other._max_value
             and self._learning_rate_scheduler == other._learning_rate_scheduler
             and self._hits_scheduler == other._hits_scheduler
-            and self._bias_beta_scale == other._bias_beta_scale
+            and self._bias_scheduler == other._bias_scheduler
             and self._min_interval_width == other._min_interval_width
             and self._max_depth == other._max_depth
             and self._rng.getstate() == other._rng.getstate()
@@ -277,7 +274,7 @@ class Transmitter:
         Sample a value from the Transmitter distribution.
 
         Args:
-            bias (float, optional): The bias to apply to the sampling.
+            bias (float): The bias to apply to the sampling.
                 Defaults to 0.0.
 
         Returns:
@@ -288,8 +285,6 @@ class Transmitter:
             raise TypeError("bias must be a float.")
         if not (-1.0 <= bias <= 1.0):
             raise ValueError("bias must be in [-1, 1].")
-        # compute bias beta
-        bias_beta = 1.0 + float(bias) * self._bias_beta_scale
         # sample a value from the root's log_mass
         node_id = self._root_id
         node = self._nodes[node_id]
@@ -302,9 +297,10 @@ class Transmitter:
                 sample = TransmitterSample(value=value, node_id=node_id)
                 break
             # bias the search
-            left_biased_log_mass = self._nodes[node.left_child_id].log_mass * bias_beta
+            bias_scale = 1.0 + float(bias) * self._bias_scheduler(node.depth)
+            left_biased_log_mass = self._nodes[node.left_child_id].log_mass * bias_scale
             right_biased_log_mass = (
-                self._nodes[node.right_child_id].log_mass * bias_beta
+                self._nodes[node.right_child_id].log_mass * bias_scale
             )
             # stable log_mass sampling with softmax
             m = max(left_biased_log_mass, right_biased_log_mass)
@@ -382,7 +378,7 @@ class Transmitter:
             "max_value": self._max_value,
             "learning_rate_scheduler": self._learning_rate_scheduler.to_dict(),
             "hits_scheduler": self._hits_scheduler.to_dict(),
-            "bias_beta_scale": self._bias_beta_scale,
+            "bias_scheduler": self._bias_scheduler.to_dict(),
             "min_interval_width": self._min_interval_width,
             "max_depth": self._max_depth,
             "rng": self._rng.getstate(),
@@ -416,8 +412,8 @@ class Transmitter:
             raise KeyError("data must contain the key 'learning_rate_scheduler'.")
         if "hits_scheduler" not in data:
             raise KeyError("data must contain the key 'hits_scheduler'.")
-        if "bias_beta_scale" not in data:
-            raise KeyError("data must contain the key 'bias_beta_scale'.")
+        if "bias_scheduler" not in data:
+            raise KeyError("data must contain the key 'bias_scheduler'.")
         if "min_interval_width" not in data:
             raise KeyError("data must contain the key 'min_interval_width'.")
         if "max_depth" not in data:
@@ -432,7 +428,7 @@ class Transmitter:
             data["max_value"],
             Scheduler.from_dict(data["learning_rate_scheduler"]),
             Scheduler.from_dict(data["hits_scheduler"]),
-            data["bias_beta_scale"],
+            Scheduler.from_dict(data["bias_scheduler"]),
             data["min_interval_width"],
             data["max_depth"],
         )
