@@ -12,20 +12,21 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
     of node depths.
 
     Attributes:
-        segments (tuple[tuple[int, ScheduleStrategy]]): The segments of the strategy.
+        segments (tuple[tuple[int, ScheduleStrategy], ...]): The segments
+            of the strategy.
     """
 
     __slots__ = ("_segments", "_depths")
 
     def __init__(
         self,
-        segments: tuple[tuple[int, ScheduleStrategy]],
+        segments: tuple[tuple[int, ScheduleStrategy], ...],
     ) -> None:
         """
         Initialize a PiecewiseScheduleStrategy.
 
         Args:
-            segments (tuple[tuple[int, ScheduleStrategy]]): The segments
+            segments (tuple[tuple[int, ScheduleStrategy], ...]): The segments
                 of the strategy.
         """
         # segments validations
@@ -92,12 +93,12 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         return result
 
     @property
-    def segments(self) -> tuple[tuple[int, ScheduleStrategy]]:
+    def segments(self) -> tuple[tuple[int, ScheduleStrategy], ...]:
         """
         Get the segments of the strategy.
 
         Returns:
-            tuple[tuple[int, ScheduleStrategy]]: The segments of the strategy.
+            tuple[tuple[int, ScheduleStrategy], ...]: The segments of the strategy.
         """
         return self._segments
 
@@ -135,12 +136,11 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         Returns:
             dict[str, Any]: The dictionary representation of the strategy.
         """
-        segments = tuple(
-            (depth, strategy.to_dict()) for depth, strategy in self._segments
-        )
         result = {
             "type": self.__class__.__name__,
-            "segments": segments,
+            "segments": tuple(
+                (depth, strategy.to_dict()) for depth, strategy in self._segments
+            ),
         }
         return result
 

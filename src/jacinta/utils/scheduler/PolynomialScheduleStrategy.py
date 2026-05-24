@@ -11,7 +11,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
     A ScheduleStrategy that returns a polynomial value for a given node depth.
 
     Attributes:
-        coefficients (tuple[float]): The coefficients of the polynomial function.
+        coefficients (tuple[float, ...]): The coefficients of the polynomial function.
         min_value (float | None): The minimum value of the strategy.
         max_value (float | None): The maximum value of the strategy.
     """
@@ -20,7 +20,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     def __init__(
         self,
-        coefficients: tuple[float],
+        coefficients: tuple[float, ...],
         min_value: float | None = None,
         max_value: float | None = None,
     ) -> None:
@@ -28,7 +28,8 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         Initialize a PolynomialScheduleStrategy.
 
         Args:
-            coefficients (tuple[float]): The coefficients of the polynomial function.
+            coefficients (tuple[float, ...]): The coefficients
+                of the polynomial function.
             min_value (float | None): The minimum value of the strategy.
             max_value (float | None): The maximum value of the strategy.
         """
@@ -98,12 +99,12 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         return result
 
     @property
-    def coefficients(self) -> tuple[float]:
+    def coefficients(self) -> tuple[float, ...]:
         """
         Get the coefficients of the strategy.
 
         Returns:
-            tuple[float]: The coefficients of the strategy.
+            tuple[float, ...]: The coefficients of the strategy.
         """
         return self._coefficients
 

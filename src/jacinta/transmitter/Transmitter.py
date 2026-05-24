@@ -20,28 +20,39 @@ class Transmitter:
     Attributes:
         min_value (float): The closed left bound of the transmitter's interval.
         max_value (float): The open right bound of the transmitter's interval.
+        expected_feedback_mean (float | None): The expected feedback mean.
+        expected_feedback_var (float | None): The expected feedback variance.
+        expected_feedback_mean_ema_rate (float): The EMA rate for the expected
+            feedback mean.
+        expected_feedback_var_ema_rate (float): The EMA rate for the expected
+            feedback variance.
         learning_rate_scheduler (Scheduler): The scheduler for the learning rate.
-        hits_scheduler (Scheduler): The scheduler for the number of hits needed
-            to split a node.
-        bias_scheduler (Scheduler): The scheduler for the bias scale.
+        hits_rate_scheduler (Scheduler): The scheduler for the hits rate.
+        bias_scale_scheduler (Scheduler): The scheduler for the bias scale.
         min_interval_width (float | None): The minimum width of an interval.
         max_depth (int | None): The maximum depth of the tree.
-        rng (random.Random): The random number generator.
-        nodes (tuple[TransmitterNode]): The nodes of the tree.
+        nodes (tuple[TransmitterNode, ...]): The nodes of the tree.
         root_id (int): The ID of the root node.
+        rng (random.Random): The random number generator.
+        eps (float): A small positive value used for numerical stability.
     """
 
     __slots__ = (
         "_min_value",
         "_max_value",
+        "_expected_feedback_mean",
+        "_expected_feedback_var",
+        "_expected_feedback_mean_ema_rate",
+        "_expected_feedback_var_ema_rate",
         "_learning_rate_scheduler",
-        "_hits_scheduler",
-        "_bias_scheduler",
+        "_hits_rate_scheduler",
+        "_bias_scale_scheduler",
         "_min_interval_width",
         "_max_depth",
-        "_rng",
         "_nodes",
         "_root_id",
+        "_rng",
+        "_eps",
         "_frozen",
     )
 
@@ -49,12 +60,15 @@ class Transmitter:
         self,
         min_value: float,
         max_value: float,
+        expected_feedback_mean_ema_rate: float,
+        expected_feedback_var_ema_rate: float,
         learning_rate_scheduler: Scheduler,
-        hits_scheduler: Scheduler,
-        bias_scheduler: Scheduler,
+        hits_rate_scheduler: Scheduler,
+        bias_scale_scheduler: Scheduler,
         min_interval_width: float | None = None,
         max_depth: int | None = None,
         seed: int | None = None,
+        eps: float = 1e-9,
     ) -> None:
         """
         Initialize a Transmitter.
@@ -62,16 +76,21 @@ class Transmitter:
         Args:
             min_value (float): The closed left bound of the transmitter's interval.
             max_value (float): The open right bound of the transmitter's interval.
+            expected_feedback_mean_ema_rate (float): The EMA rate for the expected
+                feedback mean.
+            expected_feedback_var_ema_rate (float): The EMA rate for the expected
+                feedback variance.
             learning_rate_scheduler (Scheduler): The scheduler for the learning rate.
-            hits_scheduler (Scheduler): The scheduler for the number of hits needed
-                to split a node.
-            bias_scheduler (Scheduler): The scheduler for the bias scale.
+            hits_rate_scheduler (Scheduler): The scheduler for the hits rate.
+            bias_scale_scheduler (Scheduler): The scheduler for the bias scale.
             min_interval_width (float | None): The minimum width of an interval.
                 Defaults to None.
             max_depth (int | None): The maximum depth of the tree.
                 Defaults to None.
             seed (int | None): The seed for the random number generator.
                 Defaults to None.
+            eps (float): A small positive value used for numerical stability.
+                Defaults to 1e-9.
         """
         # min_value & max_value validations
         if not isinstance(min_value, (float, int)):
@@ -80,15 +99,27 @@ class Transmitter:
             raise TypeError("max_value must be a float.")
         if min_value >= max_value:
             raise ValueError("min_value must be lower than max_value.")
+        # expected_feedback_mean_ema_rate validations
+        if not isinstance(expected_feedback_mean_ema_rate, (float, int)):
+            raise TypeError("expected_feedback_mean_ema_rate must be a float.")
+        if expected_feedback_mean_ema_rate <= 0.0:
+            raise ValueError(
+                "expected_feedback_mean_ema_rate must be greater than 0.0."
+            )
+        # expected_feedback_var_ema_rate validations
+        if not isinstance(expected_feedback_var_ema_rate, (float, int)):
+            raise TypeError("expected_feedback_var_ema_rate must be a float.")
+        if expected_feedback_var_ema_rate <= 0.0:
+            raise ValueError("expected_feedback_var_ema_rate must be greater than 0.0.")
         # learning_rate_scheduler validations
         if not isinstance(learning_rate_scheduler, Scheduler):
             raise TypeError("learning_rate_scheduler must be a Scheduler.")
-        # hits_scheduler validations
-        if not isinstance(hits_scheduler, Scheduler):
-            raise TypeError("hits_scheduler must be a Scheduler.")
-        # bias_scheduler validations
-        if not isinstance(bias_scheduler, Scheduler):
-            raise TypeError("bias_scheduler must be a Scheduler.")
+        # hits_rate_scheduler validations
+        if not isinstance(hits_rate_scheduler, Scheduler):
+            raise TypeError("hits_rate_scheduler must be a Scheduler.")
+        # bias_scale_scheduler validations
+        if not isinstance(bias_scale_scheduler, Scheduler):
+            raise TypeError("bias_scale_scheduler must be a Scheduler.")
         # min_interval_width validations
         if min_interval_width is not None:
             if not isinstance(min_interval_width, (float, int)):
@@ -110,18 +141,28 @@ class Transmitter:
         if seed is not None:
             if not isinstance(seed, int):
                 raise TypeError("seed must be an int.")
+        # eps validations
+        if not isinstance(eps, (float, int)):
+            raise TypeError("eps must be a float.")
+        if eps <= 0.0:
+            raise ValueError("eps must be greater than 0.0.")
         # initializations
         super().__setattr__("_frozen", False)
         self._min_value = float(min_value)
         self._max_value = float(max_value)
+        self._expected_feedback_mean = None
+        self._expected_feedback_var = None
+        self._expected_feedback_mean_ema_rate = float(expected_feedback_mean_ema_rate)
+        self._expected_feedback_var_ema_rate = float(expected_feedback_var_ema_rate)
         self._learning_rate_scheduler = learning_rate_scheduler
-        self._hits_scheduler = hits_scheduler
-        self._bias_scheduler = bias_scheduler
+        self._hits_rate_scheduler = hits_rate_scheduler
+        self._bias_scale_scheduler = bias_scale_scheduler
         self._min_interval_width = (
             float(min_interval_width) if min_interval_width is not None else None
         )
         self._max_depth = max_depth if max_depth is not None else None
         self._rng = random.Random(seed)
+        self._eps = float(eps)
         # root node
         root_depth = 0
         root_log_weight = 0.0
@@ -134,7 +175,7 @@ class Transmitter:
             log_weight=root_log_weight,
             log_mass=math.log(float(max_value) - float(min_value)),
             depth=root_depth,
-            hits_left=int(self._hits_scheduler(root_depth)),
+            hits_left=int(self._hits_rate_scheduler(root_depth)),
         )
         # tree represented as a list of node indices (not pointers)
         self._nodes = [root]
@@ -153,12 +194,21 @@ class Transmitter:
             f"{self.__class__.__name__}("
             f"min_value={self._min_value!r}, "
             f"max_value={self._max_value!r}, "
+            f"expected_feedback_mean={self._expected_feedback_mean!r}, "
+            f"expected_feedback_var={self._expected_feedback_var!r}, "
+            "expected_feedback_mean_ema_rate="
+            f"{self._expected_feedback_mean_ema_rate!r}, "
+            "expected_feedback_var_ema_rate="
+            f"{self._expected_feedback_var_ema_rate!r}, "
             f"learning_rate_scheduler={self._learning_rate_scheduler!r}, "
-            f"hits_scheduler={self._hits_scheduler!r}, "
-            f"bias_scheduler={self._bias_scheduler!r}, "
+            f"hits_rate_scheduler={self._hits_rate_scheduler!r}, "
+            f"bias_scale_scheduler={self._bias_scale_scheduler!r}, "
             f"min_interval_width={self._min_interval_width!r}, "
             f"max_depth={self._max_depth!r}, "
-            f"nodes={self._nodes!r})"
+            f"nodes={self._nodes!r}, "
+            f"root_id={self._root_id!r}, "
+            f"rng={self._rng!r}, "
+            f"eps={self._eps!r})"
         )
         return result
 
@@ -183,6 +233,46 @@ class Transmitter:
         return self._max_value
 
     @property
+    def expected_feedback_mean(self) -> float | None:
+        """
+        Get the expected feedback mean.
+
+        Returns:
+            float | None: The expected feedback mean.
+        """
+        return self._expected_feedback_mean
+
+    @property
+    def expected_feedback_var(self) -> float | None:
+        """
+        Get the expected feedback variance.
+
+        Returns:
+            float | None: The expected feedback variance.
+        """
+        return self._expected_feedback_var
+
+    @property
+    def expected_feedback_mean_ema_rate(self) -> float:
+        """
+        Get the EMA rate for the expected feedback mean.
+
+        Returns:
+            float: The EMA rate for the expected feedback mean.
+        """
+        return self._expected_feedback_mean_ema_rate
+
+    @property
+    def expected_feedback_var_ema_rate(self) -> float:
+        """
+        Get the EMA rate for the expected feedback variance.
+
+        Returns:
+            float: The EMA rate for the expected feedback variance.
+        """
+        return self._expected_feedback_var_ema_rate
+
+    @property
     def learning_rate_scheduler(self) -> Scheduler:
         """
         Get the scheduler for the learning rate.
@@ -193,24 +283,24 @@ class Transmitter:
         return self._learning_rate_scheduler
 
     @property
-    def hits_scheduler(self) -> Scheduler:
+    def hits_rate_scheduler(self) -> Scheduler:
         """
-        Get the scheduler for the number of hits needed to split a node.
+        Get the scheduler for the hits rate.
 
         Returns:
-            Scheduler: The scheduler for the number of hits needed to split a node.
+            Scheduler: The scheduler for the hits rate.
         """
-        return self._hits_scheduler
+        return self._hits_rate_scheduler
 
     @property
-    def bias_scheduler(self) -> Scheduler:
+    def bias_scale_scheduler(self) -> Scheduler:
         """
         Get the scheduler for the bias scale.
 
         Returns:
             Scheduler: The scheduler for the bias scale.
         """
-        return self._bias_scheduler
+        return self._bias_scale_scheduler
 
     @property
     def min_interval_width(self) -> float | None:
@@ -233,14 +323,44 @@ class Transmitter:
         return self._max_depth
 
     @property
-    def nodes(self) -> tuple[TransmitterNodeView]:
+    def nodes(self) -> tuple[TransmitterNodeView, ...]:
         """
         Get the tree of nodes.
 
         Returns:
-            tuple[TransmitterNodeView]: The tree of nodes.
+            tuple[TransmitterNodeView, ...]: The tree of nodes.
         """
         return tuple(self._nodes)
+
+    @property
+    def root_id(self) -> int:
+        """
+        Get the ID of the root node.
+
+        Returns:
+            int: The ID of the root node.
+        """
+        return self._root_id
+
+    @property
+    def rng(self) -> tuple[int, tuple[int, ...], None]:
+        """
+        Get the state of the random number generator.
+
+        Returns:
+            tuple[int, tuple[int, ...], None]: The state of the random number generator.
+        """
+        return self._rng.getstate()
+
+    @property
+    def eps(self) -> float:
+        """
+        Get the epsilon value used for numerical stability.
+
+        Returns:
+            float: The epsilon value used for numerical stability.
+        """
+        return self._eps
 
     def __eq__(self, other: object) -> bool:
         """
@@ -259,13 +379,21 @@ class Transmitter:
         result = (
             self._min_value == other._min_value
             and self._max_value == other._max_value
+            and self._expected_feedback_mean == other._expected_feedback_mean
+            and self._expected_feedback_var == other._expected_feedback_var
+            and self._expected_feedback_mean_ema_rate
+            == other._expected_feedback_mean_ema_rate
+            and self._expected_feedback_var_ema_rate
+            == other._expected_feedback_var_ema_rate
             and self._learning_rate_scheduler == other._learning_rate_scheduler
-            and self._hits_scheduler == other._hits_scheduler
-            and self._bias_scheduler == other._bias_scheduler
+            and self._hits_rate_scheduler == other._hits_rate_scheduler
+            and self._bias_scale_scheduler == other._bias_scale_scheduler
             and self._min_interval_width == other._min_interval_width
             and self._max_depth == other._max_depth
-            and self._rng.getstate() == other._rng.getstate()
             and self._nodes == other._nodes
+            and self._root_id == other._root_id
+            and self._rng.getstate() == other._rng.getstate()
+            and self._eps == other._eps
         )
         return result
 
@@ -297,7 +425,7 @@ class Transmitter:
                 sample = TransmitterSample(value=value, node_id=node_id)
                 break
             # bias the search
-            bias_scale = 1.0 + float(bias) * self._bias_scheduler(node.depth)
+            bias_scale = 1.0 + float(bias) * self._bias_scale_scheduler(node.depth)
             left_biased_log_mass = self._nodes[node.left_child_id].log_mass * bias_scale
             right_biased_log_mass = (
                 self._nodes[node.right_child_id].log_mass * bias_scale
@@ -340,19 +468,51 @@ class Transmitter:
             raise TypeError("feedback must be a float.")
         if not (-1.0 <= feedback <= 1.0):
             raise ValueError("feedback must be in [-1, 1].")
-        # find the leaf node that contains the sample
-        node_id = sample.node_id
-        node = self._nodes[node_id]
-        if not node.is_leaf:
-            node_id = self._find_leaf(node_id, sample.value)
+        # update feedback statistics
+        if self._expected_feedback_mean is None:
+            super().__setattr__("_frozen", False)
+            self._expected_feedback_mean = float(feedback)
+            super().__setattr__("_frozen", True)
+        elif self._expected_feedback_var is None:
+            super().__setattr__("_frozen", False)
+            delta = float(feedback) - self._expected_feedback_mean
+            self._expected_feedback_var = delta**2
+            self._expected_feedback_mean += (
+                self._expected_feedback_mean_ema_rate * delta
+            )
+            super().__setattr__("_frozen", True)
+        # update the learning distribution
+        else:
+            # find the leaf node that contains the sample
+            node_id = sample.node_id
             node = self._nodes[node_id]
-        # update log_weight & log_mass
-        node.log_weight += self._learning_rate_scheduler(node.depth) * float(feedback)
-        self._propagate_log_mass_up(node_id)
-        # split if needed
-        node.hits_left -= 1
-        if self._should_split(node_id):
-            self._split_leaf(node_id)
+            if not node.is_leaf:
+                node_id = self._find_leaf(node_id, sample.value)
+                node = self._nodes[node_id]
+            # compute how good and surprising was the feedback
+            expected_feedback_std = math.sqrt(self._expected_feedback_var)
+            advantage = (float(feedback) - self._expected_feedback_mean) / (
+                expected_feedback_std + self._eps
+            )
+            # update log_weight & log_mass
+            node.log_weight += self._learning_rate_scheduler(node.depth) * advantage
+            self._propagate_log_mass_up(node_id)
+            # update expected feedback statistics
+            super().__setattr__("_frozen", False)
+            delta = float(feedback) - self._expected_feedback_mean
+            self._expected_feedback_mean += (
+                self._expected_feedback_mean_ema_rate * delta
+            )
+            self._expected_feedback_var = (
+                (1.0 - self._expected_feedback_var_ema_rate)
+                * self._expected_feedback_var
+                + self._expected_feedback_var_ema_rate * delta** 2
+            )
+            super().__setattr__("_frozen", True)
+            # split if needed
+            node.hits_left -= 1
+            if self._should_split(node_id):
+                self._split_leaf(node_id)
         return
 
     def copy(self) -> Transmitter:
@@ -376,13 +536,18 @@ class Transmitter:
             "type": self.__class__.__name__,
             "min_value": self._min_value,
             "max_value": self._max_value,
+            "expected_feedback_mean": self._expected_feedback_mean,
+            "expected_feedback_var": self._expected_feedback_var,
+            "expected_feedback_mean_ema_rate": self._expected_feedback_mean_ema_rate,
+            "expected_feedback_var_ema_rate": self._expected_feedback_var_ema_rate,
             "learning_rate_scheduler": self._learning_rate_scheduler.to_dict(),
-            "hits_scheduler": self._hits_scheduler.to_dict(),
-            "bias_scheduler": self._bias_scheduler.to_dict(),
+            "hits_rate_scheduler": self._hits_rate_scheduler.to_dict(),
+            "bias_scale_scheduler": self._bias_scale_scheduler.to_dict(),
             "min_interval_width": self._min_interval_width,
             "max_depth": self._max_depth,
-            "rng": self._rng.getstate(),
             "nodes": tuple(node.to_dict() for node in self._nodes),
+            "rng": self._rng.getstate(),
+            "eps": self._eps,
         }
         return result
 
@@ -408,38 +573,68 @@ class Transmitter:
             raise KeyError("data must contain the key 'min_value'.")
         if "max_value" not in data:
             raise KeyError("data must contain the key 'max_value'.")
+        if "expected_feedback_mean" not in data:
+            raise KeyError("data must contain the key 'expected_feedback_mean'.")
+        if "expected_feedback_var" not in data:
+            raise KeyError("data must contain the key 'expected_feedback_var'.")
+        if "expected_feedback_mean_ema_rate" not in data:
+            raise KeyError(
+                "data must contain the key 'expected_feedback_mean_ema_rate'."
+            )
+        if "expected_feedback_var_ema_rate" not in data:
+            raise KeyError(
+                "data must contain the key 'expected_feedback_var_ema_rate'."
+            )
         if "learning_rate_scheduler" not in data:
             raise KeyError("data must contain the key 'learning_rate_scheduler'.")
-        if "hits_scheduler" not in data:
-            raise KeyError("data must contain the key 'hits_scheduler'.")
-        if "bias_scheduler" not in data:
-            raise KeyError("data must contain the key 'bias_scheduler'.")
+        if "hits_rate_scheduler" not in data:
+            raise KeyError("data must contain the key 'hits_rate_scheduler'.")
+        if "bias_scale_scheduler" not in data:
+            raise KeyError("data must contain the key 'bias_scale_scheduler'.")
         if "min_interval_width" not in data:
             raise KeyError("data must contain the key 'min_interval_width'.")
         if "max_depth" not in data:
             raise KeyError("data must contain the key 'max_depth'.")
-        if "rng" not in data:
-            raise KeyError("data must contain the key 'rng'.")
         if "nodes" not in data:
             raise KeyError("data must contain the key 'nodes'.")
+        if "rng" not in data:
+            raise KeyError("data must contain the key 'rng'.")
+        if "eps" not in data:
+            raise KeyError("data must contain the key 'eps'.")
         # initializations
         result = cls(
             data["min_value"],
             data["max_value"],
+            data["expected_feedback_mean_ema_rate"],
+            data["expected_feedback_var_ema_rate"],
             Scheduler.from_dict(data["learning_rate_scheduler"]),
-            Scheduler.from_dict(data["hits_scheduler"]),
-            Scheduler.from_dict(data["bias_scheduler"]),
+            Scheduler.from_dict(data["hits_rate_scheduler"]),
+            Scheduler.from_dict(data["bias_scale_scheduler"]),
             data["min_interval_width"],
             data["max_depth"],
+            None,
+            data["eps"],
         )
-        # overwrite the tree
+        # overwrite the feedback statistics
         object.__setattr__(result, "_frozen", False)
-        rng_state = data["rng"]
-        rng_state[1] = tuple(rng_state[1])
-        result._rng.setstate(tuple(rng_state))
+        result._expected_feedback_mean = (
+            float(data["expected_feedback_mean"])
+            if data.get("expected_feedback_mean") is not None
+            else None
+        )
+        result._expected_feedback_var = (
+            float(data["expected_feedback_var"])
+            if data.get("expected_feedback_var") is not None
+            else None
+        )
+        # overwrite the tree nodes
         result._nodes = [
             TransmitterNode.from_dict(node_data) for node_data in data["nodes"]
         ]
+        # overwrite the random number generator
+        rng_state = list(data["rng"])
+        rng_state[1] = tuple(rng_state[1])
+        result._rng.setstate(tuple(rng_state))
         object.__setattr__(result, "_frozen", True)
         return result
 
@@ -585,7 +780,7 @@ class Transmitter:
             log_weight=child_log_weight,
             log_mass=child_log_weight + math.log(node_mid - node.left),
             depth=child_depth,
-            hits_left=int(self._hits_scheduler(child_depth)),
+            hits_left=int(self._hits_rate_scheduler(child_depth)),
         )
         right_child_node = TransmitterNode(
             left=node_mid,
@@ -596,7 +791,7 @@ class Transmitter:
             log_weight=child_log_weight,
             log_mass=child_log_weight + math.log(node.right - node_mid),
             depth=child_depth,
-            hits_left=int(self._hits_scheduler(child_depth)),
+            hits_left=int(self._hits_rate_scheduler(child_depth)),
         )
         # add new nodes to the tree
         self._nodes.append(left_child_node)
