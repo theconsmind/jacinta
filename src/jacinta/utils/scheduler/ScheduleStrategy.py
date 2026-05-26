@@ -9,7 +9,7 @@ from typing import Any
 
 class ScheduleStrategy(ABC):
     """
-    A ScheduleStrategy represents a callable strategy that maps a node depth
+    A ScheduleStrategy represents a callable strategy that maps a depth
     to a value.
     """
 
@@ -18,13 +18,13 @@ class ScheduleStrategy(ABC):
     @abstractmethod
     def __call__(self, depth: int) -> float:
         """
-        Get the strategy value based on the node depth.
+        Get the ScheduleStrategy value based on the depth.
 
-         Args:
-             depth (int): The depth of the node.
+        Args:
+            depth (int): The depth.
 
-         Returns:
-             float: The strategy value based on the node depth.
+        Returns:
+            float: The ScheduleStrategy value based on the depth.
         """
         ...
 
@@ -37,26 +37,26 @@ class ScheduleStrategy(ABC):
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the strategies are equal, False otherwise.
+            bool: True if the ScheduleStrategies are equal, False otherwise.
         """
         ...
 
     @abstractmethod
     def __hash__(self) -> int:
         """
-        Get the hash of the strategy.
+        Get the hash of the ScheduleStrategy.
 
         Returns:
-            int: The hash of the strategy.
+            int: The hash of the ScheduleStrategy.
         """
         ...
 
     def copy(self) -> ScheduleStrategy:
         """
-        Get a copy of the strategy.
+        Get a copy of the ScheduleStrategy.
 
         Returns:
-            ScheduleStrategy: A copy of the strategy.
+            ScheduleStrategy: A copy of the ScheduleStrategy.
         """
         result = deepcopy(self)
         return result
@@ -64,10 +64,10 @@ class ScheduleStrategy(ABC):
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the strategy.
+        Get the dictionary representation of the ScheduleStrategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the strategy.
+            dict[str, Any]: The dictionary representation of the ScheduleStrategy.
         """
         ...
 
@@ -78,7 +78,8 @@ class ScheduleStrategy(ABC):
         Create a ScheduleStrategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the strategy.
+            data (dict[str, Any]): The dictionary representation
+                of the ScheduleStrategy.
 
         Returns:
             ScheduleStrategy: The ScheduleStrategy instance.
@@ -97,12 +98,12 @@ class ScheduleStrategy(ABC):
                 result = subclass.from_dict(data)
                 break
         if result is None:
-            raise ValueError(f"Strategy type '{data['type']}' not found.")
+            raise ValueError(f"ScheduleStrategy type '{data['type']}' not found.")
         return result
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
-        Save the strategy to a json file.
+        Save the ScheduleStrategy to a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -126,7 +127,7 @@ class ScheduleStrategy(ABC):
     @classmethod
     def load(cls, path: str | Path) -> ScheduleStrategy:
         """
-        Load the strategy from a json file.
+        Load a ScheduleStrategy from a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -151,7 +152,7 @@ class ScheduleStrategy(ABC):
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        Set an attribute of the strategy.
+        Set an attribute of the ScheduleStrategy.
 
         Args:
             name (str): The name of the attribute.

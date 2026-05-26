@@ -7,10 +7,10 @@ from .ScheduleStrategy import ScheduleStrategy
 
 class ConstantScheduleStrategy(ScheduleStrategy):
     """
-    A ScheduleStrategy that returns a constant value for a given node depth.
+    A ScheduleStrategy that returns a constant value for a given depth.
 
     Attributes:
-        value (float): The constant value of the strategy.
+        value (float): The constant value of the ConstantScheduleStrategy.
     """
 
     __slots__ = ("_value",)
@@ -20,7 +20,7 @@ class ConstantScheduleStrategy(ScheduleStrategy):
         Initialize a ConstantScheduleStrategy.
 
         Args:
-            value (float): The value of the strategy.
+            value (float): The value of the ConstantScheduleStrategy.
         """
         # value validations
         if not isinstance(value, (float, int)):
@@ -33,23 +33,23 @@ class ConstantScheduleStrategy(ScheduleStrategy):
 
     def __repr__(self) -> str:
         """
-        Get the representation of the strategy.
+        Get the representation of the ConstantScheduleStrategy.
 
         Returns:
-            str: The representation of the strategy.
+            str: The representation of the ConstantScheduleStrategy.
         """
         result = f"{self.__class__.__name__}(value={self._value})"
         return result
 
     def __call__(self, depth: int) -> float:
         """
-        Get the strategy value based on the node depth.
+        Get the ConstantScheduleStrategy value based on the depth.
 
         Args:
-            depth (int): The depth of the node.
+            depth (int): The depth.
 
         Returns:
-            float: The strategy value based on the node depth.
+            float: The ConstantScheduleStrategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -63,10 +63,10 @@ class ConstantScheduleStrategy(ScheduleStrategy):
     @property
     def value(self) -> float:
         """
-        Get the value of the strategy.
+        Get the value of the ConstantScheduleStrategy.
 
         Returns:
-            float: The value of the strategy.
+            float: The value of the ConstantScheduleStrategy.
         """
         return self._value
 
@@ -78,7 +78,7 @@ class ConstantScheduleStrategy(ScheduleStrategy):
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the strategies are equal, False otherwise.
+            bool: True if the ConstantScheduleStrategies are equal, False otherwise.
         """
         # type validations
         if not isinstance(other, ConstantScheduleStrategy):
@@ -89,20 +89,21 @@ class ConstantScheduleStrategy(ScheduleStrategy):
 
     def __hash__(self) -> int:
         """
-        Get the hash of the strategy.
+        Get the hash of the ConstantScheduleStrategy.
 
         Returns:
-            int: The hash of the strategy.
+            int: The hash of the ConstantScheduleStrategy.
         """
         result = hash((self._value,))
         return result
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the strategy.
+        Get the dictionary representation of the ConstantScheduleStrategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the strategy.
+            dict[str, Any]: The dictionary representation
+                of the ConstantScheduleStrategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -116,7 +117,8 @@ class ConstantScheduleStrategy(ScheduleStrategy):
         Create a ConstantScheduleStrategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the strategy.
+            data (dict[str, Any]): The dictionary representation
+                of the ConstantScheduleStrategy.
 
         Returns:
             ConstantScheduleStrategy: The ConstantScheduleStrategy instance.

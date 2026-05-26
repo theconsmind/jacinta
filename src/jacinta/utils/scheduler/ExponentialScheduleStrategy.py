@@ -8,14 +8,14 @@ from .ScheduleStrategy import ScheduleStrategy
 
 class ExponentialScheduleStrategy(ScheduleStrategy):
     """
-    A ScheduleStrategy that returns an exponential value for a given node depth.
+    A ScheduleStrategy that returns an exponential value for a given depth.
 
     Attributes:
         scale (float): The scale of the exponential function.
         rate (float): The rate of the exponential function.
         intercept (float): The intercept of the exponential function.
-        min_value (float | None): The minimum value of the strategy.
-        max_value (float | None): The maximum value of the strategy.
+        min_value (float | None): The minimum value of the ExponentialScheduleStrategy.
+        max_value (float | None): The maximum value of the ExponentialScheduleStrategy.
     """
 
     __slots__ = ("_scale", "_rate", "_intercept", "_min_value", "_max_value")
@@ -35,8 +35,10 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
             scale (float): The scale of the exponential function.
             rate (float): The rate of the exponential function.
             intercept (float): The intercept of the exponential function.
-            min_value (float | None): The minimum value of the strategy.
-            max_value (float | None): The maximum value of the strategy.
+            min_value (float | None): The minimum value
+                of the ExponentialScheduleStrategy.
+            max_value (float | None): The maximum value
+                of the ExponentialScheduleStrategy.
         """
         # scale validations
         if not isinstance(scale, (float, int)):
@@ -67,10 +69,10 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
 
     def __repr__(self) -> str:
         """
-        Get the representation of the strategy.
+        Get the representation of the ExponentialScheduleStrategy.
 
         Returns:
-            str: The representation of the strategy.
+            str: The representation of the ExponentialScheduleStrategy.
         """
         result = (
             f"{self.__class__.__name__}"
@@ -82,13 +84,13 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
 
     def __call__(self, depth: int) -> float:
         """
-        Get the strategy value based on the node depth.
+        Get the ExponentialScheduleStrategy value based on the depth.
 
         Args:
-            depth (int): The depth of the node.
+            depth (int): The depth.
 
         Returns:
-            float: The strategy value based on the node depth.
+            float: The ExponentialScheduleStrategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -107,50 +109,50 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
     @property
     def scale(self) -> float:
         """
-        Get the scale of the strategy.
+        Get the scale of the ExponentialScheduleStrategy.
 
         Returns:
-            float: The scale of the strategy.
+            float: The scale of the ExponentialScheduleStrategy.
         """
         return self._scale
 
     @property
     def rate(self) -> float:
         """
-        Get the rate of the strategy.
+        Get the rate of the ExponentialScheduleStrategy.
 
         Returns:
-            float: The rate of the strategy.
+            float: The rate of the ExponentialScheduleStrategy.
         """
         return self._rate
 
     @property
     def intercept(self) -> float:
         """
-        Get the intercept of the strategy.
+        Get the intercept of the ExponentialScheduleStrategy.
 
         Returns:
-            float: The intercept of the strategy.
+            float: The intercept of the ExponentialScheduleStrategy.
         """
         return self._intercept
 
     @property
     def min_value(self) -> float | None:
         """
-        Get the minimum value of the strategy.
+        Get the minimum value of the ExponentialScheduleStrategy.
 
         Returns:
-            float | None: The minimum value of the strategy.
+            float | None: The minimum value of the ExponentialScheduleStrategy.
         """
         return self._min_value
 
     @property
     def max_value(self) -> float | None:
         """
-        Get the maximum value of the strategy.
+        Get the maximum value of the ExponentialScheduleStrategy.
 
         Returns:
-            float | None: The maximum value of the strategy.
+            float | None: The maximum value of the ExponentialScheduleStrategy.
         """
         return self._max_value
 
@@ -162,7 +164,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the strategies are equal, False otherwise.
+            bool: True if the ExponentialScheduleStrategies are equal, False otherwise.
         """
         # type validations
         if not isinstance(other, ExponentialScheduleStrategy):
@@ -179,10 +181,10 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
 
     def __hash__(self) -> int:
         """
-        Get the hash of the strategy.
+        Get the hash of the ExponentialScheduleStrategy.
 
         Returns:
-            int: The hash of the strategy.
+            int: The hash of the ExponentialScheduleStrategy.
         """
         result = hash(
             (
@@ -197,10 +199,11 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the strategy.
+        Get the dictionary representation of the ExponentialScheduleStrategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the strategy.
+            dict[str, Any]: The dictionary representation
+                of the ExponentialScheduleStrategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -218,7 +221,8 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         Create an ExponentialScheduleStrategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the strategy.
+            data (dict[str, Any]): The dictionary representation
+                of the ExponentialScheduleStrategy.
 
         Returns:
             ExponentialScheduleStrategy: The ExponentialScheduleStrategy instance.

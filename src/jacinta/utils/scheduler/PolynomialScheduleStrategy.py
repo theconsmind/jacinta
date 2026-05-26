@@ -8,12 +8,12 @@ from .ScheduleStrategy import ScheduleStrategy
 
 class PolynomialScheduleStrategy(ScheduleStrategy):
     """
-    A ScheduleStrategy that returns a polynomial value for a given node depth.
+    A ScheduleStrategy that returns a polynomial value for a given depth.
 
     Attributes:
         coefficients (tuple[float, ...]): The coefficients of the polynomial function.
-        min_value (float | None): The minimum value of the strategy.
-        max_value (float | None): The maximum value of the strategy.
+        min_value (float | None): The minimum value of the PolynomialScheduleStrategy.
+        max_value (float | None): The maximum value of the PolynomialScheduleStrategy.
     """
 
     __slots__ = ("_coefficients", "_min_value", "_max_value")
@@ -30,8 +30,10 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         Args:
             coefficients (tuple[float, ...]): The coefficients
                 of the polynomial function.
-            min_value (float | None): The minimum value of the strategy.
-            max_value (float | None): The maximum value of the strategy.
+            min_value (float | None): The minimum value
+                of the PolynomialScheduleStrategy.
+            max_value (float | None): The maximum value
+                of the PolynomialScheduleStrategy.
         """
         # coefficients validations
         if not isinstance(coefficients, (tuple, list)):
@@ -59,10 +61,10 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     def __repr__(self) -> str:
         """
-        Get the representation of the strategy.
+        Get the representation of the PolynomialScheduleStrategy.
 
         Returns:
-            str: The representation of the strategy.
+            str: The representation of the PolynomialScheduleStrategy.
         """
         result = (
             f"{self.__class__.__name__}"
@@ -73,13 +75,13 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     def __call__(self, depth: int) -> float:
         """
-        Get the strategy value based on the node depth.
+        Get the PolynomialScheduleStrategy value based on the depth.
 
         Args:
-            depth (int): The depth of the node.
+            depth (int): The depth.
 
         Returns:
-            float: The strategy value based on the node depth.
+            float: The PolynomialScheduleStrategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -101,30 +103,30 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
     @property
     def coefficients(self) -> tuple[float, ...]:
         """
-        Get the coefficients of the strategy.
+        Get the coefficients of the PolynomialScheduleStrategy.
 
         Returns:
-            tuple[float, ...]: The coefficients of the strategy.
+            tuple[float, ...]: The coefficients of the PolynomialScheduleStrategy.
         """
         return self._coefficients
 
     @property
     def min_value(self) -> float | None:
         """
-        Get the minimum value of the strategy.
+        Get the minimum value of the PolynomialScheduleStrategy.
 
         Returns:
-            float | None: The minimum value of the strategy.
+            float | None: The minimum value of the PolynomialScheduleStrategy.
         """
         return self._min_value
 
     @property
     def max_value(self) -> float | None:
         """
-        Get the maximum value of the strategy.
+        Get the maximum value of the PolynomialScheduleStrategy.
 
         Returns:
-            float | None: The maximum value of the strategy.
+            float | None: The maximum value of the PolynomialScheduleStrategy.
         """
         return self._max_value
 
@@ -136,7 +138,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the strategies are equal, False otherwise.
+            bool: True if the PolynomialScheduleStrategies are equal, False otherwise.
         """
         # type validations
         if not isinstance(other, PolynomialScheduleStrategy):
@@ -151,10 +153,10 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     def __hash__(self) -> int:
         """
-        Get the hash of the strategy.
+        Get the hash of the PolynomialScheduleStrategy.
 
         Returns:
-            int: The hash of the strategy.
+            int: The hash of the PolynomialScheduleStrategy.
         """
         result = hash(
             (
@@ -167,10 +169,11 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the strategy.
+        Get the dictionary representation of the PolynomialScheduleStrategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the strategy.
+            dict[str, Any]: The dictionary representation
+                of the PolynomialScheduleStrategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -186,7 +189,8 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         Create a PolynomialScheduleStrategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the strategy.
+            data (dict[str, Any]): The dictionary representation
+                of the PolynomialScheduleStrategy.
 
         Returns:
             PolynomialScheduleStrategy: The PolynomialScheduleStrategy instance.

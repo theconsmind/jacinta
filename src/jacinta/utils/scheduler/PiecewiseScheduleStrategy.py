@@ -8,12 +8,12 @@ from .ScheduleStrategy import ScheduleStrategy
 
 class PiecewiseScheduleStrategy(ScheduleStrategy):
     """
-    A ScheduleStrategy that uses different strategies for different ranges
-    of node depths.
+    A ScheduleStrategy that uses different ScheduleStrategies for different ranges
+    of depths.
 
     Attributes:
         segments (tuple[tuple[int, ScheduleStrategy], ...]): The segments
-            of the strategy.
+            of the PiecewiseScheduleStrategy.
     """
 
     __slots__ = ("_segments", "_depths")
@@ -27,7 +27,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
 
         Args:
             segments (tuple[tuple[int, ScheduleStrategy], ...]): The segments
-                of the strategy.
+                of the PiecewiseScheduleStrategy.
         """
         # segments validations
         if not isinstance(segments, (tuple, list)):
@@ -63,23 +63,23 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
 
     def __repr__(self) -> str:
         """
-        Get the representation of the strategy.
+        Get the representation of the PiecewiseScheduleStrategy.
 
         Returns:
-            str: The representation of the strategy.
+            str: The representation of the PiecewiseScheduleStrategy.
         """
         result = f"{self.__class__.__name__}(segments={self._segments!r})"
         return result
 
     def __call__(self, depth: int) -> float:
         """
-        Get the strategy value based on the node depth.
+        Get the PiecewiseScheduleStrategy value based on the depth.
 
         Args:
-            depth (int): The depth of the node.
+            depth (int): The depth.
 
         Returns:
-            float: The strategy value based on the node depth.
+            float: The PiecewiseScheduleStrategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -95,10 +95,11 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
     @property
     def segments(self) -> tuple[tuple[int, ScheduleStrategy], ...]:
         """
-        Get the segments of the strategy.
+        Get the segments of the PiecewiseScheduleStrategy.
 
         Returns:
-            tuple[tuple[int, ScheduleStrategy], ...]: The segments of the strategy.
+            tuple[tuple[int, ScheduleStrategy], ...]: The segments
+                of the PiecewiseScheduleStrategy.
         """
         return self._segments
 
@@ -110,7 +111,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the strategies are equal, False otherwise.
+            bool: True if the PiecewiseScheduleStrategies are equal, False otherwise.
         """
         # type validations
         if not isinstance(other, PiecewiseScheduleStrategy):
@@ -121,20 +122,21 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
 
     def __hash__(self) -> int:
         """
-        Get the hash of the strategy.
+        Get the hash of the PiecewiseScheduleStrategy.
 
         Returns:
-            int: The hash of the strategy.
+            int: The hash of the PiecewiseScheduleStrategy.
         """
         result = hash((self._segments,))
         return result
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the strategy.
+        Get the dictionary representation of the PiecewiseScheduleStrategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the strategy.
+            dict[str, Any]: The dictionary representation
+                of the PiecewiseScheduleStrategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -150,7 +152,8 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         Create a PiecewiseScheduleStrategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the strategy.
+            data (dict[str, Any]): The dictionary representation
+                of the PiecewiseScheduleStrategy.
 
         Returns:
             PiecewiseScheduleStrategy: The PiecewiseScheduleStrategy instance.

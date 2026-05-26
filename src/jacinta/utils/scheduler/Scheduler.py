@@ -10,21 +10,21 @@ from .ScheduleStrategy import ScheduleStrategy
 
 class Scheduler:
     """
-    A Scheduler represents a callable scheduler that maps a node depth to
-    a value using a schedule strategy.
+    A Scheduler represents a callable scheduler that maps a depth to
+    a value using a ScheduleStrategy.
 
     Attributes:
-        strategy (ScheduleStrategy): The schedule strategy to use.
+        strategy (ScheduleStrategy): The ScheduleStrategy to use.
     """
 
     __slots__ = ("_strategy", "_frozen")
 
     def __init__(self, strategy: ScheduleStrategy) -> None:
         """
-        Initialize the Scheduler.
+        Initialize a Scheduler.
 
         Args:
-            strategy (ScheduleStrategy): The schedule strategy to use.
+            strategy (ScheduleStrategy): The ScheduleStrategy to use.
         """
         # strategy validations
         if not isinstance(strategy, ScheduleStrategy):
@@ -37,23 +37,23 @@ class Scheduler:
 
     def __repr__(self) -> str:
         """
-        Get the representation of the scheduler.
+        Get the representation of the Scheduler.
 
         Returns:
-            str: The representation of the scheduler.
+            str: The representation of the Scheduler.
         """
         result = f"{self.__class__.__name__}(strategy={self._strategy!r})"
         return result
 
     def __call__(self, depth: int) -> float:
         """
-        Get the schedule value based on the node depth.
+        Get the Scheduler value based on the depth.
 
         Args:
-            depth (int): The depth of the node.
+            depth (int): The depth.
 
         Returns:
-            float: The schedule value based on the node depth.
+            float: The Scheduler value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -67,10 +67,10 @@ class Scheduler:
     @property
     def strategy(self) -> ScheduleStrategy:
         """
-        Get the schedule strategy of the scheduler.
+        Get the ScheduleStrategy of the Scheduler.
 
         Returns:
-            ScheduleStrategy: The schedule strategy of the scheduler.
+            ScheduleStrategy: The ScheduleStrategy of the Scheduler.
         """
         return self._strategy
 
@@ -82,7 +82,7 @@ class Scheduler:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the schedulers are equal, False otherwise.
+            bool: True if the Schedulers are equal, False otherwise.
         """
         # type validations
         if not isinstance(other, Scheduler):
@@ -93,30 +93,30 @@ class Scheduler:
 
     def __hash__(self) -> int:
         """
-        Get the hash of the scheduler.
+        Get the hash of the Scheduler.
 
         Returns:
-            int: The hash of the scheduler.
+            int: The hash of the Scheduler.
         """
         result = hash((self._strategy,))
         return result
 
     def copy(self) -> Scheduler:
         """
-        Get a copy of the scheduler.
+        Get a copy of the Scheduler.
 
         Returns:
-            Scheduler: A copy of the scheduler.
+            Scheduler: A copy of the Scheduler.
         """
         result = deepcopy(self)
         return result
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the scheduler.
+        Get the dictionary representation of the Scheduler.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the scheduler.
+            dict[str, Any]: The dictionary representation of the Scheduler.
         """
         result = {
             "type": self.__class__.__name__,
@@ -130,7 +130,7 @@ class Scheduler:
         Create a Scheduler from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the scheduler.
+            data (dict[str, Any]): The dictionary representation of the Scheduler.
 
         Returns:
             Scheduler: The Scheduler instance.
@@ -150,7 +150,7 @@ class Scheduler:
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
-        Save the scheduler to a json file.
+        Save the Scheduler to a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -174,7 +174,7 @@ class Scheduler:
     @classmethod
     def load(cls, path: str | Path) -> Scheduler:
         """
-        Load the scheduler from a json file.
+        Load a Scheduler from a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -199,7 +199,7 @@ class Scheduler:
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        Set an attribute of the scheduler.
+        Set an attribute of the Scheduler.
 
         Args:
             name (str): The name of the attribute.

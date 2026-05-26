@@ -8,15 +8,15 @@ from .ScheduleStrategy import ScheduleStrategy
 
 class PowerScheduleStrategy(ScheduleStrategy):
     """
-    A ScheduleStrategy that returns a power value for a given node depth.
+    A ScheduleStrategy that returns a power value for a given depth.
 
     Attributes:
         scale (float): The scale of the power function.
         exponent (float): The exponent of the power function.
         offset (float): The offset of the power function.
         intercept (float): The intercept of the power function.
-        min_value (float | None): The minimum value of the strategy.
-        max_value (float | None): The maximum value of the strategy.
+        min_value (float | None): The minimum value of the PowerScheduleStrategy.
+        max_value (float | None): The maximum value of the PowerScheduleStrategy.
     """
 
     __slots__ = (
@@ -45,8 +45,8 @@ class PowerScheduleStrategy(ScheduleStrategy):
             exponent (float): The exponent of the power function.
             offset (float): The offset of the power function.
             intercept (float): The intercept of the power function.
-            min_value (float | None): The minimum value of the strategy.
-            max_value (float | None): The maximum value of the strategy.
+            min_value (float | None): The minimum value of the PowerScheduleStrategy.
+            max_value (float | None): The maximum value of the PowerScheduleStrategy.
         """
         # scale validations
         if not isinstance(scale, (float, int)):
@@ -81,10 +81,10 @@ class PowerScheduleStrategy(ScheduleStrategy):
 
     def __repr__(self) -> str:
         """
-        Get the representation of the strategy.
+        Get the representation of the PowerScheduleStrategy.
 
         Returns:
-            str: The representation of the strategy.
+            str: The representation of the PowerScheduleStrategy.
         """
         result = (
             f"{self.__class__.__name__}"
@@ -96,13 +96,13 @@ class PowerScheduleStrategy(ScheduleStrategy):
 
     def __call__(self, depth: int) -> float:
         """
-        Get the strategy value based on the node depth.
+        Get the PowerScheduleStrategy value based on the depth.
 
         Args:
-            depth (int): The depth of the node.
+            depth (int): The depth.
 
         Returns:
-            float: The strategy value based on the node depth.
+            float: The PowerScheduleStrategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -124,60 +124,60 @@ class PowerScheduleStrategy(ScheduleStrategy):
     @property
     def scale(self) -> float:
         """
-        Get the scale of the strategy.
+        Get the scale of the PowerScheduleStrategy.
 
         Returns:
-            float: The scale of the strategy.
+            float: The scale of the PowerScheduleStrategy.
         """
         return self._scale
 
     @property
     def exponent(self) -> float:
         """
-        Get the exponent of the strategy.
+        Get the exponent of the PowerScheduleStrategy.
 
         Returns:
-            float: The exponent of the strategy.
+            float: The exponent of the PowerScheduleStrategy.
         """
         return self._exponent
 
     @property
     def offset(self) -> float:
         """
-        Get the offset of the strategy.
+        Get the offset of the PowerScheduleStrategy.
 
         Returns:
-            float: The offset of the strategy.
+            float: The offset of the PowerScheduleStrategy.
         """
         return self._offset
 
     @property
     def intercept(self) -> float:
         """
-        Get the intercept of the strategy.
+        Get the intercept of the PowerScheduleStrategy.
 
         Returns:
-            float: The intercept of the strategy.
+            float: The intercept of the PowerScheduleStrategy.
         """
         return self._intercept
 
     @property
     def min_value(self) -> float | None:
         """
-        Get the minimum value of the strategy.
+        Get the minimum value of the PowerScheduleStrategy.
 
         Returns:
-            float | None: The minimum value of the strategy.
+            float | None: The minimum value of the PowerScheduleStrategy.
         """
         return self._min_value
 
     @property
     def max_value(self) -> float | None:
         """
-        Get the maximum value of the strategy.
+        Get the maximum value of the PowerScheduleStrategy.
 
         Returns:
-            float | None: The maximum value of the strategy.
+            float | None: The maximum value of the PowerScheduleStrategy.
         """
         return self._max_value
 
@@ -189,7 +189,7 @@ class PowerScheduleStrategy(ScheduleStrategy):
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the strategies are equal, False otherwise.
+            bool: True if the PowerScheduleStrategies are equal, False otherwise.
         """
         # type validations
         if not isinstance(other, PowerScheduleStrategy):
@@ -207,10 +207,10 @@ class PowerScheduleStrategy(ScheduleStrategy):
 
     def __hash__(self) -> int:
         """
-        Get the hash of the strategy.
+        Get the hash of the PowerScheduleStrategy.
 
         Returns:
-            int: The hash of the strategy.
+            int: The hash of the PowerScheduleStrategy.
         """
         result = hash(
             (
@@ -226,10 +226,10 @@ class PowerScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the strategy.
+        Get the dictionary representation of the PowerScheduleStrategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the strategy.
+            dict[str, Any]: The dictionary representation of the PowerScheduleStrategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -248,7 +248,8 @@ class PowerScheduleStrategy(ScheduleStrategy):
         Create a PowerScheduleStrategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the strategy.
+            data (dict[str, Any]): The dictionary representation
+                of the PowerScheduleStrategy.
 
         Returns:
             PowerScheduleStrategy: The PowerScheduleStrategy instance.

@@ -7,13 +7,13 @@ from .ScheduleStrategy import ScheduleStrategy
 
 class LinearScheduleStrategy(ScheduleStrategy):
     """
-    A ScheduleStrategy that returns a linear value for a given node depth.
+    A ScheduleStrategy that returns a linear value for a given depth.
 
     Attributes:
         slope (float): The slope of the linear function.
         intercept (float): The intercept of the linear function.
-        min_value (float | None): The minimum value of the strategy.
-        max_value (float | None): The maximum value of the strategy.
+        min_value (float | None): The minimum value of the LinearScheduleStrategy.
+        max_value (float | None): The maximum value of the LinearScheduleStrategy.
     """
 
     __slots__ = ("_slope", "_intercept", "_min_value", "_max_value")
@@ -31,8 +31,8 @@ class LinearScheduleStrategy(ScheduleStrategy):
         Args:
             slope (float): The slope of the linear function.
             intercept (float): The intercept of the linear function.
-            min_value (float | None): The minimum value of the strategy.
-            max_value (float | None): The maximum value of the strategy.
+            min_value (float | None): The minimum value of the LinearScheduleStrategy.
+            max_value (float | None): The maximum value of the LinearScheduleStrategy.
         """
         # slope validations
         if not isinstance(slope, (float, int)):
@@ -59,10 +59,10 @@ class LinearScheduleStrategy(ScheduleStrategy):
 
     def __repr__(self) -> str:
         """
-        Get the representation of the strategy.
+        Get the representation of the LinearScheduleStrategy.
 
         Returns:
-            str: The representation of the strategy.
+            str: The representation of the LinearScheduleStrategy.
         """
         result = (
             f"{self.__class__.__name__}"
@@ -73,13 +73,13 @@ class LinearScheduleStrategy(ScheduleStrategy):
 
     def __call__(self, depth: int) -> float:
         """
-        Get the strategy value based on the node depth.
+        Get the LinearScheduleStrategy value based on the depth.
 
         Args:
-            depth (int): The depth of the node.
+            depth (int): The depth.
 
         Returns:
-            float: The strategy value based on the node depth.
+            float: The LinearScheduleStrategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -98,40 +98,40 @@ class LinearScheduleStrategy(ScheduleStrategy):
     @property
     def slope(self) -> float:
         """
-        Get the slope of the strategy.
+        Get the slope of the LinearScheduleStrategy.
 
         Returns:
-            float: The slope of the strategy.
+            float: The slope of the LinearScheduleStrategy.
         """
         return self._slope
 
     @property
     def intercept(self) -> float:
         """
-        Get the intercept of the strategy.
+        Get the intercept of the LinearScheduleStrategy.
 
         Returns:
-            float: The intercept of the strategy.
+            float: The intercept of the LinearScheduleStrategy.
         """
         return self._intercept
 
     @property
     def min_value(self) -> float | None:
         """
-        Get the minimum value of the strategy.
+        Get the minimum value of the LinearScheduleStrategy.
 
         Returns:
-            float | None: The minimum value of the strategy.
+            float | None: The minimum value of the LinearScheduleStrategy.
         """
         return self._min_value
 
     @property
     def max_value(self) -> float | None:
         """
-        Get the maximum value of the strategy.
+        Get the maximum value of the LinearScheduleStrategy.
 
         Returns:
-            float | None: The maximum value of the strategy.
+            float | None: The maximum value of the LinearScheduleStrategy.
         """
         return self._max_value
 
@@ -143,7 +143,7 @@ class LinearScheduleStrategy(ScheduleStrategy):
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the strategies are equal, False otherwise.
+            bool: True if the LinearScheduleStrategies are equal, False otherwise.
         """
         # type validations
         if not isinstance(other, LinearScheduleStrategy):
@@ -159,10 +159,10 @@ class LinearScheduleStrategy(ScheduleStrategy):
 
     def __hash__(self) -> int:
         """
-        Get the hash of the strategy.
+        Get the hash of the LinearScheduleStrategy.
 
         Returns:
-            int: The hash of the strategy.
+            int: The hash of the LinearScheduleStrategy.
         """
         result = hash(
             (
@@ -176,10 +176,10 @@ class LinearScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the strategy.
+        Get the dictionary representation of the LinearScheduleStrategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the strategy.
+            dict[str, Any]: The dictionary representation of the LinearScheduleStrategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -196,7 +196,8 @@ class LinearScheduleStrategy(ScheduleStrategy):
         Create a LinearScheduleStrategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the strategy.
+            data (dict[str, Any]): The dictionary representation
+                of the LinearScheduleStrategy.
 
         Returns:
             LinearScheduleStrategy: The LinearScheduleStrategy instance.
