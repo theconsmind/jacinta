@@ -6,13 +6,15 @@ from itertools import product
 from pathlib import Path
 from typing import Any
 
+from .NDPoint import NDPoint
+
 
 class NDSpace:
     """
     An NDSpace represents an N-dimensional space.
 
     Attributes:
-        bounds (tuple[tuple[float, float], ...]): The bounds of the space.
+        bounds (tuple[tuple[float, float], ...]): The bounds of the NDSpace.
     """
 
     __slots__ = ("_bounds", "_frozen")
@@ -22,7 +24,7 @@ class NDSpace:
         Initialize an NDSpace.
 
         Args:
-            bounds (tuple[tuple[float, float], ...]): The bounds of the space.
+            bounds (tuple[tuple[float, float], ...]): The bounds of the NDSpace.
         """
         # bounds validations
         if not isinstance(bounds, (tuple, list)):
@@ -104,49 +106,45 @@ class NDSpace:
         result = hash((self._bounds,))
         return result
 
-    def contains(self, point: tuple[float, ...]) -> bool:
+    def contains(self, point: NDPoint) -> bool:
         """
-        Check if a point is within the bounds of the NDSpace.
+        Check if an NDPoint is within the bounds of the NDSpace.
 
         Args:
-            point (tuple[float, ...]): The point to check.
+            point (NDPoint): The NDPoint to check.
 
         Returns:
-            bool: True if the point is within the bounds, False otherwise.
+            bool: True if the NDPoint is within the bounds, False otherwise.
         """
         # point validations
-        if not isinstance(point, (tuple, list)):
-            raise TypeError("point must be a tuple.")
-        if len(point) != self.nd:
-            raise ValueError(f"point must have length {self.nd}.")
-        for coord in point:
-            if not isinstance(coord, (float, int)):
-                raise TypeError("All point coordinates must be floats.")
+        if not isinstance(point, NDPoint):
+            raise TypeError("point must be an NDPoint.")
+        if point.nd != self.nd:
+            raise ValueError(f"point must be {self.nd}D.")
         # check if the point is within the bounds
         contains = all(
             lower <= coord < upper
-            for coord, (lower, upper) in zip(point, self._bounds, strict=True)
+            for coord, (lower, upper) in zip(
+                point.coordinates, self._bounds, strict=True
+            )
         )
         return contains
 
-    def split(self, point: tuple[float, ...]) -> tuple[NDSpace, ...]:
+    def split(self, point: NDPoint) -> tuple[NDSpace, ...]:
         """
-        Split the NDSpace into smaller NDSpaces based on a point.
+        Split the NDSpace into smaller NDSpaces based on an NDPoint.
 
         Args:
-            point (tuple[float, ...]): The point to split the NDSpace by.
+            point (NDPoint): The NDPoint to split the NDSpace by.
 
         Returns:
-            tuple[NDSpace, ...]: The sub-spaces created by the split.
+            tuple[NDSpace, ...]: The sub-NDSpaces created by the split.
         """
         # point validations
-        if not isinstance(point, (tuple, list)):
-            raise TypeError("point must be a tuple.")
-        if len(point) != self.nd:
-            raise ValueError(f"point must have length {self.nd}.")
-        for coord in point:
-            if not isinstance(coord, (float, int)):
-                raise TypeError("All point coordinates must be floats.")
+        if not isinstance(point, NDPoint):
+            raise TypeError("point must be an NDPoint.")
+        if point.nd != self.nd:
+            raise ValueError(f"point must be {self.nd}D.")
         if not self.contains(point):
             raise ValueError("point must be in range.")
         # split the space
@@ -159,9 +157,9 @@ class NDSpace:
             for dim, upper_half in enumerate(directions):
                 lower, upper = self._bounds[dim]
                 if upper_half:
-                    new_bound = (point[dim], upper)
+                    new_bound = (point.coordinates[dim], upper)
                 else:
-                    new_bound = (lower, point[dim])
+                    new_bound = (lower, point.coordinates[dim])
                 # skip if the new bound is empty (lower == upper)
                 if new_bound[0] == new_bound[1]:
                     is_valid = False
