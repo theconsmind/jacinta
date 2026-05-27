@@ -5,127 +5,155 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from .NDSpace import NDSpace
 
-class NDPoint:
+
+class NDTree:
     """
-    An NDPoint represents an N-dimensional point.
+    An NDTree represents a tree of N-dimensional spaces.
 
     Attributes:
-        coordinates (tuple[float, ...]): The coordinates of the NDPoint.
+        space (NDSpace): The root NDSpace of the NDTree.
+        depth (int): The depth of the NDTree.
     """
 
-    __slots__ = ("_coordinates", "_frozen")
+    __slots__ = (
+        "_space",
+        "_depth",
+        "_frozen",
+    )
 
-    def __init__(self, coordinates: tuple[float, ...]) -> None:
+    def __init__(self, space: NDSpace, depth: int) -> None:
         """
-        Initialize an NDPoint.
+        Initialize an NDTree.
 
         Args:
-            coordinates (tuple[float, ...]): The coordinates of the NDPoint.
+            space (NDSpace): The root NDSpace of the NDTree.
         """
-        # coordinates validations
-        if not isinstance(coordinates, (tuple, list)):
-            raise TypeError("coordinates must be a tuple.")
-        for coord in coordinates:
-            if not isinstance(coord, (float, int)):
-                raise TypeError("All coordinates must be floats.")
+        # space validations
+        if not isinstance(space, NDSpace):
+            raise TypeError("space must be an NDSpace.")
+        # depth validations
+        if not isinstance(depth, int):
+            raise TypeError("depth must be an int.")
+        if depth < 0:
+            raise ValueError("depth must be greater than or equal to 0.")
         # initializations
         super().__setattr__("_frozen", False)
-        self._coordinates = tuple(float(coord) for coord in coordinates)
+        self._space = space.copy()
+        self._depth = depth
         super().__setattr__("_frozen", True)
         return
 
     def __repr__(self) -> str:
         """
-        Get the representation of the NDPoint.
+        Get the representation of the NDTree.
 
         Returns:
-            str: The representation of the NDPoint.
+            str: The representation of the NDTree.
         """
-        result = f"{self.__class__.__name__}(coordinates={self._coordinates!r})"
+        result = (
+            f"{self.__class__.__name__}(space={self._space!r}, depth={self._depth!r})"
+        )
         return result
 
     @property
-    def coordinates(self) -> tuple[float, ...]:
+    def space(self) -> NDSpace:
         """
-        Get the coordinates of the NDPoint.
+        Get the root NDSpace of the NDTree.
 
         Returns:
-            tuple[float, ...]: The coordinates of the NDPoint.
+            NDSpace: The root NDSpace of the NDTree.
         """
-        return self._coordinates
+        return self._space
+
+    @property
+    def depth(self) -> int:
+        """
+        Get the depth of the NDTree.
+
+        Returns:
+            int: The depth of the NDTree.
+        """
+        return self._depth
 
     @property
     def nd(self) -> int:
         """
-        Get the number of dimensions of the NDPoint.
+        Get the number of dimensions of the NDTree.
 
         Returns:
-            int: The number of dimensions of the NDPoint.
+            int: The number of dimensions of the NDTree.
         """
-        nd = len(self._coordinates)
+        nd = self._space.nd
         return nd
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two NDPoints are equal.
+        Check if two NDTrees are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the NDPoints are equal, False otherwise.
+            bool: True if the NDTrees are equal, False otherwise.
         """
         # type validations
-        if not isinstance(other, NDPoint):
+        if not isinstance(other, NDTree):
             return NotImplemented
         # equality check
-        result = self._coordinates == other._coordinates
+        result = self._space == other._space and self._depth == other._depth
         return result
 
     def __hash__(self) -> int:
         """
-        Get the hash of the NDPoint.
+        Get the hash of the NDTree.
 
         Returns:
-            int: The hash of the NDPoint.
+            int: The hash of the NDTree.
         """
-        result = hash((self._coordinates,))
+        result = hash(
+            (
+                self._space,
+                self._depth,
+            )
+        )
         return result
 
-    def copy(self) -> NDPoint:
+    def copy(self) -> NDTree:
         """
-        Get a copy of the NDPoint.
+        Get a copy of the NDTree.
 
         Returns:
-            NDPoint: A copy of the NDPoint.
+            NDTree: A copy of the NDTree.
         """
         result = deepcopy(self)
         return result
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the NDPoint.
+        Get the dictionary representation of the NDTree.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the NDPoint.
+            dict[str, Any]: The dictionary representation of the NDTree.
         """
         result = {
             "type": self.__class__.__name__,
-            "coordinates": self._coordinates,
+            "space": self._space,
+            "depth": self._depth,
         }
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> NDPoint:
+    def from_dict(cls, data: dict[str, Any]) -> NDTree:
         """
-        Create an NDPoint from a dictionary.
+        Create an NDTree from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the NDPoint.
+            data (dict[str, Any]): The dictionary representation of the NDTree.
 
         Returns:
-            NDPoint: The NDPoint instance.
+            NDTree: The NDTree instance.
         """
         # data validations
         if not isinstance(data, dict):
@@ -134,15 +162,17 @@ class NDPoint:
             raise KeyError("data must contain the key 'type'.")
         if data["type"] != cls.__name__:
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
-        if "coordinates" not in data:
-            raise KeyError("data must contain the key 'coordinates'.")
+        if "space" not in data:
+            raise KeyError("data must contain the key 'space'.")
+        if "depth" not in data:
+            raise KeyError("data must contain the key 'depth'.")
         # initializations
-        result = cls(data["coordinates"])
+        result = cls(NDSpace.from_dict(data["space"]), data["depth"])
         return result
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
-        Save the NDPoint to a json file.
+        Save the NDTree to a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -164,15 +194,15 @@ class NDPoint:
         return
 
     @classmethod
-    def load(cls, path: str | Path) -> NDPoint:
+    def load(cls, path: str | Path) -> NDTree:
         """
-        Load an NDPoint from a json file.
+        Load an NDTree from a json file.
 
         Args:
             path (str | Path): The path to the file.
 
         Returns:
-            NDPoint: The NDPoint instance.
+            NDTree: The NDTree instance.
         """
         # path validations
         if not isinstance(path, (str, Path)):
@@ -191,7 +221,7 @@ class NDPoint:
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        Set an attribute of the NDPoint.
+        Set an attribute of the NDTree.
 
         Args:
             name (str): The name of the attribute.

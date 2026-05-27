@@ -55,7 +55,7 @@ class NDSpace:
         Returns:
             str: The representation of the NDSpace.
         """
-        result = f"{self.__class__.__name__}(bounds={self._bounds})"
+        result = f"{self.__class__.__name__}(bounds={self._bounds!r})"
         return result
 
     @property
@@ -147,13 +147,13 @@ class NDSpace:
             raise ValueError(f"point must be {self.nd}D.")
         if not self.contains(point):
             raise ValueError("point must be in range.")
-        # split the space
-        ndspaces = []
+        # split the NDSpace
+        spaces = []
         # generate all combinations of upper/lower halves
         for directions in product((False, True), repeat=self.nd):
             new_bounds = list(self._bounds)
             is_valid = True
-            # build bounds for each subspace
+            # build bounds for each sub-NDSpace
             for dim, upper_half in enumerate(directions):
                 lower, upper = self._bounds[dim]
                 if upper_half:
@@ -165,12 +165,12 @@ class NDSpace:
                     is_valid = False
                     break
                 new_bounds[dim] = new_bound
-            # create new ndspace if valid (lower < upper)
+            # create new NDSpace if valid (lower < upper)
             if is_valid:
-                ndspace = NDSpace(tuple(new_bounds))
-                ndspaces.append(ndspace)
-        ndspaces = tuple(ndspaces)
-        return ndspaces
+                space = NDSpace(tuple(new_bounds))
+                spaces.append(space)
+        spaces = tuple(spaces)
+        return spaces
 
     def add_dimensions(self, bounds: tuple[tuple[float, float], ...]) -> NDSpace:
         """
@@ -201,8 +201,8 @@ class NDSpace:
         # create new NDSpace with new bound
         new_bounds = tuple((float(lower), float(upper)) for (lower, upper) in bounds)
         new_bounds = self._bounds + new_bounds
-        ndspace = NDSpace(new_bounds)
-        return ndspace
+        space = NDSpace(new_bounds)
+        return space
 
     def remove_dimensions(self, dims: tuple[int, ...]) -> NDSpace:
         """
@@ -226,8 +226,8 @@ class NDSpace:
         new_bounds = tuple(
             bound for idx, bound in enumerate(self._bounds) if idx not in dims
         )
-        ndspace = NDSpace(new_bounds)
-        return ndspace
+        space = NDSpace(new_bounds)
+        return space
 
     def copy(self) -> NDSpace:
         """
