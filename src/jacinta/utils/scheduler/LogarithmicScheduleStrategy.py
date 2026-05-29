@@ -36,9 +36,9 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
             offset (float): The offset of the logarithmic function.
             intercept (float): The intercept of the logarithmic function.
             min_value (float | None): The minimum value
-                of the LogarithmicScheduleStrategy.
+                of the LogarithmicScheduleStrategy. Defaults to None.
             max_value (float | None): The maximum value
-                of the LogarithmicScheduleStrategy.
+                of the LogarithmicScheduleStrategy. Defaults to None.
         """
         # scale validations
         if not isinstance(scale, (float, int)):
@@ -166,7 +166,7 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         Returns:
             bool: True if the LogarithmicScheduleStrategies are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, LogarithmicScheduleStrategy):
             return NotImplemented
         # equality check

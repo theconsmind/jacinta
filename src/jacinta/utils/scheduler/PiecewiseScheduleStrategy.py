@@ -113,7 +113,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         Returns:
             bool: True if the PiecewiseScheduleStrategies are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, PiecewiseScheduleStrategy):
             return NotImplemented
         # equality check

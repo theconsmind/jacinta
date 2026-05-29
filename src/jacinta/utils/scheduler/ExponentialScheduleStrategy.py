@@ -36,9 +36,9 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
             rate (float): The rate of the exponential function.
             intercept (float): The intercept of the exponential function.
             min_value (float | None): The minimum value
-                of the ExponentialScheduleStrategy.
+                of the ExponentialScheduleStrategy. Defaults to None.
             max_value (float | None): The maximum value
-                of the ExponentialScheduleStrategy.
+                of the ExponentialScheduleStrategy. Defaults to None.
         """
         # scale validations
         if not isinstance(scale, (float, int)):
@@ -166,7 +166,7 @@ class ExponentialScheduleStrategy(ScheduleStrategy):
         Returns:
             bool: True if the ExponentialScheduleStrategies are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, ExponentialScheduleStrategy):
             return NotImplemented
         # equality check

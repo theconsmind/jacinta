@@ -30,10 +30,10 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         Args:
             coefficients (tuple[float, ...]): The coefficients
                 of the polynomial function.
-            min_value (float | None): The minimum value
-                of the PolynomialScheduleStrategy.
-            max_value (float | None): The maximum value
-                of the PolynomialScheduleStrategy.
+            min_value (float | None): The minimum value of the
+                PolynomialScheduleStrategy. Defaults to None.
+            max_value (float | None): The maximum value of the
+                PolynomialScheduleStrategy. Defaults to None.
         """
         # coefficients validations
         if not isinstance(coefficients, (tuple, list)):
@@ -140,7 +140,7 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         Returns:
             bool: True if the PolynomialScheduleStrategies are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, PolynomialScheduleStrategy):
             return NotImplemented
         # equality check

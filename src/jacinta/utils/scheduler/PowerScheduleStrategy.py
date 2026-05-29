@@ -46,7 +46,9 @@ class PowerScheduleStrategy(ScheduleStrategy):
             offset (float): The offset of the power function.
             intercept (float): The intercept of the power function.
             min_value (float | None): The minimum value of the PowerScheduleStrategy.
+                Defaults to None.
             max_value (float | None): The maximum value of the PowerScheduleStrategy.
+                Defaults to None.
         """
         # scale validations
         if not isinstance(scale, (float, int)):
@@ -191,7 +193,7 @@ class PowerScheduleStrategy(ScheduleStrategy):
         Returns:
             bool: True if the PowerScheduleStrategies are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, PowerScheduleStrategy):
             return NotImplemented
         # equality check

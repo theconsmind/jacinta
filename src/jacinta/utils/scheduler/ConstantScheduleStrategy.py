@@ -80,7 +80,7 @@ class ConstantScheduleStrategy(ScheduleStrategy):
         Returns:
             bool: True if the ConstantScheduleStrategies are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, ConstantScheduleStrategy):
             return NotImplemented
         # equality check

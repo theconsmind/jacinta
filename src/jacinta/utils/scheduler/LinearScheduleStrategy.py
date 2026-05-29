@@ -32,7 +32,9 @@ class LinearScheduleStrategy(ScheduleStrategy):
             slope (float): The slope of the linear function.
             intercept (float): The intercept of the linear function.
             min_value (float | None): The minimum value of the LinearScheduleStrategy.
+                Defaults to None.
             max_value (float | None): The maximum value of the LinearScheduleStrategy.
+                Defaults to None.
         """
         # slope validations
         if not isinstance(slope, (float, int)):
@@ -145,7 +147,7 @@ class LinearScheduleStrategy(ScheduleStrategy):
         Returns:
             bool: True if the LinearScheduleStrategies are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, LinearScheduleStrategy):
             return NotImplemented
         # equality check

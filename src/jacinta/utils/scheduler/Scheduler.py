@@ -84,7 +84,7 @@ class Scheduler:
         Returns:
             bool: True if the Schedulers are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, Scheduler):
             return NotImplemented
         # equality check
@@ -155,6 +155,7 @@ class Scheduler:
         Args:
             path (str | Path): The path to the file.
             overwrite (bool): Whether to overwrite the file if it exists.
+                Defaults to False.
         """
         # path validations
         if not isinstance(path, (str, Path)):
