@@ -41,16 +41,6 @@ class ScheduleStrategy(ABC):
         """
         ...
 
-    @abstractmethod
-    def __hash__(self) -> int:
-        """
-        Get the hash of the ScheduleStrategy.
-
-        Returns:
-            int: The hash of the ScheduleStrategy.
-        """
-        ...
-
     def copy(self) -> ScheduleStrategy:
         """
         Get a copy of the ScheduleStrategy.

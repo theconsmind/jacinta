@@ -91,16 +91,6 @@ class Scheduler:
         result = self._strategy == other._strategy
         return result
 
-    def __hash__(self) -> int:
-        """
-        Get the hash of the Scheduler.
-
-        Returns:
-            int: The hash of the Scheduler.
-        """
-        result = hash((self._strategy,))
-        return result
-
     def copy(self) -> Scheduler:
         """
         Get a copy of the Scheduler.

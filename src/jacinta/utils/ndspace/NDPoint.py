@@ -76,21 +76,11 @@ class NDPoint:
         Returns:
             bool: True if the NDPoints are equal, False otherwise.
         """
-        # type validations
+        # other validations
         if not isinstance(other, NDPoint):
             return NotImplemented
         # equality check
         result = self._coordinates == other._coordinates
-        return result
-
-    def __hash__(self) -> int:
-        """
-        Get the hash of the NDPoint.
-
-        Returns:
-            int: The hash of the NDPoint.
-        """
-        result = hash((self._coordinates,))
         return result
 
     def copy(self) -> NDPoint:
@@ -147,6 +137,7 @@ class NDPoint:
         Args:
             path (str | Path): The path to the file.
             overwrite (bool): Whether to overwrite the file if it exists.
+                Defaults to False.
         """
         # path validations
         if not isinstance(path, (str, Path)):

@@ -87,16 +87,6 @@ class ConstantScheduleStrategy(ScheduleStrategy):
         result = self._value == other._value
         return result
 
-    def __hash__(self) -> int:
-        """
-        Get the hash of the ConstantScheduleStrategy.
-
-        Returns:
-            int: The hash of the ConstantScheduleStrategy.
-        """
-        result = hash((self._value,))
-        return result
-
     def to_dict(self) -> dict[str, Any]:
         """
         Get the dictionary representation of the ConstantScheduleStrategy.

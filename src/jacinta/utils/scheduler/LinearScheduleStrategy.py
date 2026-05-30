@@ -159,23 +159,6 @@ class LinearScheduleStrategy(ScheduleStrategy):
         )
         return result
 
-    def __hash__(self) -> int:
-        """
-        Get the hash of the LinearScheduleStrategy.
-
-        Returns:
-            int: The hash of the LinearScheduleStrategy.
-        """
-        result = hash(
-            (
-                self._slope,
-                self._intercept,
-                self._min_value,
-                self._max_value,
-            )
-        )
-        return result
-
     def to_dict(self) -> dict[str, Any]:
         """
         Get the dictionary representation of the LinearScheduleStrategy.

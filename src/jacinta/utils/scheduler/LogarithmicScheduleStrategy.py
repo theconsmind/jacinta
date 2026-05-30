@@ -179,24 +179,6 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         )
         return result
 
-    def __hash__(self) -> int:
-        """
-        Get the hash of the LogarithmicScheduleStrategy.
-
-        Returns:
-            int: The hash of the LogarithmicScheduleStrategy.
-        """
-        result = hash(
-            (
-                self._scale,
-                self._offset,
-                self._intercept,
-                self._min_value,
-                self._max_value,
-            )
-        )
-        return result
-
     def to_dict(self) -> dict[str, Any]:
         """
         Get the dictionary representation of the LogarithmicScheduleStrategy.

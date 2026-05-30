@@ -120,16 +120,6 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
         result = self._segments == other._segments
         return result
 
-    def __hash__(self) -> int:
-        """
-        Get the hash of the PiecewiseScheduleStrategy.
-
-        Returns:
-            int: The hash of the PiecewiseScheduleStrategy.
-        """
-        result = hash((self._segments,))
-        return result
-
     def to_dict(self) -> dict[str, Any]:
         """
         Get the dictionary representation of the PiecewiseScheduleStrategy.
