@@ -16,17 +16,21 @@ class NDSpace:
     Attributes:
         bounds (tuple[tuple[float, float], ...]): The bounds of the NDSpace.
         parent (NDSpace | None): The parent NDSpace of the NDSpace.
-        split_point (NDPoint | None): The split point of the NDSpace.
+        root (NDSpace): The root NDSpace of the NDSpace.
+        split_point (NDPoint | None): The split NDPoint of the NDSpace.
         children (tuple[NDSpace, ...] | None): The children NDSpaces of the NDSpace.
         depth (int): The depth of the NDSpace.
+        height (int): The height of the NDSpace.
     """
 
     __slots__ = (
         "_bounds",
         "_parent",
+        "_root",
         "_split_point",
         "_children",
         "_depth",
+        "_height",
         "_frozen",
     )
 
@@ -43,7 +47,7 @@ class NDSpace:
             bounds (tuple[tuple[float, float], ...]): The bounds of the NDSpace.
             parent (NDSpace | None): The parent NDSpace of the NDSpace.
                 Defaults to None.
-            split_point (NDPoint | None): The split point of the NDSpace.
+            split_point (NDPoint | None): The split NDPoint of the NDSpace.
                 Defaults to None.
         """
         # bounds validations
@@ -93,9 +97,11 @@ class NDSpace:
         super().__setattr__("_frozen", False)
         self._bounds = tuple((float(lower), float(upper)) for (lower, upper) in bounds)
         self._parent = parent
+        self._root = parent.root if parent is not None else self
         self._depth = parent.depth + 1 if parent is not None else 0
         self._split_point = None
         self._children = None
+        self._height = 0
         if split_point is not None:
             self.split(split_point)
         super().__setattr__("_frozen", True)
@@ -124,30 +130,40 @@ class NDSpace:
     @property
     def parent(self) -> NDSpace | None:
         """
-        Get the parent of the NDSpace.
+        Get the parent NDSpace of the NDSpace.
 
         Returns:
-            NDSpace | None: The parent of the NDSpace.
+            NDSpace | None: The parent NDSpace of the NDSpace.
         """
         return self._parent
 
     @property
-    def split_point(self) -> NDPoint | None:
+    def root(self) -> NDSpace:
         """
-        Get the split point of the NDSpace.
+        Get the root NDSpace of the NDSpace.
 
         Returns:
-            NDPoint | None: The split point of the NDSpace.
+            NDSpace: The root NDSpace of the NDSpace.
+        """
+        return self._root
+
+    @property
+    def split_point(self) -> NDPoint | None:
+        """
+        Get the split NDPoint of the NDSpace.
+
+        Returns:
+            NDPoint | None: The split NDPoint of the NDSpace.
         """
         return self._split_point
 
     @property
     def children(self) -> tuple[NDSpace, ...] | None:
         """
-        Get the children of the NDSpace.
+        Get the children NDSpaces of the NDSpace.
 
         Returns:
-            tuple[NDSpace, ...] | None: The children of the NDSpace.
+            tuple[NDSpace, ...] | None: The children NDSpaces of the NDSpace.
         """
         return self._children
 
@@ -162,6 +178,16 @@ class NDSpace:
         return self._depth
 
     @property
+    def height(self) -> int:
+        """
+        Get the height of the NDSpace.
+
+        Returns:
+            int: The height of the NDSpace.
+        """
+        return self._height
+
+    @property
     def nd(self) -> int:
         """
         Get the number of dimensions of the NDSpace.
@@ -171,19 +197,6 @@ class NDSpace:
         """
         nd = len(self._bounds)
         return nd
-
-    @property
-    def root(self) -> NDSpace:
-        """
-        Get the root Nof the NDSpace.
-
-        Returns:
-            NDSpace: The root of the NDSpace.
-        """
-        space = self
-        while space._parent is not None:
-            space = space._parent
-        return space
 
     @property
     def is_leaf(self) -> bool:
@@ -295,29 +308,13 @@ class NDSpace:
         self._split_point = point
         self._children = spaces
         super().__setattr__("_frozen", True)
+        self._update_height()
         return spaces
 
     def collapse(self) -> None:
         """
         Collapse the NDSpace by removing its children.
         """
-
-        def _update_depth(space: NDSpace, depth: int) -> None:
-            """
-            Recursively update the depth of the NDSpace and its children.
-
-            Args:
-                space (NDSpace): The NDSpace to update.
-                depth (int): The depth to update to.
-            """
-            super().__setattr__("_frozen", False)
-            space._depth = depth
-            if space._split_point is not None:
-                for child in space._children:
-                    _update_depth(child, depth + 1)
-            super().__setattr__("_frozen", True)
-            return
-
         # remove children if the NDSpace is split
         if self._split_point is not None:
             # remove parent references from children
@@ -325,12 +322,14 @@ class NDSpace:
                 super(NDSpace, child).__setattr__("_frozen", False)
                 child._parent = None
                 super(NDSpace, child).__setattr__("_frozen", True)
-                _update_depth(child, 0)
+                child._update_root()
+                child._update_depth()
             # remove children reference from self
             super().__setattr__("_frozen", False)
             self._split_point = None
             self._children = None
             super().__setattr__("_frozen", True)
+            self._update_height()
         return
 
     def add_dimensions(
@@ -376,7 +375,7 @@ class NDSpace:
             """
             super().__setattr__("_frozen", False)
             space._bounds = space._bounds + new_bounds
-            # if there is a split point, update its coordinates
+            # if there is a split NDPoint, update its coordinates
             if space._split_point is not None:
                 space._split_point = NDPoint(
                     space._split_point.coordinates + new_coords
@@ -388,6 +387,83 @@ class NDSpace:
             return
 
         _add_dimensions(root)
+        return self
+
+    def remove_dimensions(self, dims: set[int]) -> NDSpace:
+        """
+        Remove dimensions from the NDSpace.
+
+        Args:
+            dims (set[int]): The indices of the dimensions to remove.
+
+        Returns:
+            NDSpace: The NDSpace with removed dimensions.
+        """
+        # dims validations
+        if not isinstance(dims, (set, tuple, list)):
+            raise TypeError("dims must be a set.")
+        if len(set(dims)) != len(dims):
+            raise ValueError("All dims must be unique.")
+        for dim in dims:
+            if not isinstance(dim, int):
+                raise TypeError("All dims must be ints.")
+            if not (0 <= dim < self.nd):
+                raise IndexError("All dims must be in range.")
+        # remove dimensions from the whole NDSpace tree
+        dims = set(dims)
+        root = self.root
+
+        def _remove_dimensions(space: NDSpace) -> None:
+            """
+            Recursively remove dimensions from the NDSpace tree.
+
+            Args:
+                space (NDSpace): The NDSpace to remove dimensions from.
+            """
+            super().__setattr__("_frozen", False)
+            new_bounds = tuple(
+                bound for idx, bound in enumerate(space._bounds) if idx not in dims
+            )
+            space._bounds = new_bounds
+            # if there is a split NDPoint, update its coordinates
+            if space._split_point is not None:
+                new_coords = tuple(
+                    coord
+                    for idx, coord in enumerate(space._split_point.coordinates)
+                    if idx not in dims
+                )
+                space._split_point = NDPoint(new_coords)
+                # remove dimensions from children
+                for child in space._children:
+                    _remove_dimensions(child)
+                # group duplicated children
+                groups = {}
+                for child in space._children:
+                    if child._bounds not in groups:
+                        groups[child._bounds] = []
+                    groups[child._bounds].append(child)
+                # merge duplicated children
+                merged_children = []
+                discarded_children = []
+                for children in groups.values():
+                    selected_child = self._merge(tuple(children))
+                    merged_children.append(selected_child)
+                    for child in children:
+                        if child is not selected_child:
+                            discarded_children.append(child)
+                space._children = tuple(merged_children)
+                # remove parent references from discarded children
+                for child in discarded_children:
+                    super(NDSpace, child).__setattr__("_frozen", False)
+                    child._parent = None
+                    super(NDSpace, child).__setattr__("_frozen", True)
+                    child._update_root()
+                    child._update_depth()
+            super().__setattr__("_frozen", True)
+            space._update_height()
+            return
+
+        _remove_dimensions(root)
         return self
 
     def copy(self) -> NDSpace:
@@ -451,7 +527,8 @@ class NDSpace:
 
             Args:
                 data (dict[str, Any]): The dictionary representation of the NDSpace.
-                parent (NDSpace | None): The parent of the NDSpace. Defaults to None.
+                parent (NDSpace | None): The parent NDSpace of the NDSpace.
+                    Defaults to None.
 
             Returns:
                 NDSpace: The NDSpace instance.
@@ -491,6 +568,7 @@ class NDSpace:
                 space._split_point = split_point
                 space._children = children
                 super(NDSpace, space).__setattr__("_frozen", True)
+                space._update_height()
             return space
 
         space = _from_dict(data)
@@ -545,6 +623,65 @@ class NDSpace:
             data = json.load(f)
         result = cls.from_dict(data)
         return result
+
+    def _update_root(self) -> None:
+        """
+        Recursively update the root NDSpace of the NDSpace tree.
+        """
+        new_root = self._parent._root if self._parent is not None else self
+        if self._root is not new_root:
+            super().__setattr__("_frozen", False)
+            self._root = new_root
+            super().__setattr__("_frozen", True)
+            if self._split_point is not None:
+                for child in self._children:
+                    child._update_root()
+        return
+
+    def _update_depth(self) -> None:
+        """
+        Recursively update the depth of the NDSpace and its children.
+        """
+        new_depth = self._parent._depth + 1 if self._parent is not None else 0
+        if self._depth != new_depth:
+            super().__setattr__("_frozen", False)
+            self._depth = new_depth
+            super().__setattr__("_frozen", True)
+            if self._split_point is not None:
+                for child in self._children:
+                    child._update_depth()
+        return
+
+    def _update_height(self) -> None:
+        """
+        Recursively update the height of the NDSpace and its ancestors.
+        """
+        new_height = (
+            1 + max(child._height for child in self._children)
+            if self._split_point is not None
+            else 0
+        )
+        if self._height != new_height:
+            super().__setattr__("_frozen", False)
+            self._height = new_height
+            super().__setattr__("_frozen", True)
+            if self._parent is not None:
+                self._parent._update_height()
+        return
+
+    def _merge(self, spaces: tuple[NDSpace, ...]) -> NDSpace:
+        """
+        Merge duplicated NDSpaces into a single NDSpace.
+
+        Args:
+            spaces (tuple[NDSpace, ...]): The NDSpaces to merge.
+
+        Returns:
+            NDSpace: The selected NDSpace.
+        """
+        # choose the space with the greatest height
+        space = max(spaces, key=lambda space: space.height)
+        return space
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
