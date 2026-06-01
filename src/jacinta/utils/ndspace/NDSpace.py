@@ -220,7 +220,7 @@ class NDSpace:
             bool: True if the NDSpaces are equal, False otherwise.
         """
         # other validations
-        if not isinstance(other, NDSpace):
+        if type(self) is not type(other):
             return NotImplemented
         # equality check
         result = self._bounds == other._bounds

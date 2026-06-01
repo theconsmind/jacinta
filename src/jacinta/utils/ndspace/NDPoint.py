@@ -77,7 +77,7 @@ class NDPoint:
             bool: True if the NDPoints are equal, False otherwise.
         """
         # other validations
-        if not isinstance(other, NDPoint):
+        if type(self) is not type(other):
             return NotImplemented
         # equality check
         result = self._coordinates == other._coordinates
