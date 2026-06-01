@@ -30,9 +30,9 @@ class NDPoint:
             if not isinstance(coord, (float, int)):
                 raise TypeError("All coordinates must be floats.")
         # initializations
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._coordinates = tuple(float(coord) for coord in coordinates)
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         return
 
     def __repr__(self) -> str:
@@ -192,5 +192,5 @@ class NDPoint:
         if getattr(self, "_frozen", False):
             raise AttributeError(f"{self.__class__.__name__} is immutable.")
         # set the attribute
-        super().__setattr__(name, value)
+        object.__setattr__(self, name, value)
         return

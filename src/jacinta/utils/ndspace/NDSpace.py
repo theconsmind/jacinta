@@ -94,7 +94,7 @@ class NDSpace:
                 raise ValueError("split_point must be contained in bounds.")
 
         # initializations
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._bounds = tuple((float(lower), float(upper)) for (lower, upper) in bounds)
         self._parent = parent
         self._root = parent.root if parent is not None else self
@@ -104,7 +104,7 @@ class NDSpace:
         self._height = 0
         if split_point is not None:
             self.split(split_point)
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         return
 
     def __repr__(self) -> str:
@@ -304,10 +304,10 @@ class NDSpace:
                 spaces.append(space)
         spaces = tuple(spaces)
         # update children
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._split_point = point
         self._children = spaces
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         self._update_height()
         return spaces
 
@@ -319,16 +319,16 @@ class NDSpace:
         if self._split_point is not None:
             # remove parent references from children
             for child in self._children:
-                super(NDSpace, child).__setattr__("_frozen", False)
+                object.__setattr__(child, "_frozen", False)
                 child._parent = None
-                super(NDSpace, child).__setattr__("_frozen", True)
+                object.__setattr__(child, "_frozen", True)
                 child._update_root()
                 child._update_depth()
             # remove children reference from self
-            super().__setattr__("_frozen", False)
+            object.__setattr__(self, "_frozen", False)
             self._split_point = None
             self._children = None
-            super().__setattr__("_frozen", True)
+            object.__setattr__(self, "_frozen", True)
             self._update_height()
         return
 
@@ -373,7 +373,7 @@ class NDSpace:
             Args:
                 space (NDSpace): The NDSpace to add new dimensions to.
             """
-            super().__setattr__("_frozen", False)
+            object.__setattr__(space, "_frozen", False)
             space._bounds = space._bounds + new_bounds
             # if there is a split NDPoint, update its coordinates
             if space._split_point is not None:
@@ -383,7 +383,7 @@ class NDSpace:
                 # add new bounds to children
                 for child in space._children:
                     _add_dimensions(child)
-            super().__setattr__("_frozen", True)
+            object.__setattr__(space, "_frozen", True)
             return
 
         _add_dimensions(root)
@@ -420,7 +420,7 @@ class NDSpace:
             Args:
                 space (NDSpace): The NDSpace to remove dimensions from.
             """
-            super().__setattr__("_frozen", False)
+            object.__setattr__(space, "_frozen", False)
             new_bounds = tuple(
                 bound for idx, bound in enumerate(space._bounds) if idx not in dims
             )
@@ -446,7 +446,7 @@ class NDSpace:
                 merged_children = []
                 discarded_children = []
                 for children in groups.values():
-                    selected_child = self._merge(tuple(children))
+                    selected_child = space._merge(tuple(children))
                     merged_children.append(selected_child)
                     for child in children:
                         if child is not selected_child:
@@ -454,12 +454,12 @@ class NDSpace:
                 space._children = tuple(merged_children)
                 # remove parent references from discarded children
                 for child in discarded_children:
-                    super(NDSpace, child).__setattr__("_frozen", False)
+                    object.__setattr__(child, "_frozen", False)
                     child._parent = None
-                    super(NDSpace, child).__setattr__("_frozen", True)
+                    object.__setattr__(child, "_frozen", True)
                     child._update_root()
                     child._update_depth()
-            super().__setattr__("_frozen", True)
+            object.__setattr__(space, "_frozen", True)
             space._update_height()
             return
 
@@ -564,10 +564,10 @@ class NDSpace:
                 expected_bounds = {child.bounds for child in expected_children}
                 if actual_bounds != expected_bounds:
                     raise ValueError("children are not compatible with split_point.")
-                super(NDSpace, space).__setattr__("_frozen", False)
+                object.__setattr__(space, "_frozen", False)
                 space._split_point = split_point
                 space._children = children
-                super(NDSpace, space).__setattr__("_frozen", True)
+                object.__setattr__(space, "_frozen", True)
                 space._update_height()
             return space
 
@@ -630,9 +630,9 @@ class NDSpace:
         """
         new_root = self._parent._root if self._parent is not None else self
         if self._root is not new_root:
-            super().__setattr__("_frozen", False)
+            object.__setattr__(self, "_frozen", False)
             self._root = new_root
-            super().__setattr__("_frozen", True)
+            object.__setattr__(self, "_frozen", True)
             if self._split_point is not None:
                 for child in self._children:
                     child._update_root()
@@ -644,9 +644,9 @@ class NDSpace:
         """
         new_depth = self._parent._depth + 1 if self._parent is not None else 0
         if self._depth != new_depth:
-            super().__setattr__("_frozen", False)
+            object.__setattr__(self, "_frozen", False)
             self._depth = new_depth
-            super().__setattr__("_frozen", True)
+            object.__setattr__(self, "_frozen", True)
             if self._split_point is not None:
                 for child in self._children:
                     child._update_depth()
@@ -662,9 +662,9 @@ class NDSpace:
             else 0
         )
         if self._height != new_height:
-            super().__setattr__("_frozen", False)
+            object.__setattr__(self, "_frozen", False)
             self._height = new_height
-            super().__setattr__("_frozen", True)
+            object.__setattr__(self, "_frozen", True)
             if self._parent is not None:
                 self._parent._update_height()
         return
@@ -695,5 +695,5 @@ class NDSpace:
         if getattr(self, "_frozen", False):
             raise AttributeError(f"{self.__class__.__name__} is immutable.")
         # set the attribute
-        super().__setattr__(name, value)
+        object.__setattr__(self, name, value)
         return
