@@ -16,9 +16,9 @@ class NDSpace:
     Attributes:
         bounds (tuple[tuple[float, float], ...]): The bounds of the NDSpace.
         parent (NDSpace | None): The parent NDSpace of the NDSpace.
-        root (NDSpace): The root NDSpace of the NDSpace.
         split_point (NDPoint | None): The split NDPoint of the NDSpace.
         children (tuple[NDSpace, ...] | None): The children NDSpaces of the NDSpace.
+        root (NDSpace): The root NDSpace of the NDSpace.
         depth (int): The depth of the NDSpace.
         height (int): The height of the NDSpace.
     """
@@ -26,9 +26,9 @@ class NDSpace:
     __slots__ = (
         "_bounds",
         "_parent",
-        "_root",
         "_split_point",
         "_children",
+        "_root",
         "_depth",
         "_height",
         "_frozen",
@@ -92,7 +92,6 @@ class NDSpace:
                 )
             ):
                 raise ValueError("split_point must be contained in bounds.")
-
         # initializations
         object.__setattr__(self, "_frozen", False)
         self._bounds = tuple((float(lower), float(upper)) for (lower, upper) in bounds)
@@ -138,16 +137,6 @@ class NDSpace:
         return self._parent
 
     @property
-    def root(self) -> NDSpace:
-        """
-        Get the root NDSpace of the NDSpace.
-
-        Returns:
-            NDSpace: The root NDSpace of the NDSpace.
-        """
-        return self._root
-
-    @property
     def split_point(self) -> NDPoint | None:
         """
         Get the split NDPoint of the NDSpace.
@@ -166,6 +155,16 @@ class NDSpace:
             tuple[NDSpace, ...] | None: The children NDSpaces of the NDSpace.
         """
         return self._children
+
+    @property
+    def root(self) -> NDSpace:
+        """
+        Get the root NDSpace of the NDSpace.
+
+        Returns:
+            NDSpace: The root NDSpace of the NDSpace.
+        """
+        return self._root
 
     @property
     def depth(self) -> int:
@@ -260,6 +259,32 @@ class NDSpace:
         else:
             result = False
         return result
+
+    def find_leaf(self, point: NDPoint) -> NDSpace:
+        """
+        Find the leaf NDSpace that contains the NDPoint.
+
+        Args:
+            point (NDPoint): The NDPoint to find the leaf for.
+
+        Returns:
+            NDSpace: The leaf NDSpace that contains the NDPoint.
+        """
+        # point validations
+        if not isinstance(point, NDPoint):
+            raise TypeError("point must be an NDPoint.")
+        if point.nd != self.nd:
+            raise ValueError(f"point must be {self.nd}D.")
+        if point not in self:
+            raise ValueError("point must be contained in self.")
+        # find the leaf that contains the NDPoint
+        space = self
+        while space._split_point is not None:
+            for child in space._children:
+                if point in child:
+                    space = child
+                    break
+        return space
 
     def split(self, point: NDPoint) -> tuple[NDSpace, ...]:
         """
@@ -542,18 +567,14 @@ class NDSpace:
                 raise ValueError(f"data['type'] must be a {cls.__name__}.")
             if "bounds" not in data:
                 raise KeyError("data must contain the key 'bounds'.")
-            if "split_point" not in data:
-                raise KeyError("data must contain the key 'split_point'.")
-            if "children" not in data:
-                raise KeyError("data must contain the key 'children'.")
-            if (data["split_point"] is None) != (data["children"] is None):
+            if (data.get("split_point") is None) != (data.get("children") is None):
                 raise ValueError(
                     "data['split_point'] and data['children'] must be both None "
                     "or both not None."
                 )
             # initializations
             space = cls(data["bounds"], parent)
-            if data["split_point"] is not None:
+            if data.get("split_point") is not None:
                 split_point = NDPoint.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, space) for child_data in data["children"]
