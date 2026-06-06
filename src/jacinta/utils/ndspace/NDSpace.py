@@ -21,6 +21,8 @@ class NDSpace:
         root (NDSpace): The root NDSpace of the NDSpace.
         depth (int): The depth of the NDSpace.
         height (int): The height of the NDSpace.
+        min_width (float | None): The minimum width of each dimension of the NDSpace.
+        max_depth (int | None): The maximum depth of the NDSpace.
     """
 
     __slots__ = (
@@ -31,23 +33,25 @@ class NDSpace:
         "_root",
         "_depth",
         "_height",
+        "_min_width",
+        "_max_depth",
         "_frozen",
     )
 
     def __init__(
         self,
         bounds: tuple[tuple[float, float], ...],
-        parent: NDSpace | None = None,
-        split_point: NDPoint | None = None,
+        min_width: float | None = None,
+        max_depth: int | None = None,
     ) -> None:
         """
         Initialize an NDSpace.
 
         Args:
             bounds (tuple[tuple[float, float], ...]): The bounds of the NDSpace.
-            parent (NDSpace | None): The parent NDSpace of the NDSpace.
-                Defaults to None.
-            split_point (NDPoint | None): The split NDPoint of the NDSpace.
+            min_width (float | None): The minimum width of each dimension
+                of the NDSpace. Defaults to None.
+            max_depth (int | None): The maximum depth of the NDSpace.
                 Defaults to None.
         """
         # bounds validations
@@ -66,43 +70,33 @@ class NDSpace:
                 raise ValueError(
                     "All lower bounds must be lower than their respective upper bounds."
                 )
-        # parent validations
-        if parent is not None:
-            if not isinstance(parent, NDSpace):
-                raise TypeError("parent must be an NDSpace.")
-            if parent.nd != len(bounds):
-                raise ValueError(f"parent must be {len(bounds)}D.")
-            if not all(
-                parent_lower <= lower and upper <= parent_upper
-                for (lower, upper), (parent_lower, parent_upper) in zip(
-                    bounds, parent._bounds, strict=True
+        # min_width validations
+        if min_width is not None:
+            if not isinstance(min_width, (float, int)):
+                raise TypeError("min_width must be a float.")
+            if min_width <= 0:
+                raise ValueError("min_width must be greater than 0.")
+            if any(upper - lower < min_width for lower, upper in bounds):
+                raise ValueError(
+                    "All bounds widths must be greater than or equal to min_width."
                 )
-            ):
-                raise ValueError("bounds must be contained in parent bounds.")
-        # split_point validations
-        if split_point is not None:
-            if not isinstance(split_point, NDPoint):
-                raise TypeError("split_point must be an NDPoint.")
-            if split_point.nd != len(bounds):
-                raise ValueError(f"split_point must be {len(bounds)}D.")
-            if not all(
-                lower <= coord < upper
-                for coord, (lower, upper) in zip(
-                    split_point.coordinates, bounds, strict=True
-                )
-            ):
-                raise ValueError("split_point must be contained in bounds.")
+        # max_depth validations
+        if max_depth is not None:
+            if not isinstance(max_depth, int):
+                raise TypeError("max_depth must be an int.")
+            if max_depth < 0:
+                raise ValueError("max_depth must be greater than or equal to 0.")
         # initializations
         object.__setattr__(self, "_frozen", False)
-        self._bounds = tuple((float(lower), float(upper)) for (lower, upper) in bounds)
-        self._parent = parent
-        self._root = parent.root if parent is not None else self
-        self._depth = parent.depth + 1 if parent is not None else 0
+        self._bounds = tuple((float(lower), float(upper)) for lower, upper in bounds)
+        self._parent = None
         self._split_point = None
         self._children = None
+        self._root = self
+        self._depth = 0
         self._height = 0
-        if split_point is not None:
-            self.split(split_point)
+        self._min_width = float(min_width) if min_width is not None else None
+        self._max_depth = max_depth
         object.__setattr__(self, "_frozen", True)
         return
 
@@ -187,6 +181,26 @@ class NDSpace:
         return self._height
 
     @property
+    def min_width(self) -> float | None:
+        """
+        Get the minimum width of each dimension of the NDSpace.
+
+        Returns:
+            float | None: The minimum width of each dimension of the NDSpace.
+        """
+        return self._min_width
+
+    @property
+    def max_depth(self) -> int | None:
+        """
+        Get the maximum depth of the NDSpace.
+
+        Returns:
+            int | None: The maximum depth of the NDSpace.
+        """
+        return self._max_depth
+
+    @property
     def nd(self) -> int:
         """
         Get the number of dimensions of the NDSpace.
@@ -205,7 +219,7 @@ class NDSpace:
         Returns:
             bool: True if the NDSpace is a leaf, False otherwise.
         """
-        is_leaf = self._split_point is None
+        is_leaf = self._children is None
         return is_leaf
 
     def __eq__(self, other: object) -> bool:
@@ -241,6 +255,7 @@ class NDSpace:
         if other.nd != self.nd:
             raise ValueError(f"other must be {self.nd}D.")
         # check if the NDPoint is within the bounds
+        result = False
         if isinstance(other, NDPoint):
             result = all(
                 lower <= coord < upper
@@ -256,8 +271,6 @@ class NDSpace:
                     other._bounds, self._bounds, strict=True
                 )
             )
-        else:
-            result = False
         return result
 
     def find_leaf(self, point: NDPoint) -> NDSpace:
@@ -279,12 +292,52 @@ class NDSpace:
             raise ValueError("point must be contained in self.")
         # find the leaf that contains the NDPoint
         space = self
-        while space._split_point is not None:
+        while not space.is_leaf:
             for child in space._children:
                 if point in child:
                     space = child
                     break
         return space
+
+    def can_split(self, point: NDPoint) -> bool:
+        """
+        Checks if the NDSpace can be split by an NDPoint.
+
+        Args:
+            point (NDPoint): The NDPoint to check if the NDSpace can be split by.
+
+        Returns:
+            bool: True if the NDSpace can be split, False otherwise.
+        """
+        # point validations
+        if not isinstance(point, NDPoint):
+            raise TypeError("point must be an NDPoint.")
+        if point.nd != self.nd:
+            raise ValueError(f"point must be {self.nd}D.")
+        if point not in self:
+            raise ValueError("point must be contained in self.")
+        # check if the NDSpace is a leaf
+        result = True
+        if not self.is_leaf:
+            result = False
+        # check if the NDSpace is at max depth
+        elif self._max_depth is not None and self._depth == self._max_depth:
+            result = False
+        # check if the NDSpace can be split by the point
+        elif self._min_width is not None:
+            for coord, (lower, upper) in zip(
+                point.coordinates, self._bounds, strict=True
+            ):
+                lower_width = coord - lower
+                upper_width = upper - coord
+                # skip new empty bounds (lower == upper)
+                if lower_width != 0 and lower_width < self._min_width:
+                    result = False
+                    break
+                if upper_width != 0 and upper_width < self._min_width:
+                    result = False
+                    break
+        return result
 
     def split(self, point: NDPoint) -> tuple[NDSpace, ...]:
         """
@@ -303,8 +356,9 @@ class NDSpace:
             raise ValueError(f"point must be {self.nd}D.")
         if point not in self:
             raise ValueError("point must be contained in self.")
-        if self._split_point is not None:
-            raise ValueError("NDSpace is already split.")
+        # self validations
+        if not self.can_split(point):
+            raise ValueError("self cannot be split.")
         # split the NDSpace
         spaces = []
         # generate all combinations of upper/lower halves
@@ -325,7 +379,12 @@ class NDSpace:
                 new_bounds[dim] = new_bound
             # create new NDSpace if valid (lower < upper)
             if is_valid:
-                space = NDSpace(tuple(new_bounds), parent=self)
+                space = NDSpace(tuple(new_bounds), self._min_width, self._max_depth)
+                object.__setattr__(space, "_frozen", False)
+                space._parent = self
+                space._root = self._root
+                space._depth = self._depth + 1
+                object.__setattr__(space, "_frozen", True)
                 spaces.append(space)
         spaces = tuple(spaces)
         # update children
@@ -341,7 +400,7 @@ class NDSpace:
         Collapse the NDSpace by removing its children.
         """
         # remove children if the NDSpace is split
-        if self._split_point is not None:
+        if not self.is_leaf:
             # remove parent references from children
             for child in self._children:
                 object.__setattr__(child, "_frozen", False)
@@ -386,8 +445,12 @@ class NDSpace:
                 raise ValueError(
                     "All lower bounds must be lower than their respective upper bounds."
                 )
+            if self._min_width is not None and bound[1] - bound[0] < self._min_width:
+                raise ValueError(
+                    "All bounds widths must be greater than or equal to min_width."
+                )
         # add new bounds to the whole NDSpace tree
-        new_bounds = tuple((float(lower), float(upper)) for (lower, upper) in bounds)
+        new_bounds = tuple((float(lower), float(upper)) for lower, upper in bounds)
         new_coords = tuple(lower for lower, _ in new_bounds)
         root = self.root
 
@@ -400,12 +463,11 @@ class NDSpace:
             """
             object.__setattr__(space, "_frozen", False)
             space._bounds = space._bounds + new_bounds
-            # if there is a split NDPoint, update its coordinates
-            if space._split_point is not None:
+            # add new bounds to children
+            if not space.is_leaf:
                 space._split_point = NDPoint(
                     space._split_point.coordinates + new_coords
                 )
-                # add new bounds to children
                 for child in space._children:
                     _add_dimensions(child)
             object.__setattr__(space, "_frozen", True)
@@ -450,15 +512,14 @@ class NDSpace:
                 bound for idx, bound in enumerate(space._bounds) if idx not in dims
             )
             space._bounds = new_bounds
-            # if there is a split NDPoint, update its coordinates
-            if space._split_point is not None:
+            # remove dimensions from children
+            if not space.is_leaf:
                 new_coords = tuple(
                     coord
                     for idx, coord in enumerate(space._split_point.coordinates)
                     if idx not in dims
                 )
                 space._split_point = NDPoint(new_coords)
-                # remove dimensions from children
                 for child in space._children:
                     _remove_dimensions(child)
                 # group duplicated children
@@ -522,12 +583,16 @@ class NDSpace:
             result = {
                 "type": space.__class__.__name__,
                 "bounds": space._bounds,
+                "min_width": space._min_width,
+                "max_depth": space._max_depth,
                 "split_point": space._split_point.to_dict()
                 if space._split_point is not None
                 else None,
-                "children": tuple(_to_dict(child) for child in space._children)
-                if space._children is not None
-                else None,
+                "children": (
+                    tuple(_to_dict(child) for child in space._children)
+                    if not space.is_leaf
+                    else None
+                ),
             }
             return result
 
@@ -567,23 +632,56 @@ class NDSpace:
                 raise ValueError(f"data['type'] must be a {cls.__name__}.")
             if "bounds" not in data:
                 raise KeyError("data must contain the key 'bounds'.")
-            if (data.get("split_point") is None) != (data.get("children") is None):
+            if "min_width" not in data:
+                raise KeyError("data must contain the key 'min_width'.")
+            if "max_depth" not in data:
+                raise KeyError("data must contain the key 'max_depth'.")
+            if "split_point" not in data:
+                raise KeyError("data must contain the key 'split_point'.")
+            if "children" not in data:
+                raise KeyError("data must contain the key 'children'.")
+            if (data["split_point"] is None) != (data["children"] is None):
                 raise ValueError(
                     "data['split_point'] and data['children'] must be both None "
                     "or both not None."
                 )
+            # parent validations
+            if parent is not None:
+                if parent._max_depth is not None and parent._depth == parent._max_depth:
+                    raise ValueError("parent cannot be split.")
+                if parent._min_width != data["min_width"]:
+                    raise ValueError(
+                        "data['min_width'] must be equal to parent._min_width."
+                    )
+                if parent._max_depth != data["max_depth"]:
+                    raise ValueError(
+                        "data['max_depth'] must be equal to parent._max_depth."
+                    )
             # initializations
-            space = cls(data["bounds"], parent)
-            if data.get("split_point") is not None:
+            space = cls(data["bounds"], data["min_width"], data["max_depth"])
+            # update parent attributes
+            if parent is not None:
+                object.__setattr__(space, "_frozen", False)
+                space._parent = parent
+                space._root = parent._root
+                space._depth = parent._depth + 1
+                object.__setattr__(space, "_frozen", True)
+            # update children attributes
+            if data["children"] is not None:
                 split_point = NDPoint.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, space) for child_data in data["children"]
                 )
                 # validate split integrity
-                expected_children = cls(data["bounds"]).split(split_point)
-                actual_bounds = {child.bounds for child in children}
-                expected_bounds = {child.bounds for child in expected_children}
-                if actual_bounds != expected_bounds:
+                expected_children = cls(
+                    data["bounds"], data["min_width"], data["max_depth"]
+                ).split(split_point)
+                actual_bounds = {child._bounds for child in children}
+                expected_bounds = {child._bounds for child in expected_children}
+                if (
+                    len(children) != len(expected_children)
+                    or actual_bounds != expected_bounds
+                ):
                     raise ValueError("children are not compatible with split_point.")
                 object.__setattr__(space, "_frozen", False)
                 space._split_point = split_point
@@ -654,7 +752,7 @@ class NDSpace:
             object.__setattr__(self, "_frozen", False)
             self._root = new_root
             object.__setattr__(self, "_frozen", True)
-            if self._split_point is not None:
+            if not self.is_leaf:
                 for child in self._children:
                     child._update_root()
         return
@@ -668,7 +766,7 @@ class NDSpace:
             object.__setattr__(self, "_frozen", False)
             self._depth = new_depth
             object.__setattr__(self, "_frozen", True)
-            if self._split_point is not None:
+            if not self.is_leaf:
                 for child in self._children:
                     child._update_depth()
         return
@@ -679,7 +777,7 @@ class NDSpace:
         """
         new_height = (
             1 + max(child._height for child in self._children)
-            if self._split_point is not None
+            if not self.is_leaf
             else 0
         )
         if self._height != new_height:
