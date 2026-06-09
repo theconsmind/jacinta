@@ -15,8 +15,8 @@ class PowerScheduleStrategy(ScheduleStrategy):
         exponent (float): The exponent of the power function.
         offset (float): The offset of the power function.
         intercept (float): The intercept of the power function.
-        min_value (float | None): The minimum value of the PowerScheduleStrategy.
-        max_value (float | None): The maximum value of the PowerScheduleStrategy.
+        min_value (float | None): The minimum value of the strategy.
+        max_value (float | None): The maximum value of the strategy.
     """
 
     __slots__ = (
@@ -45,9 +45,9 @@ class PowerScheduleStrategy(ScheduleStrategy):
             exponent (float): The exponent of the power function.
             offset (float): The offset of the power function.
             intercept (float): The intercept of the power function.
-            min_value (float | None): The minimum value of the PowerScheduleStrategy.
+            min_value (float | None): The minimum value of the strategy.
                 Defaults to None.
-            max_value (float | None): The maximum value of the PowerScheduleStrategy.
+            max_value (float | None): The maximum value of the strategy.
                 Defaults to None.
         """
         # scale validations
@@ -71,22 +71,22 @@ class PowerScheduleStrategy(ScheduleStrategy):
         if min_value is not None and max_value is not None and min_value > max_value:
             raise ValueError("min_value must be less than or equal to max_value.")
         # initializations
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._scale = float(scale)
         self._exponent = float(exponent)
         self._offset = float(offset)
         self._intercept = float(intercept)
         self._min_value = float(min_value) if min_value is not None else None
         self._max_value = float(max_value) if max_value is not None else None
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         return
 
     def __repr__(self) -> str:
         """
-        Get the representation of the PowerScheduleStrategy.
+        Get the representation of the strategy.
 
         Returns:
-            str: The representation of the PowerScheduleStrategy.
+            str: The representation of the strategy.
         """
         result = (
             f"{self.__class__.__name__}"
@@ -98,13 +98,13 @@ class PowerScheduleStrategy(ScheduleStrategy):
 
     def __call__(self, depth: int) -> float:
         """
-        Get the PowerScheduleStrategy value based on the depth.
+        Get the strategy value based on the depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The PowerScheduleStrategy value based on the depth.
+            float: The strategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -126,75 +126,75 @@ class PowerScheduleStrategy(ScheduleStrategy):
     @property
     def scale(self) -> float:
         """
-        Get the scale of the PowerScheduleStrategy.
+        Get the scale of the strategy.
 
         Returns:
-            float: The scale of the PowerScheduleStrategy.
+            float: The scale of the strategy.
         """
         return self._scale
 
     @property
     def exponent(self) -> float:
         """
-        Get the exponent of the PowerScheduleStrategy.
+        Get the exponent of the strategy.
 
         Returns:
-            float: The exponent of the PowerScheduleStrategy.
+            float: The exponent of the strategy.
         """
         return self._exponent
 
     @property
     def offset(self) -> float:
         """
-        Get the offset of the PowerScheduleStrategy.
+        Get the offset of the strategy.
 
         Returns:
-            float: The offset of the PowerScheduleStrategy.
+            float: The offset of the strategy.
         """
         return self._offset
 
     @property
     def intercept(self) -> float:
         """
-        Get the intercept of the PowerScheduleStrategy.
+        Get the intercept of the strategy.
 
         Returns:
-            float: The intercept of the PowerScheduleStrategy.
+            float: The intercept of the strategy.
         """
         return self._intercept
 
     @property
     def min_value(self) -> float | None:
         """
-        Get the minimum value of the PowerScheduleStrategy.
+        Get the minimum value of the strategy.
 
         Returns:
-            float | None: The minimum value of the PowerScheduleStrategy.
+            float | None: The minimum value of the strategy.
         """
         return self._min_value
 
     @property
     def max_value(self) -> float | None:
         """
-        Get the maximum value of the PowerScheduleStrategy.
+        Get the maximum value of the strategy.
 
         Returns:
-            float | None: The maximum value of the PowerScheduleStrategy.
+            float | None: The maximum value of the strategy.
         """
         return self._max_value
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two PowerScheduleStrategies are equal.
+        Check if two strategies are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the PowerScheduleStrategies are equal, False otherwise.
+            bool: True if the strategies are equal, False otherwise.
         """
         # other validations
-        if not isinstance(other, PowerScheduleStrategy):
+        if type(self) is not type(other):
             return NotImplemented
         # equality check
         result = (
@@ -209,10 +209,10 @@ class PowerScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the PowerScheduleStrategy.
+        Get the dictionary representation of the strategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the PowerScheduleStrategy.
+            dict[str, Any]: The dictionary representation of the strategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -228,14 +228,13 @@ class PowerScheduleStrategy(ScheduleStrategy):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PowerScheduleStrategy:
         """
-        Create a PowerScheduleStrategy from a dictionary.
+        Create a strategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation
-                of the PowerScheduleStrategy.
+            data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            PowerScheduleStrategy: The PowerScheduleStrategy instance.
+            PowerScheduleStrategy: The strategy.
         """
         # data validations
         if not isinstance(data, dict):

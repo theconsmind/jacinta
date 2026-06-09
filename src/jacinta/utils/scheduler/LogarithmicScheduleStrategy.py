@@ -14,8 +14,8 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         scale (float): The scale of the logarithmic function.
         offset (float): The offset of the logarithmic function.
         intercept (float): The intercept of the logarithmic function.
-        min_value (float | None): The minimum value of the LogarithmicScheduleStrategy.
-        max_value (float | None): The maximum value of the LogarithmicScheduleStrategy.
+        min_value (float | None): The minimum value of the strategy.
+        max_value (float | None): The maximum value of the strategy.
     """
 
     __slots__ = ("_scale", "_offset", "_intercept", "_min_value", "_max_value")
@@ -35,10 +35,10 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
             scale (float): The scale of the logarithmic function.
             offset (float): The offset of the logarithmic function.
             intercept (float): The intercept of the logarithmic function.
-            min_value (float | None): The minimum value
-                of the LogarithmicScheduleStrategy. Defaults to None.
-            max_value (float | None): The maximum value
-                of the LogarithmicScheduleStrategy. Defaults to None.
+            min_value (float | None): The minimum value of the strategy.
+                Defaults to None.
+            max_value (float | None): The maximum value of the strategy.
+                Defaults to None.
         """
         # scale validations
         if not isinstance(scale, (float, int)):
@@ -58,21 +58,21 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
         if min_value is not None and max_value is not None and min_value > max_value:
             raise ValueError("min_value must be less than or equal to max_value.")
         # initializations
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._scale = float(scale)
         self._offset = float(offset)
         self._intercept = float(intercept)
         self._min_value = float(min_value) if min_value is not None else None
         self._max_value = float(max_value) if max_value is not None else None
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         return
 
     def __repr__(self) -> str:
         """
-        Get the representation of the LogarithmicScheduleStrategy.
+        Get the representation of the strategy.
 
         Returns:
-            str: The representation of the LogarithmicScheduleStrategy.
+            str: The representation of the strategy.
         """
         result = (
             f"{self.__class__.__name__}"
@@ -84,13 +84,13 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
 
     def __call__(self, depth: int) -> float:
         """
-        Get the LogarithmicScheduleStrategy value based on the depth.
+        Get the strategy value based on the depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The LogarithmicScheduleStrategy value based on the depth.
+            float: The strategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -109,65 +109,65 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
     @property
     def scale(self) -> float:
         """
-        Get the scale of the LogarithmicScheduleStrategy.
+        Get the scale of the strategy.
 
         Returns:
-            float: The scale of the LogarithmicScheduleStrategy.
+            float: The scale of the strategy.
         """
         return self._scale
 
     @property
     def offset(self) -> float:
         """
-        Get the offset of the LogarithmicScheduleStrategy.
+        Get the offset of the strategy.
 
         Returns:
-            float: The offset of the LogarithmicScheduleStrategy.
+            float: The offset of the strategy.
         """
         return self._offset
 
     @property
     def intercept(self) -> float:
         """
-        Get the intercept of the LogarithmicScheduleStrategy.
+        Get the intercept of the strategy.
 
         Returns:
-            float: The intercept of the LogarithmicScheduleStrategy.
+            float: The intercept of the strategy.
         """
         return self._intercept
 
     @property
     def min_value(self) -> float | None:
         """
-        Get the minimum value of the LogarithmicScheduleStrategy.
+        Get the minimum value of the strategy.
 
         Returns:
-            float | None: The minimum value of the LogarithmicScheduleStrategy.
+            float | None: The minimum value of the strategy.
         """
         return self._min_value
 
     @property
     def max_value(self) -> float | None:
         """
-        Get the maximum value of the LogarithmicScheduleStrategy.
+        Get the maximum value of the strategy.
 
         Returns:
-            float | None: The maximum value of the LogarithmicScheduleStrategy.
+            float | None: The maximum value of the strategy.
         """
         return self._max_value
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two LogarithmicScheduleStrategies are equal.
+        Check if two strategies are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the LogarithmicScheduleStrategies are equal, False otherwise.
+            bool: True if the strategies are equal, False otherwise.
         """
         # other validations
-        if not isinstance(other, LogarithmicScheduleStrategy):
+        if type(self) is not type(other):
             return NotImplemented
         # equality check
         result = (
@@ -181,11 +181,10 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the LogarithmicScheduleStrategy.
+        Get the dictionary representation of the strategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation
-                of the LogarithmicScheduleStrategy.
+            dict[str, Any]: The dictionary representation of the strategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -200,14 +199,13 @@ class LogarithmicScheduleStrategy(ScheduleStrategy):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> LogarithmicScheduleStrategy:
         """
-        Create a LogarithmicScheduleStrategy from a dictionary.
+        Create a strategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation
-                of the LogarithmicScheduleStrategy.
+            data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            LogarithmicScheduleStrategy: The LogarithmicScheduleStrategy instance.
+            LogarithmicScheduleStrategy: The strategy.
         """
         # data validations
         if not isinstance(data, dict):

@@ -4,7 +4,7 @@ import json
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 
 class ScheduleStrategy(ABC):
@@ -18,35 +18,35 @@ class ScheduleStrategy(ABC):
     @abstractmethod
     def __call__(self, depth: int) -> float:
         """
-        Get the ScheduleStrategy value based on the depth.
+        Get the strategy value based on the depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The ScheduleStrategy value based on the depth.
+            float: The strategy value based on the depth.
         """
         ...
 
     @abstractmethod
     def __eq__(self, other: object) -> bool:
         """
-        Check if two ScheduleStrategies are equal.
+        Check if two strategies are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the ScheduleStrategies are equal, False otherwise.
+            bool: True if the strategies are equal, False otherwise.
         """
         ...
 
-    def copy(self) -> ScheduleStrategy:
+    def copy(self) -> Self:
         """
-        Get a copy of the ScheduleStrategy.
+        Get a copy of the strategy.
 
         Returns:
-            ScheduleStrategy: A copy of the ScheduleStrategy.
+            Self: The copy of the strategy.
         """
         result = deepcopy(self)
         return result
@@ -54,25 +54,24 @@ class ScheduleStrategy(ABC):
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the ScheduleStrategy.
+        Get the dictionary representation of the strategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the ScheduleStrategy.
+            dict[str, Any]: The dictionary representation of the strategy.
         """
         ...
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, data: dict[str, Any]) -> ScheduleStrategy:
+    def from_dict(cls, data: dict[str, Any]) -> Self:
         """
-        Create a ScheduleStrategy from a dictionary.
+        Create a strategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation
-                of the ScheduleStrategy.
+            data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            ScheduleStrategy: The ScheduleStrategy instance.
+            Self: The strategy.
         """
         # data validations
         if not isinstance(data, dict):
@@ -93,7 +92,7 @@ class ScheduleStrategy(ABC):
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
-        Save the ScheduleStrategy to a json file.
+        Save the strategy to a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -116,15 +115,15 @@ class ScheduleStrategy(ABC):
         return
 
     @classmethod
-    def load(cls, path: str | Path) -> ScheduleStrategy:
+    def load(cls, path: str | Path) -> Self:
         """
-        Load a ScheduleStrategy from a json file.
+        Load a strategy from a json file.
 
         Args:
             path (str | Path): The path to the file.
 
         Returns:
-            ScheduleStrategy: The ScheduleStrategy instance.
+            Self: The strategy.
         """
         # path validations
         if not isinstance(path, (str, Path)):
@@ -143,7 +142,7 @@ class ScheduleStrategy(ABC):
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        Set an attribute of the ScheduleStrategy.
+        Set an attribute of the strategy.
 
         Args:
             name (str): The name of the attribute.
@@ -153,5 +152,5 @@ class ScheduleStrategy(ABC):
         if getattr(self, "_frozen", False):
             raise AttributeError(f"{self.__class__.__name__} is immutable.")
         # set the attribute
-        super().__setattr__(name, value)
+        object.__setattr__(self, name, value)
         return

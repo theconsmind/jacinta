@@ -13,7 +13,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
 
     Attributes:
         segments (tuple[tuple[int, ScheduleStrategy], ...]): The segments
-            of the PiecewiseScheduleStrategy.
+            of the strategy.
     """
 
     __slots__ = ("_segments", "_depths")
@@ -27,7 +27,7 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
 
         Args:
             segments (tuple[tuple[int, ScheduleStrategy], ...]): The segments
-                of the PiecewiseScheduleStrategy.
+                of the strategy.
         """
         # segments validations
         if not isinstance(segments, (tuple, list)):
@@ -55,31 +55,31 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
                     "segments must be sorted by depth and depths must be unique."
                 )
         # initializations
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._segments = tuple(tuple(segment) for segment in segments)
         self._depths = depths
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         return
 
     def __repr__(self) -> str:
         """
-        Get the representation of the PiecewiseScheduleStrategy.
+        Get the representation of the strategy.
 
         Returns:
-            str: The representation of the PiecewiseScheduleStrategy.
+            str: The representation of the strategy.
         """
         result = f"{self.__class__.__name__}(segments={self._segments!r})"
         return result
 
     def __call__(self, depth: int) -> float:
         """
-        Get the PiecewiseScheduleStrategy value based on the depth.
+        Get the strategy value based on the depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The PiecewiseScheduleStrategy value based on the depth.
+            float: The strategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -95,26 +95,25 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
     @property
     def segments(self) -> tuple[tuple[int, ScheduleStrategy], ...]:
         """
-        Get the segments of the PiecewiseScheduleStrategy.
+        Get the segments of the strategy.
 
         Returns:
-            tuple[tuple[int, ScheduleStrategy], ...]: The segments
-                of the PiecewiseScheduleStrategy.
+            tuple[tuple[int, ScheduleStrategy], ...]: The segments of the strategy.
         """
         return self._segments
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two PiecewiseScheduleStrategies are equal.
+        Check if two strategies are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the PiecewiseScheduleStrategies are equal, False otherwise.
+            bool: True if the strategies are equal, False otherwise.
         """
         # other validations
-        if not isinstance(other, PiecewiseScheduleStrategy):
+        if type(self) is not type(other):
             return NotImplemented
         # equality check
         result = self._segments == other._segments
@@ -122,11 +121,10 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the PiecewiseScheduleStrategy.
+        Get the dictionary representation of the strategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation
-                of the PiecewiseScheduleStrategy.
+            dict[str, Any]: The dictionary representation of the strategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -139,14 +137,13 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PiecewiseScheduleStrategy:
         """
-        Create a PiecewiseScheduleStrategy from a dictionary.
+        Create a strategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation
-                of the PiecewiseScheduleStrategy.
+            data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            PiecewiseScheduleStrategy: The PiecewiseScheduleStrategy instance.
+            PiecewiseScheduleStrategy: The strategy.
         """
         # data validations
         if not isinstance(data, dict):

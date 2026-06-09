@@ -14,7 +14,7 @@ class Scheduler:
     a value using a ScheduleStrategy.
 
     Attributes:
-        strategy (ScheduleStrategy): The ScheduleStrategy to use.
+        strategy (ScheduleStrategy): The strategy to use.
     """
 
     __slots__ = ("_strategy", "_frozen")
@@ -24,36 +24,36 @@ class Scheduler:
         Initialize a Scheduler.
 
         Args:
-            strategy (ScheduleStrategy): The ScheduleStrategy to use.
+            strategy (ScheduleStrategy): The strategy to use.
         """
         # strategy validations
         if not isinstance(strategy, ScheduleStrategy):
-            raise TypeError("strategy must be an instance of ScheduleStrategy.")
+            raise TypeError("strategy must be a ScheduleStrategy.")
         # initializations
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._strategy = strategy
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         return
 
     def __repr__(self) -> str:
         """
-        Get the representation of the Scheduler.
+        Get the representation of the scheduler.
 
         Returns:
-            str: The representation of the Scheduler.
+            str: The representation of the scheduler.
         """
         result = f"{self.__class__.__name__}(strategy={self._strategy!r})"
         return result
 
     def __call__(self, depth: int) -> float:
         """
-        Get the Scheduler value based on the depth.
+        Get the scheduler value based on the depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The Scheduler value based on the depth.
+            float: The scheduler value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -67,25 +67,25 @@ class Scheduler:
     @property
     def strategy(self) -> ScheduleStrategy:
         """
-        Get the ScheduleStrategy of the Scheduler.
+        Get the strategy of the scheduler.
 
         Returns:
-            ScheduleStrategy: The ScheduleStrategy of the Scheduler.
+            ScheduleStrategy: The strategy of the scheduler.
         """
         return self._strategy
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two Schedulers are equal.
+        Check if two schedulers are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the Schedulers are equal, False otherwise.
+            bool: True if the schedulers are equal, False otherwise.
         """
         # other validations
-        if not isinstance(other, Scheduler):
+        if type(self) is not type(other):
             return NotImplemented
         # equality check
         result = self._strategy == other._strategy
@@ -93,20 +93,20 @@ class Scheduler:
 
     def copy(self) -> Scheduler:
         """
-        Get a copy of the Scheduler.
+        Get a copy of the scheduler.
 
         Returns:
-            Scheduler: A copy of the Scheduler.
+            Scheduler: The copy of the scheduler.
         """
         result = deepcopy(self)
         return result
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the Scheduler.
+        Get the dictionary representation of the scheduler.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the Scheduler.
+            dict[str, Any]: The dictionary representation of the scheduler.
         """
         result = {
             "type": self.__class__.__name__,
@@ -117,13 +117,13 @@ class Scheduler:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Scheduler:
         """
-        Create a Scheduler from a dictionary.
+        Create a scheduler from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the Scheduler.
+            data (dict[str, Any]): The dictionary representation of the scheduler.
 
         Returns:
-            Scheduler: The Scheduler instance.
+            Scheduler: The scheduler.
         """
         # data validations
         if not isinstance(data, dict):
@@ -140,7 +140,7 @@ class Scheduler:
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
-        Save the Scheduler to a json file.
+        Save the scheduler to a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -165,13 +165,13 @@ class Scheduler:
     @classmethod
     def load(cls, path: str | Path) -> Scheduler:
         """
-        Load a Scheduler from a json file.
+        Load a scheduler from a json file.
 
         Args:
             path (str | Path): The path to the file.
 
         Returns:
-            Scheduler: The Scheduler instance.
+            Scheduler: The scheduler.
         """
         # path validations
         if not isinstance(path, (str, Path)):
@@ -190,7 +190,7 @@ class Scheduler:
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        Set an attribute of the Scheduler.
+        Set an attribute of the scheduler.
 
         Args:
             name (str): The name of the attribute.
@@ -200,5 +200,5 @@ class Scheduler:
         if getattr(self, "_frozen", False):
             raise AttributeError(f"{self.__class__.__name__} is immutable.")
         # set the attribute
-        super().__setattr__(name, value)
+        object.__setattr__(self, name, value)
         return

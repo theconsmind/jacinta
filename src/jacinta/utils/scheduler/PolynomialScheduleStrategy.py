@@ -12,8 +12,8 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     Attributes:
         coefficients (tuple[float, ...]): The coefficients of the polynomial function.
-        min_value (float | None): The minimum value of the PolynomialScheduleStrategy.
-        max_value (float | None): The maximum value of the PolynomialScheduleStrategy.
+        min_value (float | None): The minimum value of the strategy.
+        max_value (float | None): The maximum value of the strategy.
     """
 
     __slots__ = ("_coefficients", "_min_value", "_max_value")
@@ -30,10 +30,10 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         Args:
             coefficients (tuple[float, ...]): The coefficients
                 of the polynomial function.
-            min_value (float | None): The minimum value of the
-                PolynomialScheduleStrategy. Defaults to None.
-            max_value (float | None): The maximum value of the
-                PolynomialScheduleStrategy. Defaults to None.
+            min_value (float | None): The minimum value of the strategy.
+                Defaults to None.
+            max_value (float | None): The maximum value of the strategy.
+                Defaults to None.
         """
         # coefficients validations
         if not isinstance(coefficients, (tuple, list)):
@@ -52,19 +52,19 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
         if min_value is not None and max_value is not None and min_value > max_value:
             raise ValueError("min_value must be less than or equal to max_value.")
         # initializations
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._coefficients = tuple(float(coefficient) for coefficient in coefficients)
         self._min_value = float(min_value) if min_value is not None else None
         self._max_value = float(max_value) if max_value is not None else None
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         return
 
     def __repr__(self) -> str:
         """
-        Get the representation of the PolynomialScheduleStrategy.
+        Get the representation of the strategy.
 
         Returns:
-            str: The representation of the PolynomialScheduleStrategy.
+            str: The representation of the strategy.
         """
         result = (
             f"{self.__class__.__name__}"
@@ -75,13 +75,13 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     def __call__(self, depth: int) -> float:
         """
-        Get the PolynomialScheduleStrategy value based on the depth.
+        Get the strategy value based on the depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The PolynomialScheduleStrategy value based on the depth.
+            float: The strategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -103,45 +103,45 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
     @property
     def coefficients(self) -> tuple[float, ...]:
         """
-        Get the coefficients of the PolynomialScheduleStrategy.
+        Get the coefficients of the strategy.
 
         Returns:
-            tuple[float, ...]: The coefficients of the PolynomialScheduleStrategy.
+            tuple[float, ...]: The coefficients of the strategy.
         """
         return self._coefficients
 
     @property
     def min_value(self) -> float | None:
         """
-        Get the minimum value of the PolynomialScheduleStrategy.
+        Get the minimum value of the strategy.
 
         Returns:
-            float | None: The minimum value of the PolynomialScheduleStrategy.
+            float | None: The minimum value of the strategy.
         """
         return self._min_value
 
     @property
     def max_value(self) -> float | None:
         """
-        Get the maximum value of the PolynomialScheduleStrategy.
+        Get the maximum value of the strategy.
 
         Returns:
-            float | None: The maximum value of the PolynomialScheduleStrategy.
+            float | None: The maximum value of the strategy.
         """
         return self._max_value
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two PolynomialScheduleStrategies are equal.
+        Check if two strategies are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the PolynomialScheduleStrategies are equal, False otherwise.
+            bool: True if the strategies are equal, False otherwise.
         """
         # other validations
-        if not isinstance(other, PolynomialScheduleStrategy):
+        if type(self) is not type(other):
             return NotImplemented
         # equality check
         result = (
@@ -153,11 +153,10 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the PolynomialScheduleStrategy.
+        Get the dictionary representation of the strategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation
-                of the PolynomialScheduleStrategy.
+            dict[str, Any]: The dictionary representation of the strategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -170,14 +169,13 @@ class PolynomialScheduleStrategy(ScheduleStrategy):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PolynomialScheduleStrategy:
         """
-        Create a PolynomialScheduleStrategy from a dictionary.
+        Create a strategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation
-                of the PolynomialScheduleStrategy.
+            data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            PolynomialScheduleStrategy: The PolynomialScheduleStrategy instance.
+            PolynomialScheduleStrategy: The strategy.
         """
         # data validations
         if not isinstance(data, dict):

@@ -88,7 +88,7 @@ class NDPoint:
         Get a copy of the point.
 
         Returns:
-            Self: A copy of the point.
+            Self: The copy of the point.
         """
         result = deepcopy(self)
         return result

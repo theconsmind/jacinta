@@ -12,8 +12,8 @@ class LinearScheduleStrategy(ScheduleStrategy):
     Attributes:
         slope (float): The slope of the linear function.
         intercept (float): The intercept of the linear function.
-        min_value (float | None): The minimum value of the LinearScheduleStrategy.
-        max_value (float | None): The maximum value of the LinearScheduleStrategy.
+        min_value (float | None): The minimum value of the strategy.
+        max_value (float | None): The maximum value of the strategy.
     """
 
     __slots__ = ("_slope", "_intercept", "_min_value", "_max_value")
@@ -31,9 +31,9 @@ class LinearScheduleStrategy(ScheduleStrategy):
         Args:
             slope (float): The slope of the linear function.
             intercept (float): The intercept of the linear function.
-            min_value (float | None): The minimum value of the LinearScheduleStrategy.
+            min_value (float | None): The minimum value of the strategy.
                 Defaults to None.
-            max_value (float | None): The maximum value of the LinearScheduleStrategy.
+            max_value (float | None): The maximum value of the strategy.
                 Defaults to None.
         """
         # slope validations
@@ -51,20 +51,20 @@ class LinearScheduleStrategy(ScheduleStrategy):
         if min_value is not None and max_value is not None and min_value > max_value:
             raise ValueError("min_value must be less than or equal to max_value.")
         # initializations
-        super().__setattr__("_frozen", False)
+        object.__setattr__(self, "_frozen", False)
         self._slope = float(slope)
         self._intercept = float(intercept)
         self._min_value = float(min_value) if min_value is not None else None
         self._max_value = float(max_value) if max_value is not None else None
-        super().__setattr__("_frozen", True)
+        object.__setattr__(self, "_frozen", True)
         return
 
     def __repr__(self) -> str:
         """
-        Get the representation of the LinearScheduleStrategy.
+        Get the representation of the strategy.
 
         Returns:
-            str: The representation of the LinearScheduleStrategy.
+            str: The representation of the strategy.
         """
         result = (
             f"{self.__class__.__name__}"
@@ -75,13 +75,13 @@ class LinearScheduleStrategy(ScheduleStrategy):
 
     def __call__(self, depth: int) -> float:
         """
-        Get the LinearScheduleStrategy value based on the depth.
+        Get the strategy value based on the depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The LinearScheduleStrategy value based on the depth.
+            float: The strategy value based on the depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -100,55 +100,55 @@ class LinearScheduleStrategy(ScheduleStrategy):
     @property
     def slope(self) -> float:
         """
-        Get the slope of the LinearScheduleStrategy.
+        Get the slope of the strategy.
 
         Returns:
-            float: The slope of the LinearScheduleStrategy.
+            float: The slope of the strategy.
         """
         return self._slope
 
     @property
     def intercept(self) -> float:
         """
-        Get the intercept of the LinearScheduleStrategy.
+        Get the intercept of the strategy.
 
         Returns:
-            float: The intercept of the LinearScheduleStrategy.
+            float: The intercept of the strategy.
         """
         return self._intercept
 
     @property
     def min_value(self) -> float | None:
         """
-        Get the minimum value of the LinearScheduleStrategy.
+        Get the minimum value of the strategy.
 
         Returns:
-            float | None: The minimum value of the LinearScheduleStrategy.
+            float | None: The minimum value of the strategy.
         """
         return self._min_value
 
     @property
     def max_value(self) -> float | None:
         """
-        Get the maximum value of the LinearScheduleStrategy.
+        Get the maximum value of the strategy.
 
         Returns:
-            float | None: The maximum value of the LinearScheduleStrategy.
+            float | None: The maximum value of the strategy.
         """
         return self._max_value
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two LinearScheduleStrategies are equal.
+        Check if two strategies are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the LinearScheduleStrategies are equal, False otherwise.
+            bool: True if the strategies are equal, False otherwise.
         """
         # other validations
-        if not isinstance(other, LinearScheduleStrategy):
+        if type(self) is not type(other):
             return NotImplemented
         # equality check
         result = (
@@ -161,10 +161,10 @@ class LinearScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the LinearScheduleStrategy.
+        Get the dictionary representation of the strategy.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the LinearScheduleStrategy.
+            dict[str, Any]: The dictionary representation of the strategy.
         """
         result = {
             "type": self.__class__.__name__,
@@ -178,14 +178,13 @@ class LinearScheduleStrategy(ScheduleStrategy):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> LinearScheduleStrategy:
         """
-        Create a LinearScheduleStrategy from a dictionary.
+        Create a strategy from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation
-                of the LinearScheduleStrategy.
+            data (dict[str, Any]): The dictionary representation of the strategy.
 
         Returns:
-            LinearScheduleStrategy: The LinearScheduleStrategy instance.
+            LinearScheduleStrategy: The strategy.
         """
         # data validations
         if not isinstance(data, dict):
