@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from itertools import product
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from .NDPoint import NDPoint
 
@@ -14,15 +14,15 @@ class NDSpace:
     An NDSpace represents an N-dimensional space.
 
     Attributes:
-        bounds (tuple[tuple[float, float], ...]): The bounds of the NDSpace.
-        parent (NDSpace | None): The parent NDSpace of the NDSpace.
-        split_point (NDPoint | None): The split NDPoint of the NDSpace.
-        children (tuple[NDSpace, ...] | None): The children NDSpaces of the NDSpace.
-        root (NDSpace): The root NDSpace of the NDSpace.
-        depth (int): The depth of the NDSpace.
-        height (int): The height of the NDSpace.
-        min_width (float | None): The minimum width of each dimension of the NDSpace.
-        max_depth (int | None): The maximum depth of the NDSpace.
+        bounds (tuple[tuple[float, float], ...]): The bounds of the space.
+        parent (Self | None): The parent of the space.
+        split_point (NDPoint | None): The split point of the space.
+        children (tuple[Self, ...] | None): The children of the space.
+        root (Self): The root of the space.
+        depth (int): The depth of the space.
+        height (int): The height of the space.
+        min_width (float | None): The minimum width of each dimension of the space.
+        max_depth (int | None): The maximum depth of the space.
     """
 
     __slots__ = (
@@ -48,10 +48,10 @@ class NDSpace:
         Initialize an NDSpace.
 
         Args:
-            bounds (tuple[tuple[float, float], ...]): The bounds of the NDSpace.
-            min_width (float | None): The minimum width of each dimension
-                of the NDSpace. Defaults to None.
-            max_depth (int | None): The maximum depth of the NDSpace.
+            bounds (tuple[tuple[float, float], ...]): The bounds of the space.
+            min_width (float | None): The minimum width of each dimension of the space.
+                Defaults to None.
+            max_depth (int | None): The maximum depth of the space.
                 Defaults to None.
         """
         # bounds validations
@@ -102,10 +102,10 @@ class NDSpace:
 
     def __repr__(self) -> str:
         """
-        Get the representation of the NDSpace.
+        Get the representation of the space.
 
         Returns:
-            str: The representation of the NDSpace.
+            str: The representation of the space.
         """
         result = f"{self.__class__.__name__}(bounds={self._bounds!r})"
         return result
@@ -113,100 +113,100 @@ class NDSpace:
     @property
     def bounds(self) -> tuple[tuple[float, float], ...]:
         """
-        Get the bounds of the NDSpace.
+        Get the bounds of the space.
 
         Returns:
-            tuple[tuple[float, float], ...]: The bounds of the NDSpace.
+            tuple[tuple[float, float], ...]: The bounds of the space.
         """
         return self._bounds
 
     @property
-    def parent(self) -> NDSpace | None:
+    def parent(self) -> Self | None:
         """
-        Get the parent NDSpace of the NDSpace.
+        Get the parent of the space.
 
         Returns:
-            NDSpace | None: The parent NDSpace of the NDSpace.
+            Self | None: The parent of the space.
         """
         return self._parent
 
     @property
     def split_point(self) -> NDPoint | None:
         """
-        Get the split NDPoint of the NDSpace.
+        Get the split point of the space.
 
         Returns:
-            NDPoint | None: The split NDPoint of the NDSpace.
+            NDPoint | None: The split point of the space.
         """
         return self._split_point
 
     @property
-    def children(self) -> tuple[NDSpace, ...] | None:
+    def children(self) -> tuple[Self, ...] | None:
         """
-        Get the children NDSpaces of the NDSpace.
+        Get the children of the space.
 
         Returns:
-            tuple[NDSpace, ...] | None: The children NDSpaces of the NDSpace.
+            tuple[Self, ...] | None: The children of the space.
         """
         return self._children
 
     @property
-    def root(self) -> NDSpace:
+    def root(self) -> Self:
         """
-        Get the root NDSpace of the NDSpace.
+        Get the root of the space.
 
         Returns:
-            NDSpace: The root NDSpace of the NDSpace.
+            Self: The root of the space.
         """
         return self._root
 
     @property
     def depth(self) -> int:
         """
-        Get the depth of the NDSpace.
+        Get the depth of the space.
 
         Returns:
-            int: The depth of the NDSpace.
+            int: The depth of the space.
         """
         return self._depth
 
     @property
     def height(self) -> int:
         """
-        Get the height of the NDSpace.
+        Get the height of the space.
 
         Returns:
-            int: The height of the NDSpace.
+            int: The height of the space.
         """
         return self._height
 
     @property
     def min_width(self) -> float | None:
         """
-        Get the minimum width of each dimension of the NDSpace.
+        Get the minimum width of each dimension of the space.
 
         Returns:
-            float | None: The minimum width of each dimension of the NDSpace.
+            float | None: The minimum width of each dimension of the space.
         """
         return self._min_width
 
     @property
     def max_depth(self) -> int | None:
         """
-        Get the maximum depth of the NDSpace.
+        Get the maximum depth of the space.
 
         Returns:
-            int | None: The maximum depth of the NDSpace.
+            int | None: The maximum depth of the space.
         """
         return self._max_depth
 
     @property
     def nd(self) -> int:
         """
-        Get the number of dimensions of the NDSpace.
+        Get the number of dimensions of the space.
 
         Returns:
-            int: The number of dimensions of the NDSpace.
+            int: The number of dimensions of the space.
         """
         nd = len(self._bounds)
         return nd
@@ -214,23 +214,23 @@ class NDSpace:
     @property
     def is_leaf(self) -> bool:
         """
-        Check if the NDSpace is a leaf.
+        Check if the space is a leaf.
 
         Returns:
-            bool: True if the NDSpace is a leaf, False otherwise.
+            bool: True if the space is a leaf, False otherwise.
         """
         is_leaf = self._children is None
         return is_leaf
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two NDSpaces are equal.
+        Check if two spaces are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the NDSpaces are equal, False otherwise.
+            bool: True if the spaces are equal, False otherwise.
         """
         # other validations
         if type(self) is not type(other):
@@ -241,20 +241,21 @@ class NDSpace:
 
     def __contains__(self, other: object) -> bool:
         """
-        Check if an NDPoint or NDSpace is within the bounds of the NDSpace.
+        Check if a point or space is within the bounds of the space.
 
         Args:
             other (object): The object to check.
 
         Returns:
-            bool: True if the NDPoint or NDSpace is within the bounds, False otherwise.
+            bool: True if the point or space is within the bounds of the space,
+                False otherwise.
         """
         # other validations
         if not isinstance(other, (NDPoint, NDSpace)):
             raise TypeError("other must be an NDPoint or an NDSpace.")
         if other.nd != self.nd:
             raise ValueError(f"other must be {self.nd}D.")
-        # check if the NDPoint is within the bounds
+        # check if the point is within the bounds
         result = False
         if isinstance(other, NDPoint):
             result = all(
@@ -263,7 +264,7 @@ class NDSpace:
                     other.coordinates, self._bounds, strict=True
                 )
             )
-        # check if the NDSpace is within the bounds
+        # check if the space is within the bounds
         elif isinstance(other, NDSpace):
             result = all(
                 lower <= other_lower and other_upper <= upper
@@ -273,15 +274,15 @@ class NDSpace:
             )
         return result
 
-    def find_leaf(self, point: NDPoint) -> NDSpace:
+    def find_leaf(self, point: NDPoint) -> Self:
         """
-        Find the leaf NDSpace that contains the NDPoint.
+        Find the leaf that contains the point.
 
         Args:
-            point (NDPoint): The NDPoint to find the leaf for.
+            point (NDPoint): The point to find the leaf for.
 
         Returns:
-            NDSpace: The leaf NDSpace that contains the NDPoint.
+            Self: The leaf that contains the point.
         """
         # point validations
         if not isinstance(point, NDPoint):
@@ -290,7 +291,7 @@ class NDSpace:
             raise ValueError(f"point must be {self.nd}D.")
         if point not in self:
             raise ValueError("point must be contained in self.")
-        # find the leaf that contains the NDPoint
+        # find the leaf that contains the point
         space = self
         while not space.is_leaf:
             for child in space._children:
@@ -301,13 +302,13 @@ class NDSpace:
 
     def can_split(self, point: NDPoint) -> bool:
         """
-        Checks if the NDSpace can be split by an NDPoint.
+        Check if the space can be split by a point.
 
         Args:
-            point (NDPoint): The NDPoint to check if the NDSpace can be split by.
+            point (NDPoint): The point to check if the space can be split by.
 
         Returns:
-            bool: True if the NDSpace can be split, False otherwise.
+            bool: True if the space can be split, False otherwise.
         """
         # point validations
         if not isinstance(point, NDPoint):
@@ -316,14 +317,14 @@ class NDSpace:
             raise ValueError(f"point must be {self.nd}D.")
         if point not in self:
             raise ValueError("point must be contained in self.")
-        # check if the NDSpace is a leaf
+        # check if the space is a leaf
         result = True
         if not self.is_leaf:
             result = False
-        # check if the NDSpace is at max depth
+        # check if the space is at max depth
         elif self._max_depth is not None and self._depth == self._max_depth:
             result = False
-        # check if the NDSpace can be split by the point
+        # check if the space can be split by the point
         elif self._min_width is not None:
             for coord, (lower, upper) in zip(
                 point.coordinates, self._bounds, strict=True
@@ -339,15 +340,15 @@ class NDSpace:
                     break
         return result
 
-    def split(self, point: NDPoint) -> tuple[NDSpace, ...]:
+    def split(self, point: NDPoint) -> tuple[Self, ...]:
         """
-        Split the NDSpace into smaller NDSpaces based on an NDPoint.
+        Split the space into smaller spaces based on a point.
 
         Args:
-            point (NDPoint): The NDPoint to split the NDSpace by.
+            point (NDPoint): The point to split the space by.
 
         Returns:
-            tuple[NDSpace, ...]: The sub-NDSpaces created by the split.
+            tuple[Self, ...]: The sub-spaces created by the split.
         """
         # point validations
         if not isinstance(point, NDPoint):
@@ -359,13 +360,13 @@ class NDSpace:
         # self validations
         if not self.can_split(point):
             raise ValueError("self cannot be split.")
-        # split the NDSpace
+        # split the space
         spaces = []
         # generate all combinations of upper/lower halves
         for directions in product((False, True), repeat=self.nd):
             new_bounds = list(self._bounds)
             is_valid = True
-            # build bounds for each sub-NDSpace
+            # build bounds for each sub-space
             for dim, upper_half in enumerate(directions):
                 lower, upper = self._bounds[dim]
                 if upper_half:
@@ -377,9 +378,11 @@ class NDSpace:
                     is_valid = False
                     break
                 new_bounds[dim] = new_bound
-            # create new NDSpace if valid (lower < upper)
+            # create new space if valid (lower < upper)
             if is_valid:
-                space = NDSpace(tuple(new_bounds), self._min_width, self._max_depth)
+                space = self.__class__(
+                    tuple(new_bounds), self._min_width, self._max_depth
+                )
                 object.__setattr__(space, "_frozen", False)
                 space._parent = self
                 space._root = self._root
@@ -397,9 +400,9 @@ class NDSpace:
 
     def collapse(self) -> None:
         """
-        Collapse the NDSpace by removing its children.
+        Collapse the space by removing its children.
         """
-        # remove children if the NDSpace is split
+        # remove children if the space is split
         if not self.is_leaf:
             # remove parent references from children
             for child in self._children:
@@ -419,15 +422,15 @@ class NDSpace:
     def add_dimensions(
         self,
         bounds: tuple[tuple[float, float], ...],
-    ) -> NDSpace:
+    ) -> Self:
         """
-        Add new dimensions to the NDSpace.
+        Add new dimensions to the space.
 
         Args:
             bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
 
         Returns:
-            NDSpace: The NDSpace with added dimensions.
+            Self: The space with added dimensions.
         """
         # bounds validations
         if not isinstance(bounds, (tuple, list)):
@@ -449,17 +452,17 @@ class NDSpace:
                 raise ValueError(
                     "All bounds widths must be greater than or equal to min_width."
                 )
-        # add new bounds to the whole NDSpace tree
+        # add new bounds to the whole tree
         new_bounds = tuple((float(lower), float(upper)) for lower, upper in bounds)
         new_coords = tuple(lower for lower, _ in new_bounds)
         root = self.root
 
-        def _add_dimensions(space: NDSpace) -> None:
+        def _add_dimensions(space: Self) -> None:
             """
-            Recursively add new dimensions to the NDSpace tree.
+            Recursively add new dimensions to the tree.
 
             Args:
-                space (NDSpace): The NDSpace to add new dimensions to.
+                space (Self): The space to add new dimensions to.
             """
             object.__setattr__(space, "_frozen", False)
             space._bounds = space._bounds + new_bounds
@@ -476,15 +479,15 @@ class NDSpace:
         _add_dimensions(root)
         return self
 
-    def remove_dimensions(self, dims: set[int]) -> NDSpace:
+    def remove_dimensions(self, dims: set[int]) -> Self:
         """
-        Remove dimensions from the NDSpace.
+        Remove dimensions from the space.
 
         Args:
             dims (set[int]): The indices of the dimensions to remove.
 
         Returns:
-            NDSpace: The NDSpace with removed dimensions.
+            Self: The space with removed dimensions.
         """
         # dims validations
         if not isinstance(dims, (set, tuple, list)):
@@ -496,16 +499,16 @@ class NDSpace:
                 raise TypeError("All dims must be ints.")
             if not (0 <= dim < self.nd):
                 raise IndexError("All dims must be in range.")
-        # remove dimensions from the whole NDSpace tree
+        # remove dimensions from the whole tree
         dims = set(dims)
         root = self.root
 
-        def _remove_dimensions(space: NDSpace) -> None:
+        def _remove_dimensions(space: Self) -> None:
             """
-            Recursively remove dimensions from the NDSpace tree.
+            Recursively remove dimensions from the tree.
 
             Args:
-                space (NDSpace): The NDSpace to remove dimensions from.
+                space (Self): The space to remove dimensions from.
             """
             object.__setattr__(space, "_frozen", False)
             new_bounds = tuple(
@@ -552,33 +555,33 @@ class NDSpace:
         _remove_dimensions(root)
         return self
 
-    def copy(self) -> NDSpace:
+    def copy(self) -> Self:
         """
-        Get a copy of the NDSpace.
+        Get a copy of the space.
 
         Returns:
-            NDSpace: A copy of the NDSpace.
+            Self: The copy of the space.
         """
         result = deepcopy(self)
         return result
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the NDSpace.
+        Get the dictionary representation of the space.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the NDSpace.
+            dict[str, Any]: The dictionary representation of the space.
         """
 
-        def _to_dict(space: NDSpace) -> dict[str, Any]:
+        def _to_dict(space: Self) -> dict[str, Any]:
             """
-            Recursively convert the NDSpace tree to a dictionary.
+            Recursively convert the tree to a dictionary.
 
             Args:
-                space (NDSpace): The NDSpace to convert.
+                space (Self): The space to convert.
 
             Returns:
-                dict[str, Any]: The dictionary representation of the NDSpace.
+                dict[str, Any]: The dictionary representation of the space.
             """
             result = {
                 "type": space.__class__.__name__,
@@ -600,28 +603,28 @@ class NDSpace:
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> NDSpace:
+    def from_dict(cls, data: dict[str, Any]) -> Self:
         """
-        Create an NDSpace from a dictionary.
+        Create a space from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the NDSpace.
+            data (dict[str, Any]): The dictionary representation of the space.
 
         Returns:
-            NDSpace: The NDSpace instance.
+            Self: The space.
         """
 
-        def _from_dict(data: dict[str, Any], parent: NDSpace | None = None) -> NDSpace:
+        def _from_dict(data: dict[str, Any], parent: Self | None = None) -> Self:
             """
-            Recursively convert a dictionary to an NDSpace tree.
+            Recursively convert a dictionary to a tree.
 
             Args:
-                data (dict[str, Any]): The dictionary representation of the NDSpace.
-                parent (NDSpace | None): The parent NDSpace of the NDSpace.
+                data (dict[str, Any]): The dictionary representation of the space.
+                parent (Self | None): The parent of the space.
                     Defaults to None.
 
             Returns:
-                NDSpace: The NDSpace instance.
+                Self: The space.
             """
             # data validations
             if not isinstance(data, dict):
@@ -695,7 +698,7 @@ class NDSpace:
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
-        Save the NDSpace to a json file.
+        Save the space to a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -718,15 +721,15 @@ class NDSpace:
         return
 
     @classmethod
-    def load(cls, path: str | Path) -> NDSpace:
+    def load(cls, path: str | Path) -> Self:
         """
-        Load an NDSpace from a json file.
+        Load a space from a json file.
 
         Args:
             path (str | Path): The path to the file.
 
         Returns:
-            NDSpace: The NDSpace instance.
+            Self: The space.
         """
         # path validations
         if not isinstance(path, (str, Path)):
@@ -745,7 +748,7 @@ class NDSpace:
 
     def _update_root(self) -> None:
         """
-        Recursively update the root NDSpace of the NDSpace tree.
+        Recursively update the root of the tree.
         """
         new_root = self._parent._root if self._parent is not None else self
         if self._root is not new_root:
@@ -759,7 +762,7 @@ class NDSpace:
 
     def _update_depth(self) -> None:
         """
-        Recursively update the depth of the NDSpace and its children.
+        Recursively update the depth of the space and its children.
         """
         new_depth = self._parent._depth + 1 if self._parent is not None else 0
         if self._depth != new_depth:
@@ -773,7 +776,7 @@ class NDSpace:
 
     def _update_height(self) -> None:
         """
-        Recursively update the height of the NDSpace and its ancestors.
+        Recursively update the height of the space and its ancestors.
         """
         new_height = (
             1 + max(child._height for child in self._children)
@@ -788,15 +791,15 @@ class NDSpace:
                 self._parent._update_height()
         return
 
-    def _merge(self, spaces: tuple[NDSpace, ...]) -> NDSpace:
+    def _merge(self, spaces: tuple[Self, ...]) -> Self:
         """
-        Merge duplicated NDSpaces into a single NDSpace.
+        Merge duplicated spaces into a single space.
 
         Args:
-            spaces (tuple[NDSpace, ...]): The NDSpaces to merge.
+            spaces (tuple[Self, ...]): The spaces to merge.
 
         Returns:
-            NDSpace: The selected NDSpace.
+            Self: The selected space.
         """
         # choose the space with the greatest height
         space = max(spaces, key=lambda space: space.height)
@@ -804,7 +807,7 @@ class NDSpace:
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        Set an attribute of the NDSpace.
+        Set an attribute of the space.
 
         Args:
             name (str): The name of the attribute.
