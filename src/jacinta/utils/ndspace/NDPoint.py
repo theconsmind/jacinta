@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 
 class NDPoint:
@@ -11,7 +11,7 @@ class NDPoint:
     An NDPoint represents an N-dimensional point.
 
     Attributes:
-        coordinates (tuple[float, ...]): The coordinates of the NDPoint.
+        coordinates (tuple[float, ...]): The coordinates of the point.
     """
 
     __slots__ = ("_coordinates", "_frozen")
@@ -21,7 +21,7 @@ class NDPoint:
         Initialize an NDPoint.
 
         Args:
-            coordinates (tuple[float, ...]): The coordinates of the NDPoint.
+            coordinates (tuple[float, ...]): The coordinates of the point.
         """
         # coordinates validations
         if not isinstance(coordinates, (tuple, list)):
@@ -37,10 +37,10 @@ class NDPoint:
 
     def __repr__(self) -> str:
         """
-        Get the representation of the NDPoint.
+        Get the representation of the point.
 
         Returns:
-            str: The representation of the NDPoint.
+            str: The representation of the point.
         """
         result = f"{self.__class__.__name__}(coordinates={self._coordinates!r})"
         return result
@@ -48,33 +48,33 @@ class NDPoint:
     @property
     def coordinates(self) -> tuple[float, ...]:
         """
-        Get the coordinates of the NDPoint.
+        Get the coordinates of the point.
 
         Returns:
-            tuple[float, ...]: The coordinates of the NDPoint.
+            tuple[float, ...]: The coordinates of the point.
         """
         return self._coordinates
 
     @property
     def nd(self) -> int:
         """
-        Get the number of dimensions of the NDPoint.
+        Get the number of dimensions of the point.
 
         Returns:
-            int: The number of dimensions of the NDPoint.
+            int: The number of dimensions of the point.
         """
         nd = len(self._coordinates)
         return nd
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two NDPoints are equal.
+        Check if two points are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the NDPoints are equal, False otherwise.
+            bool: True if the points are equal, False otherwise.
         """
         # other validations
         if type(self) is not type(other):
@@ -83,22 +83,22 @@ class NDPoint:
         result = self._coordinates == other._coordinates
         return result
 
-    def copy(self) -> NDPoint:
+    def copy(self) -> Self:
         """
-        Get a copy of the NDPoint.
+        Get a copy of the point.
 
         Returns:
-            NDPoint: A copy of the NDPoint.
+            Self: A copy of the point.
         """
         result = deepcopy(self)
         return result
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the NDPoint.
+        Get the dictionary representation of the point.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the NDPoint.
+            dict[str, Any]: The dictionary representation of the point.
         """
         result = {
             "type": self.__class__.__name__,
@@ -107,15 +107,15 @@ class NDPoint:
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> NDPoint:
+    def from_dict(cls, data: dict[str, Any]) -> Self:
         """
-        Create an NDPoint from a dictionary.
+        Create a point from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the NDPoint.
+            data (dict[str, Any]): The dictionary representation of the point.
 
         Returns:
-            NDPoint: The NDPoint instance.
+            Self: The point.
         """
         # data validations
         if not isinstance(data, dict):
@@ -132,7 +132,7 @@ class NDPoint:
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
-        Save the NDPoint to a json file.
+        Save the point to a json file.
 
         Args:
             path (str | Path): The path to the file.
@@ -155,15 +155,15 @@ class NDPoint:
         return
 
     @classmethod
-    def load(cls, path: str | Path) -> NDPoint:
+    def load(cls, path: str | Path) -> Self:
         """
-        Load an NDPoint from a json file.
+        Load a point from a json file.
 
         Args:
             path (str | Path): The path to the file.
 
         Returns:
-            NDPoint: The NDPoint instance.
+            Self: The point.
         """
         # path validations
         if not isinstance(path, (str, Path)):
@@ -182,7 +182,7 @@ class NDPoint:
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
-        Set an attribute of the NDPoint.
+        Set an attribute of the point.
 
         Args:
             name (str): The name of the attribute.
