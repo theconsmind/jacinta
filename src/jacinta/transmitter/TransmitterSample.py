@@ -5,7 +5,7 @@ from ..utils.ndspace import NDPoint
 
 class TransmitterSample(NDPoint):
     """
-    A TransmitterSample represents a sample returned by the Transmitter.
+    A TransmitterSample represents an NDPoint transmitted by a Transmitter.
     """
 
     def __init__(self, coordinates: tuple[float, ...]) -> None:
@@ -13,7 +13,7 @@ class TransmitterSample(NDPoint):
         Initialize a TransmitterSample.
 
         Args:
-            coordinates (tuple[float, ...]): The coordinates of the TransmitterSample.
+            coordinates (tuple[float, ...]): The coordinates of the point.
         """
         super().__init__(coordinates)
         return
