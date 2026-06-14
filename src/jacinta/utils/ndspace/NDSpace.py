@@ -588,9 +588,11 @@ class NDSpace:
                 "bounds": space._bounds,
                 "min_width": space._min_width,
                 "max_depth": space._max_depth,
-                "split_point": space._split_point.to_dict()
-                if space._split_point is not None
-                else None,
+                "split_point": (
+                    space._split_point.to_dict()
+                    if space._split_point is not None
+                    else None
+                ),
                 "children": (
                     tuple(_to_dict(child) for child in space._children)
                     if not space.is_leaf

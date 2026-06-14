@@ -5,7 +5,7 @@ from ..utils.ndspace import NDPoint
 
 class ReceiverSample(NDPoint):
     """
-    A ReceiverSample represents an NDPoint received by the Receiver.
+    A ReceiverSample represents an NDPoint received by a Receiver.
     """
 
     def __init__(self, coordinates: tuple[float, ...]) -> None:
