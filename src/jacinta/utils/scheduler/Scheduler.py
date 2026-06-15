@@ -1,79 +1,33 @@
 from __future__ import annotations
 
 import json
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
-
-from .ScheduleStrategy import ScheduleStrategy
+from typing import Any, Self
 
 
-class Scheduler:
+class Scheduler(ABC):
     """
-    A Scheduler represents a callable scheduler that maps a depth to
-    a value using a ScheduleStrategy.
-
-    Attributes:
-        strategy (ScheduleStrategy): The strategy to use.
+    A Scheduler represents a strategy that assigns a value to a depth.
     """
 
-    __slots__ = ("_strategy", "_frozen")
+    __slots__ = ("_frozen",)
 
-    def __init__(self, strategy: ScheduleStrategy) -> None:
-        """
-        Initialize a Scheduler.
-
-        Args:
-            strategy (ScheduleStrategy): The strategy to use.
-        """
-        # strategy validations
-        if not isinstance(strategy, ScheduleStrategy):
-            raise TypeError("strategy must be a ScheduleStrategy.")
-        # initializations
-        object.__setattr__(self, "_frozen", False)
-        self._strategy = strategy
-        object.__setattr__(self, "_frozen", True)
-        return
-
-    def __repr__(self) -> str:
-        """
-        Get the representation of the scheduler.
-
-        Returns:
-            str: The representation of the scheduler.
-        """
-        result = f"{self.__class__.__name__}(strategy={self._strategy!r})"
-        return result
-
+    @abstractmethod
     def __call__(self, depth: int) -> float:
         """
-        Get the scheduler value based on the depth.
+        Get the value assigned to the given depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The scheduler value based on the depth.
+            float: The value assigned to the given depth.
         """
-        # depth validations
-        if not isinstance(depth, int):
-            raise TypeError("depth must be an int.")
-        if depth < 0:
-            raise ValueError("depth must be greater than or equal to 0.")
-        # get the value based on the depth
-        result = self._strategy(depth)
-        return result
+        ...
 
-    @property
-    def strategy(self) -> ScheduleStrategy:
-        """
-        Get the strategy of the scheduler.
-
-        Returns:
-            ScheduleStrategy: The strategy of the scheduler.
-        """
-        return self._strategy
-
+    @abstractmethod
     def __eq__(self, other: object) -> bool:
         """
         Check if two schedulers are equal.
@@ -84,23 +38,19 @@ class Scheduler:
         Returns:
             bool: True if the schedulers are equal, False otherwise.
         """
-        # other validations
-        if type(self) is not type(other):
-            return NotImplemented
-        # equality check
-        result = self._strategy == other._strategy
-        return result
+        ...
 
-    def copy(self) -> Scheduler:
+    def copy(self) -> Self:
         """
         Get a copy of the scheduler.
 
         Returns:
-            Scheduler: The copy of the scheduler.
+            Self: The copy of the scheduler.
         """
         result = deepcopy(self)
         return result
 
+    @abstractmethod
     def to_dict(self) -> dict[str, Any]:
         """
         Get the dictionary representation of the scheduler.
@@ -108,14 +58,11 @@ class Scheduler:
         Returns:
             dict[str, Any]: The dictionary representation of the scheduler.
         """
-        result = {
-            "type": self.__class__.__name__,
-            "strategy": self._strategy.to_dict(),
-        }
-        return result
+        ...
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Scheduler:
+    @abstractmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
         """
         Create a scheduler from a dictionary.
 
@@ -123,19 +70,23 @@ class Scheduler:
             data (dict[str, Any]): The dictionary representation of the scheduler.
 
         Returns:
-            Scheduler: The scheduler.
+            Self: The scheduler.
         """
         # data validations
         if not isinstance(data, dict):
             raise TypeError("data must be a dict.")
         if "type" not in data:
             raise KeyError("data must contain the key 'type'.")
-        if data["type"] != cls.__name__:
-            raise ValueError(f"data['type'] must be a {cls.__name__}.")
-        if "strategy" not in data:
-            raise KeyError("data must contain the key 'strategy'.")
-        # initializations
-        result = cls(ScheduleStrategy.from_dict(data["strategy"]))
+        if not isinstance(data["type"], str):
+            raise TypeError("data['type'] must be a string.")
+        # find the subclass
+        result = None
+        for subclass in cls.__subclasses__():
+            if subclass.__name__ == data["type"]:
+                result = subclass.from_dict(data)
+                break
+        if result is None:
+            raise ValueError(f"Scheduler type '{data['type']}' not found.")
         return result
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
@@ -163,7 +114,7 @@ class Scheduler:
         return
 
     @classmethod
-    def load(cls, path: str | Path) -> Scheduler:
+    def load(cls, path: str | Path) -> Self:
         """
         Load a scheduler from a json file.
 
@@ -171,7 +122,7 @@ class Scheduler:
             path (str | Path): The path to the file.
 
         Returns:
-            Scheduler: The scheduler.
+            Self: The scheduler.
         """
         # path validations
         if not isinstance(path, (str, Path)):

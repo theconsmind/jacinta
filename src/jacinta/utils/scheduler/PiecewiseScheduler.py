@@ -3,31 +3,28 @@ from __future__ import annotations
 from bisect import bisect_right
 from typing import Any
 
-from .ScheduleStrategy import ScheduleStrategy
+from .Scheduler import Scheduler
 
 
-class PiecewiseScheduleStrategy(ScheduleStrategy):
+class PiecewiseScheduler(Scheduler):
     """
-    A ScheduleStrategy that uses different ScheduleStrategies for different ranges
-    of depths.
+    A Scheduler that uses different Schedulers for different depth ranges.
 
     Attributes:
-        segments (tuple[tuple[int, ScheduleStrategy], ...]): The segments
-            of the strategy.
+        segments (tuple[tuple[int, Scheduler], ...]): The segments of the scheduler.
     """
 
     __slots__ = ("_segments", "_depths")
 
     def __init__(
         self,
-        segments: tuple[tuple[int, ScheduleStrategy], ...],
+        segments: tuple[tuple[int, Scheduler], ...],
     ) -> None:
         """
-        Initialize a PiecewiseScheduleStrategy.
+        Initialize a PiecewiseScheduler.
 
         Args:
-            segments (tuple[tuple[int, ScheduleStrategy], ...]): The segments
-                of the strategy.
+            segments (tuple[tuple[int, Scheduler], ...]): The segments of the scheduler.
         """
         # segments validations
         if not isinstance(segments, (tuple, list)):
@@ -41,10 +38,8 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
                 raise ValueError("All segments must have length 2.")
             if not isinstance(segment[0], int):
                 raise TypeError("All first elements of segments must be ints.")
-            if not isinstance(segment[1], ScheduleStrategy):
-                raise TypeError(
-                    "All second elements of segments must be ScheduleStrategies."
-                )
+            if not isinstance(segment[1], Scheduler):
+                raise TypeError("All second elements of segments must be Schedulers.")
         # segment depths validations
         depths = tuple(segment[0] for segment in segments)
         if depths[0] != 0:
@@ -63,23 +58,23 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
 
     def __repr__(self) -> str:
         """
-        Get the representation of the strategy.
+        Get the representation of the scheduler.
 
         Returns:
-            str: The representation of the strategy.
+            str: The representation of the scheduler.
         """
         result = f"{self.__class__.__name__}(segments={self._segments!r})"
         return result
 
     def __call__(self, depth: int) -> float:
         """
-        Get the strategy value based on the depth.
+        Get the value assigned to the given depth.
 
         Args:
             depth (int): The depth.
 
         Returns:
-            float: The strategy value based on the depth.
+            float: The value assigned to the given depth.
         """
         # depth validations
         if not isinstance(depth, int):
@@ -88,29 +83,29 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
             raise ValueError("depth must be greater than or equal to 0.")
         # get the value based on the depth
         idx = bisect_right(self._depths, depth) - 1
-        _, strategy = self._segments[idx]
-        result = strategy(depth)
+        _, scheduler = self._segments[idx]
+        result = scheduler(depth)
         return result
 
     @property
-    def segments(self) -> tuple[tuple[int, ScheduleStrategy], ...]:
+    def segments(self) -> tuple[tuple[int, Scheduler], ...]:
         """
-        Get the segments of the strategy.
+        Get the segments of the scheduler.
 
         Returns:
-            tuple[tuple[int, ScheduleStrategy], ...]: The segments of the strategy.
+            tuple[tuple[int, Scheduler], ...]: The segments of the scheduler.
         """
         return self._segments
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two strategies are equal.
+        Check if two schedulers are equal.
 
         Args:
             other (object): The object to compare with.
 
         Returns:
-            bool: True if the strategies are equal, False otherwise.
+            bool: True if the schedulers are equal, False otherwise.
         """
         # other validations
         if type(self) is not type(other):
@@ -121,29 +116,29 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Get the dictionary representation of the strategy.
+        Get the dictionary representation of the scheduler.
 
         Returns:
-            dict[str, Any]: The dictionary representation of the strategy.
+            dict[str, Any]: The dictionary representation of the scheduler.
         """
         result = {
             "type": self.__class__.__name__,
             "segments": tuple(
-                (depth, strategy.to_dict()) for depth, strategy in self._segments
+                (depth, scheduler.to_dict()) for depth, scheduler in self._segments
             ),
         }
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> PiecewiseScheduleStrategy:
+    def from_dict(cls, data: dict[str, Any]) -> PiecewiseScheduler:
         """
-        Create a strategy from a dictionary.
+        Create a scheduler from a dictionary.
 
         Args:
-            data (dict[str, Any]): The dictionary representation of the strategy.
+            data (dict[str, Any]): The dictionary representation of the scheduler.
 
         Returns:
-            PiecewiseScheduleStrategy: The strategy.
+            PiecewiseScheduler: The scheduler.
         """
         # data validations
         if not isinstance(data, dict):
@@ -156,8 +151,8 @@ class PiecewiseScheduleStrategy(ScheduleStrategy):
             raise KeyError("data must contain the key 'segments'.")
         # initializations
         segments = tuple(
-            (depth, ScheduleStrategy.from_dict(strategy_data))
-            for depth, strategy_data in data["segments"]
+            (depth, Scheduler.from_dict(scheduler_data))
+            for depth, scheduler_data in data["segments"]
         )
         result = cls(segments)
         return result

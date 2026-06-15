@@ -1,21 +1,19 @@
-from .ConstantScheduleStrategy import ConstantScheduleStrategy
-from .ExponentialScheduleStrategy import ExponentialScheduleStrategy
-from .LinearScheduleStrategy import LinearScheduleStrategy
-from .LogarithmicScheduleStrategy import LogarithmicScheduleStrategy
-from .PiecewiseScheduleStrategy import PiecewiseScheduleStrategy
-from .PolynomialScheduleStrategy import PolynomialScheduleStrategy
-from .PowerScheduleStrategy import PowerScheduleStrategy
+from .ConstantScheduler import ConstantScheduler
+from .ExponentialScheduler import ExponentialScheduler
+from .LinearScheduler import LinearScheduler
+from .LogarithmicScheduler import LogarithmicScheduler
+from .PiecewiseScheduler import PiecewiseScheduler
+from .PolynomialScheduler import PolynomialScheduler
+from .PowerScheduler import PowerScheduler
 from .Scheduler import Scheduler
-from .ScheduleStrategy import ScheduleStrategy
 
 __all__ = [
-    "ConstantScheduleStrategy",
-    "ExponentialScheduleStrategy",
-    "LinearScheduleStrategy",
-    "LogarithmicScheduleStrategy",
-    "PiecewiseScheduleStrategy",
-    "PolynomialScheduleStrategy",
-    "PowerScheduleStrategy",
+    "ConstantScheduler",
+    "ExponentialScheduler",
+    "LinearScheduler",
+    "LogarithmicScheduler",
+    "PiecewiseScheduler",
+    "PolynomialScheduler",
+    "PowerScheduler",
     "Scheduler",
-    "ScheduleStrategy",
 ]
