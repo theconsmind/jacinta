@@ -290,6 +290,12 @@ class Transmitter(NDSpace):
                 transmitter._depth = parent._depth + 1
             transmitter._hits_left = float(data["hits_left"])
             object.__setattr__(transmitter, "_frozen", True)
+            if transmitter._hits_left > transmitter._hits_rate_scheduler(
+                transmitter._depth
+            ):
+                raise ValueError(
+                    "data['hits_left'] is not compatible with the hits_rate_scheduler."
+                )
             # update children attributes
             if data["children"] is not None:
                 children = tuple(

@@ -427,6 +427,10 @@ class Receiver(NDSpace):
                 receiver._depth = parent._depth + 1
             receiver._hits_left = float(data["hits_left"])
             object.__setattr__(receiver, "_frozen", True)
+            if receiver._hits_left > receiver._hits_rate_scheduler(receiver._depth):
+                raise ValueError(
+                    "data['hits_left'] is not compatible with the hits_rate_scheduler."
+                )
             # update children attributes
             if data["children"] is not None:
                 children = tuple(
