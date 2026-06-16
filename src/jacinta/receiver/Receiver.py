@@ -212,10 +212,9 @@ class Receiver(NDSpace):
             if receiver._parent is not None:
                 receiver = receiver._parent
         # propagate the feedback up to the root
-        receiver._transmitter.backward(tsample, float(feedback))
-        while receiver._parent is not None:
-            receiver = receiver._parent
+        while receiver is not None:
             receiver._transmitter.backward(tsample, float(feedback))
+            receiver = receiver._parent
         return
 
     def can_split(self) -> bool:
