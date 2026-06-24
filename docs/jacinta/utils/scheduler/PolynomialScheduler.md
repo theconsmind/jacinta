@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`PolynomialScheduler`](../../../src/jacinta/utils/scheduler/PolynomialScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to a polynomial function. It provides a depth-dependent configuration mechanism for parameters that must evolve polynomially across different precision levels.
+[`PolynomialScheduler`](../../../../src/jacinta/utils/scheduler/PolynomialScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to a polynomial function. It provides a depth-dependent configuration mechanism for parameters that must evolve polynomially across different precision levels.
 
 ## Formula
 

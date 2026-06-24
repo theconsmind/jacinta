@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`ConstantScheduler`](../../../src/jacinta/utils/scheduler/ConstantScheduler.py) is a [`Scheduler`](Scheduler.md) that maps every depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to the same floating-point value. It provides a depth-independent configuration mechanism for parameters that should remain constant across all precision levels.
+[`ConstantScheduler`](../../../../src/jacinta/utils/scheduler/ConstantScheduler.py) is a [`Scheduler`](Scheduler.md) that maps every depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to the same floating-point value. It provides a depth-independent configuration mechanism for parameters that should remain constant across all precision levels.
 
 ## Formula
 

@@ -1,6 +1,6 @@
 # PowerScheduler
 
-[`PowerScheduler`](../../../src/jacinta/utils/scheduler/PowerScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to a power function. It provides a depth-dependent configuration mechanism for parameters that must evolve following a power-law pattern across different precision levels.
+[`PowerScheduler`](../../../../src/jacinta/utils/scheduler/PowerScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to a power function. It provides a depth-dependent configuration mechanism for parameters that must evolve following a power-law pattern across different precision levels.
 
 ## Formula
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`PiecewiseScheduler`](../../../src/jacinta/utils/scheduler/PiecewiseScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to a piecewise function. It provides a depth-dependent configuration mechanism for parameters that must follow different scheduling strategies across different precision levels.
+[`PiecewiseScheduler`](../../../../src/jacinta/utils/scheduler/PiecewiseScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to a piecewise function. It provides a depth-dependent configuration mechanism for parameters that must follow different scheduling strategies across different precision levels.
 
 ## Formula
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`Scheduler`](../../../src/jacinta/utils/scheduler/Scheduler.py) is an abstract component that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value. It provides a depth-dependent mechanism for configuring parameters that may vary according to the precision requirements of different regions of the space.
+[`Scheduler`](../../../../src/jacinta/utils/scheduler/Scheduler.py) is an abstract component that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value. It provides a depth-dependent mechanism for configuring parameters that may vary according to the precision requirements of different regions of the space.
 
 While `Scheduler` defines the common depth-to-value mapping interface, specialized subclasses can implement different scheduling strategies to control how parameter values evolve across tree depths.
 

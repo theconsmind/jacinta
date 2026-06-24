@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`ExponentialScheduler`](../../../src/jacinta/utils/scheduler/ExponentialScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to an exponential function. It provides a depth-dependent configuration mechanism for parameters that must evolve exponentially across different precision levels.
+[`ExponentialScheduler`](../../../../src/jacinta/utils/scheduler/ExponentialScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to an exponential function. It provides a depth-dependent configuration mechanism for parameters that must evolve exponentially across different precision levels.
 
 ## Formula
 

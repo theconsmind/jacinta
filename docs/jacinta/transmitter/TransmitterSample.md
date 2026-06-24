@@ -38,7 +38,9 @@ def __init__(self, coordinates: tuple[float, ...]) -> None:
 from jacinta.transmitter import TransmitterSample
 
 # Initialize a 3D TransmitterSample
-tsample = TransmitterSample((0.1, 0.5, 0.9))
+tsample = TransmitterSample(
+    coordinates=(0.1, 0.5, 0.9),
+)
 print(tsample.nd)           # 3
 print(tsample.coordinates)  # (0.1, 0.5, 0.9)
 

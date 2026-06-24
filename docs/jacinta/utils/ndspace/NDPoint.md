@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`NDPoint`](../../../src/jacinta/utils/ndspace/NDPoint.py) is a point in an [`NDSpace`](NDSpace.md). It serves as the fundamental coordinate type across Jacinta, representing any position in a continuous space, whether it corresponds to an observation, an action, or any other spatial value.
+[`NDPoint`](../../../../src/jacinta/utils/ndspace/NDPoint.py) is a point in an [`NDSpace`](NDSpace.md). It serves as the fundamental coordinate type across Jacinta, representing any position in a continuous space, whether it corresponds to an observation, an action, or any other spatial value.
 
 While `NDPoint` provides the common coordinate representation, specialized subclasses can extend it with additional properties and capabilities.
 
@@ -143,7 +143,9 @@ def load(cls, path: str | Path) -> Self:
 from jacinta.utils.ndspace import NDPoint
 
 # Initialize a 3D NDPoint
-point = NDPoint((0.1, 0.5, 0.9))
+point = NDPoint(
+    coordinates=(0.1, 0.5, 0.9),
+)
 print(point.nd)           # 3
 print(point.coordinates)  # (0.1, 0.5, 0.9)
 

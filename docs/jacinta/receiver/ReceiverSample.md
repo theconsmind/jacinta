@@ -37,7 +37,9 @@ def __init__(self, coordinates: tuple[float, ...]) -> None:
 from jacinta.receiver import ReceiverSample
 
 # Initialize a 3D ReceiverSample
-rsample = ReceiverSample((0.1, 0.5, 0.9))
+rsample = ReceiverSample(
+    coordinates=(0.1, 0.5, 0.9),
+)
 print(rsample.nd)           # 3
 print(rsample.coordinates)  # (0.1, 0.5, 0.9)
 
