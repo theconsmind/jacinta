@@ -6,7 +6,6 @@
 
 Although it shares the same N-dimensional coordinate representation as `NDPoint`, it provides a distinct semantic type that allows the `Transmitter` module to differentiate output stimuli from other spatial representations used throughout Jacinta.
 
-
 ## API Reference
 
 ```python

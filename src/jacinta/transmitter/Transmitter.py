@@ -264,12 +264,13 @@ class Transmitter(NDSpace):
                 math.exp(log_weight - max_log_weight) for log_weight in log_weights
             ]
             # choose a transmitter based on log_weights
-            transmitter = transmitter._rng.choices(transmitters, weights=weights, k=1)[
-                0
-            ]
+            target = transmitter._rng.choices(transmitters, weights=weights, k=1)[0]
+            if target is transmitter:
+                break
+            transmitter = target
         # sample from the transmitter uniform distribution
         coords = tuple(
-            transmitter._rng.uniform(lower, upper)
+            lower + transmitter._rng.random() * (upper - lower)
             for lower, upper in transmitter._bounds
         )
         tsample = TransmitterSample(coords)
@@ -403,6 +404,7 @@ class Transmitter(NDSpace):
                 transmitter._depth = self._depth + 1
                 transmitter._log_weight = self._log_weight
                 transmitter._hits_left = self._hits_rate_scheduler(self._depth + 1)
+                transmitter._rng = self._rng
                 object.__setattr__(transmitter, "_frozen", True)
                 transmitters.append(transmitter)
         transmitters = tuple(transmitters)
@@ -452,6 +454,7 @@ class Transmitter(NDSpace):
                 "min_width": transmitter._min_width,
                 "max_depth": transmitter._max_depth,
                 "seed": transmitter._seed,
+                "rng_state": transmitter._rng.getstate(),
                 "children": (
                     tuple(_to_dict(child) for child in transmitter._children)
                     if not transmitter.is_leaf
@@ -522,6 +525,20 @@ class Transmitter(NDSpace):
                 raise TypeError("data['hits_left'] must be a float.")
             if "seed" not in data:
                 raise KeyError("data must contain the key 'seed'.")
+            if "rng_state" not in data:
+                raise KeyError("data must contain the key 'rng_state'.")
+            if not isinstance(data["rng_state"], (tuple, list)):
+                raise TypeError("data['rng_state'] must be a tuple.")
+            if len(data["rng_state"]) != 3:
+                raise ValueError("data['rng_state'] must have 3 elements.")
+            if not isinstance(data["rng_state"][0], int):
+                raise TypeError("data['rng_state'][0] must be an int.")
+            if not isinstance(data["rng_state"][1], (tuple, list)):
+                raise TypeError("data['rng_state'][1] must be a tuple.")
+            if not all(isinstance(x, int) for x in data["rng_state"][1]):
+                raise TypeError("All elements of data['rng_state'][1] must be ints.")
+            if not isinstance(data["rng_state"][2], (float, int, type(None))):
+                raise TypeError("data['rng_state'][2] must be a float or None.")
             # parent validations
             if parent is not None:
                 if parent._max_depth is not None and parent._depth == parent._max_depth:
@@ -551,8 +568,17 @@ class Transmitter(NDSpace):
                 transmitter._parent = parent
                 transmitter._root = parent._root
                 transmitter._depth = parent._depth + 1
+                transmitter._rng = parent._rng
             transmitter._log_weight = float(data["log_weight"])
             transmitter._hits_left = float(data["hits_left"])
+            rng_state = data["rng_state"]
+            transmitter._rng.setstate(
+                (
+                    rng_state[0],
+                    tuple(x for x in rng_state[1]),
+                    float(rng_state[2]) if rng_state[2] is not None else None,
+                )
+            )
             object.__setattr__(transmitter, "_frozen", True)
             if transmitter._hits_left > transmitter._hits_rate_scheduler(
                 transmitter._depth
