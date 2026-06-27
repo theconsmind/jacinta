@@ -21,8 +21,6 @@ class Transmitter(NDSpace):
         learning_rate_scheduler (Scheduler): The learning rate scheduler.
         hits_rate_scheduler (Scheduler): The hits rate scheduler.
         hits_left (float): The number of hits left to split the transmitter.
-        rng (random.Random): The random number generator.
-        seed (int | None): The seed for the random number generator.
     """
 ```
 
@@ -295,3 +293,4 @@ assert transmitter == transmitter3
 - `backward` does not update the `Transmitter` state if the `Evaluator` returns `None` during its statistics warm-up. For example, `ZScoreEvaluator` requires two observations before producing an advantage.
 - `bias` must be in `[-1, 1]`: `-1` favors less probable regions, `0` applies no bias, and `1` favors more probable regions.
 - `feedback` must be in `[-1, 1]`: `-1` represents the worst possible outcome, and `1` represents the best possible outcome.
+- `collapse` is not implemented. Once a region has been split, it cannot be merged back.

@@ -10,7 +10,7 @@ $$
 f(\text{depth}) =
 \begin{cases}
 f_0(\text{depth}), & d_0 \leq \text{depth} < d_1 \\
-f_1(depth), & d_1 \leq depth < d_2 \\
+f_1(\text{depth}), & d_1 \leq \text{depth} < d_2 \\
 \vdots \\
 f_n(\text{depth}), & d_n \leq \text{depth}
 \end{cases},

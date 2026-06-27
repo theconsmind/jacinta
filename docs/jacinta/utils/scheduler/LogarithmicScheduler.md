@@ -176,7 +176,7 @@ scheduler = LogarithmicScheduler(
     max_value=10.0,
 )
 print(scheduler(0))   # 0.2
-print(scheduler(3))   # 6.93
+print(scheduler(3))   # 6.931471805599453
 print(scheduler(10))  # 10.0
 
 # Serialize and deserialize

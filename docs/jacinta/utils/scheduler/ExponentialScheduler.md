@@ -167,7 +167,7 @@ def from_dict(cls, data: dict[str, Any]) -> ExponentialScheduler:
 ```python
 from jacinta.utils.scheduler import ExponentialScheduler
 
-# Initialize a ExponentialScheduler
+# Initialize an ExponentialScheduler
 scheduler = ExponentialScheduler(
     scale=0.1,
     rate=1.0,
@@ -176,7 +176,7 @@ scheduler = ExponentialScheduler(
     max_value=10.0,
 )
 print(scheduler(0))   # 0.2
-print(scheduler(3))   # 2.0
+print(scheduler(3))   # 2.008553692318767
 print(scheduler(10))  # 10.0
 
 # Serialize and deserialize

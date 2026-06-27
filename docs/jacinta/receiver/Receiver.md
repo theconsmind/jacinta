@@ -243,8 +243,7 @@ def get_reward(tsample: TransmitterSample) -> float:
     return reward
 
 # Forward-backward loop
-for i in range(1_000_000):
-    print(f"iteration {i}", end="\r")
+for _ in range(1000000):
     tsample = receiver.forward(rsample, bias=0.0)
     reward = get_reward(tsample)
     receiver.backward(rsample, tsample, reward)
@@ -267,5 +266,4 @@ assert receiver == receiver3
 ## Limitations
 
 - `backward` updates the `Transmitter` of every ancestor from the active `Receiver` node up to the root.
-- `bias` must be in `[-1, 1]`: `-1` favors less probable regions, `0` applies no bias, and `1` favors more probable regions.
-- `feedback` must be in `[-1, 1]`: `-1` represents the worst possible outcome, and `1` represents the best possible outcome.
+- `collapse` is not implemented. Once a region has been split, it cannot be merged back.

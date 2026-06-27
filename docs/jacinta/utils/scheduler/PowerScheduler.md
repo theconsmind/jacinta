@@ -1,5 +1,7 @@
 # PowerScheduler
 
+## Overview
+
 [`PowerScheduler`](../../../../src/jacinta/utils/scheduler/PowerScheduler.py) is a [`Scheduler`](Scheduler.md) that maps each depth level of an [`NDSpace`](../ndspace/NDSpace.md) tree to a floating-point value according to a power function. It provides a depth-dependent configuration mechanism for parameters that must evolve following a power-law pattern across different precision levels.
 
 ## Formula
@@ -187,7 +189,7 @@ scheduler = PowerScheduler(
     max_value=10.0,
 )
 print(scheduler(0))   # 10.0
-print(scheduler(3))   # 0.25
+print(scheduler(3))   # 0.24489795918367346
 print(scheduler(10))  # 0.2
 
 # Serialize and deserialize
