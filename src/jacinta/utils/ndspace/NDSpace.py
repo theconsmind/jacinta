@@ -359,7 +359,7 @@ class NDSpace:
             raise ValueError("point must be contained in self.")
         # self validations
         if not self.can_split(point):
-            raise ValueError("self cannot be split.")
+            raise RuntimeError("self cannot be split.")
         # split the space
         spaces = []
         # generate all combinations of upper/lower halves
@@ -653,7 +653,7 @@ class NDSpace:
             # parent validations
             if parent is not None:
                 if parent._max_depth is not None and parent._depth == parent._max_depth:
-                    raise ValueError("parent cannot be split.")
+                    raise RuntimeError("parent cannot be split.")
                 if parent._min_width != data["min_width"]:
                     raise ValueError(
                         "data['min_width'] must be equal to parent._min_width."

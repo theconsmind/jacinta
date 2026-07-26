@@ -259,7 +259,7 @@ class Receiver(NDSpace):
         """
         # self validations
         if not self.can_split():
-            raise ValueError("self cannot be split.")
+            raise RuntimeError("self cannot be split.")
         # the split point is the midpoint of the receiver
         coords = tuple((lower + upper) / 2 for lower, upper in self._bounds)
         midpoint = ReceiverSample(coords)
@@ -310,7 +310,7 @@ class Receiver(NDSpace):
         """
         Collapse the receiver by removing its children.
         """
-        raise TypeError("Receivers cannot be collapsed.")
+        raise NotImplementedError("Receivers cannot be collapsed.")
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -401,7 +401,7 @@ class Receiver(NDSpace):
             # parent validations
             if parent is not None:
                 if parent._max_depth is not None and parent._depth == parent._max_depth:
-                    raise ValueError("parent cannot be split.")
+                    raise RuntimeError("parent cannot be split.")
                 if parent._min_width != data["min_width"]:
                     raise ValueError(
                         "data['min_width'] must be equal to parent._min_width."
