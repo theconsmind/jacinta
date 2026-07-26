@@ -47,6 +47,16 @@ class Processor:
         return self._coordinates
 
     @property
+    def rbounds(self) -> tuple[tuple[float, float], ...]:
+        """ """
+        return self._receiver.bounds
+
+    @property
+    def tbounds(self) -> tuple[tuple[float, float], ...]:
+        """ """
+        return self._receiver.transmitter.bounds
+
+    @property
     def rnd(self) -> int:
         """ """
         return self._receiver.nd
@@ -74,6 +84,10 @@ class Processor:
         # coord validations
         if not isinstance(coord, (float, int)):
             raise TypeError("coord must be a float.")
+        # check if the coordinate is within the bounds
+        lower, upper = self._receiver.bounds[idx]
+        if not (lower <= coord < upper):
+            raise ValueError(f"coord must be in [{lower}, {upper}).")
         # register the coordinate
         coords = list(self._coordinates)
         coords[idx] = float(coord)
