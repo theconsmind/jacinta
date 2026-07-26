@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`TransmitterSample`](../../../src/jacinta/transmitter/TransmitterSample.py) is a specialized [`NDPoint`](../utils/ndspace/NDPoint.md) used by the [`Transmitter`](Transmitter.md) module to represent output stimuli.
+[`TransmitterSample`](../../../src/jacinta/processor/transmitter/TransmitterSample.py) is a specialized [`NDPoint`](../utils/ndspace/NDPoint.md) used by the [`Transmitter`](Transmitter.md) module to represent output stimuli.
 
 Although it shares the same N-dimensional coordinate representation as `NDPoint`, it provides a distinct semantic type that allows the `Transmitter` module to differentiate output stimuli from other spatial representations used throughout Jacinta.
 

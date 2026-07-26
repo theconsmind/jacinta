@@ -3,9 +3,9 @@ from __future__ import annotations
 from itertools import product
 from typing import Any
 
+from ...utils.ndspace import NDSpace
+from ...utils.scheduler import Scheduler
 from ..transmitter import Transmitter, TransmitterSample
-from ..utils.ndspace import NDSpace
-from ..utils.scheduler import Scheduler
 from .ReceiverSample import ReceiverSample
 
 

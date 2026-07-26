@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`Receiver`](../../../src/jacinta/receiver/Receiver.py) is a specialized [`NDSpace`](../utils/ndspace/NDSpace.md) that represents an adaptive context space. It maps input stimuli to output stimuli by selecting a context-specific [`Transmitter`](../transmitter/Transmitter.md).
+[`Receiver`](../../../src/jacinta/processor/receiver/Receiver.py) is a specialized [`NDSpace`](../utils/ndspace/NDSpace.md) that represents an adaptive context space. It maps input stimuli to output stimuli by selecting a context-specific [`Transmitter`](../transmitter/Transmitter.md).
 
 As feedback is received, different regions of the context space can develop specialized action distributions, allowing Jacinta to adapt its behavior to different observation patterns.
 

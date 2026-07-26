@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`ReceiverSample`](../../../src/jacinta/receiver/ReceiverSample.py) is a specialized [`NDPoint`](../utils/ndspace/NDPoint.md) used by the [`Receiver`](Receiver.md) module to represent input stimuli.
+[`ReceiverSample`](../../../src/jacinta/processor/receiver/ReceiverSample.py) is a specialized [`NDPoint`](../utils/ndspace/NDPoint.md) used by the [`Receiver`](Receiver.md) module to represent input stimuli.
 
 Although it shares the same N-dimensional coordinate representation as `NDPoint`, it provides a distinct semantic type that allows the `Receiver` module to differentiate input stimuli from other spatial representations used throughout Jacinta.
 

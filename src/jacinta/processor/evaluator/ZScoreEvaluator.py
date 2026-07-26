@@ -18,7 +18,13 @@ class ZScoreEvaluator(Evaluator):
         eps (float): A small positive value used for numerical stability.
     """
 
-    __slots__ = ("_mean", "_var", "_mean_ema_rate", "_var_ema_rate", "_eps")
+    __slots__ = (
+        "_mean",
+        "_var",
+        "_mean_ema_rate",
+        "_var_ema_rate",
+        "_eps",
+    )
 
     def __init__(
         self,
