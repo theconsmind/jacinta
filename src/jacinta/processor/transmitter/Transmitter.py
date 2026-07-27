@@ -14,7 +14,7 @@ from .TransmitterSample import TransmitterSample
 class Transmitter(NDSpace):
     """
     A Transmitter represents an NDSpace that manages the information transmitted
-    by a Receiver.
+    by a Processor.
 
     Attributes:
         log_weight (float): The log-weight of the transmitter.

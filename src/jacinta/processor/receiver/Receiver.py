@@ -12,7 +12,7 @@ from .ReceiverSample import ReceiverSample
 class Receiver(NDSpace):
     """
     A Receiver represents an NDSpace that manages the information received
-    by a Jacinta module.
+    by a Processor.
 
     Attributes:
         transmitter (Transmitter): The transmitter associated to the receiver.

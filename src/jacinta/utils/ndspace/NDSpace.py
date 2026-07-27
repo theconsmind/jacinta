@@ -419,18 +419,12 @@ class NDSpace:
             self._update_height()
         return
 
-    def add_dimensions(
-        self,
-        bounds: tuple[tuple[float, float], ...],
-    ) -> Self:
+    def add_dimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
         """
         Add new dimensions to the space.
 
         Args:
             bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
-
-        Returns:
-            Self: The space with added dimensions.
         """
         # bounds validations
         if not isinstance(bounds, (tuple, list)):
@@ -477,17 +471,14 @@ class NDSpace:
             return
 
         _add_dimensions(root)
-        return self
+        return
 
-    def remove_dimensions(self, dims: set[int]) -> Self:
+    def remove_dimensions(self, dims: set[int]) -> None:
         """
         Remove dimensions from the space.
 
         Args:
             dims (set[int]): The indices of the dimensions to remove.
-
-        Returns:
-            Self: The space with removed dimensions.
         """
         # dims validations
         if not isinstance(dims, (set, tuple, list)):
@@ -553,7 +544,7 @@ class NDSpace:
             return
 
         _remove_dimensions(root)
-        return self
+        return
 
     def copy(self) -> Self:
         """
