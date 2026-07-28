@@ -268,9 +268,20 @@ class Processor:
                 raise TypeError("All lower bounds must be floats.")
             if not isinstance(bound[1], (float, int)):
                 raise TypeError("All upper bounds must be floats.")
-        # add new bounds to the transmitter
+        # add new bounds to every distinct transmitter in the receiver tree
         bounds = tuple((float(lower), float(upper)) for lower, upper in bounds)
-        self._receiver.transmitter.add_dimensions(bounds)
+        receivers = [self._receiver.root]
+        transmitters = {}
+        # identify unique transmitters
+        while receivers:
+            receiver = receivers.pop()
+            transmitter = receiver._transmitter.root
+            transmitters[id(transmitter)] = transmitter
+            if receiver.children is not None:
+                receivers.extend(receiver.children)
+        # add new bounds to each unique transmitter
+        for transmitter in transmitters.values():
+            transmitter.add_dimensions(bounds)
         return
 
     def remove_rdimensions(self, dims: set[int]) -> None:
@@ -317,8 +328,19 @@ class Processor:
                 raise TypeError("All dims must be ints.")
             if not (0 <= dim < self.tnd):
                 raise IndexError("All dims must be in range.")
-        # remove dimensions from the transmitter
-        self._receiver.transmitter.remove_dimensions(set(dims))
+        # remove dimensions from every distinct transmitter in the receiver tree
+        receivers = [self._receiver.root]
+        transmitters = {}
+        # identify unique transmitters
+        while receivers:
+            receiver = receivers.pop()
+            transmitter = receiver._transmitter.root
+            transmitters[id(transmitter)] = transmitter
+            if receiver.children is not None:
+                receivers.extend(receiver.children)
+        # remove dimensions from each unique transmitter
+        for transmitter in transmitters.values():
+            transmitter.remove_dimensions(set(dims))
         return
 
     def copy(self) -> Processor:
