@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`Transmitter`](../../../src/jacinta/processor/transmitter/Transmitter.py) is a specialized [`NDSpace`](../utils/ndspace/NDSpace.md) that represents an adaptive probability distribution over a continuous action space. It learns from reward feedback, progressively increasing the probability of sampling actions associated with better outcomes.
+[`Transmitter`](../../../../src/jacinta/processor/transmitter/Transmitter.py) is a specialized [`NDSpace`](../../utils/ndspace/NDSpace.md) that represents an adaptive probability distribution over a continuous action space. It learns from reward feedback, progressively increasing the probability of sampling actions associated with better outcomes.
 
 Sampling can be biased to favor either more probable or less probable regions, allowing the exploration-exploitation trade-off to be adjusted without altering the learned distribution.
 
@@ -225,15 +225,15 @@ def from_dict(cls, data: dict[str, Any]) -> Transmitter:
 
 ### Inherited API
 
-`Transmitter` inherits from [`NDSpace`](../utils/ndspace/NDSpace.md).
+`Transmitter` inherits from [`NDSpace`](../../utils/ndspace/NDSpace.md).
 
 ## Examples
 
 ```python
 import math
 
-from jacinta.evaluator import ZScoreEvaluator
-from jacinta.transmitter import Transmitter, TransmitterSample
+from jacinta.processor.evaluator import ZScoreEvaluator
+from jacinta.processor.transmitter import Transmitter, TransmitterSample
 from jacinta.utils.scheduler import ConstantScheduler
 
 # Initialize a 2D Transmitter

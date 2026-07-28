@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`Evaluator`](../../../src/jacinta/processor/evaluator/Evaluator.py) is an abstract component that transforms raw feedback into a normalized evaluation signal. It provides a common interface for defining feedback normalization strategies that can be used throughout Jacinta.
+[`Evaluator`](../../../../src/jacinta/processor/evaluator/Evaluator.py) is an abstract component that transforms raw feedback into a normalized evaluation signal. It provides a common interface for defining feedback normalization strategies that can be used throughout Jacinta.
 
 While `Evaluator` defines the common feedback normalization interface, specialized subclasses can implement different evaluation strategies to produce normalized signals from observed feedback.
 

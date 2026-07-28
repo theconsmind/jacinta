@@ -238,33 +238,24 @@ def collapse(self) -> None:
 ### `add_dimensions(bounds)`
 
 ```python
-def add_dimensions(
-    self,
-    bounds: tuple[tuple[float, float], ...],
-) -> Self:
+def add_dimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
     """
     Add new dimensions to the space.
 
     Args:
         bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
-
-    Returns:
-        Self: The space with added dimensions.
     """
 ```
 
 ### `remove_dimensions(dims)`
 
 ```python
-def remove_dimensions(self, dims: set[int]) -> Self:
+def remove_dimensions(self, dims: set[int]) -> None:
     """
     Remove dimensions from the space.
 
     Args:
         dims (set[int]): The indices of the dimensions to remove.
-
-    Returns:
-        Self: The space with removed dimensions.
     """
 ```
 

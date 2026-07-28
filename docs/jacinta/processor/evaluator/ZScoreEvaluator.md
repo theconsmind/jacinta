@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`ZScoreEvaluator`](../../../src/jacinta/processor/evaluator/ZScoreEvaluator.py) is an [`Evaluator`](Evaluator.md) that normalizes raw feedback according to its z-score using online estimates of the mean and variance.
+[`ZScoreEvaluator`](../../../../src/jacinta/processor/evaluator/ZScoreEvaluator.py) is an [`Evaluator`](Evaluator.md) that normalizes raw feedback according to its z-score using online estimates of the mean and variance.
 
 It provides a normalized evaluation strategy in which positive values indicate better-than-average feedback, while negative values indicate worse-than-average feedback.
 
@@ -161,7 +161,7 @@ def from_dict(cls, data: dict[str, Any]) -> ZScoreEvaluator:
 ## Examples
 
 ```python
-from jacinta.evaluator import ZScoreEvaluator
+from jacinta.processor.evaluator import ZScoreEvaluator
 
 # Initialize a ZScoreEvaluator
 evaluator = ZScoreEvaluator(

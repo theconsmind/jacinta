@@ -315,6 +315,8 @@ class Processor:
         for dim in dims:
             if not isinstance(dim, int):
                 raise TypeError("All dims must be ints.")
+            if not (0 <= dim < self.tnd):
+                raise IndexError("All dims must be in range.")
         # remove dimensions from the transmitter
         self._receiver.transmitter.remove_dimensions(set(dims))
         return
@@ -366,10 +368,30 @@ class Processor:
             raise KeyError("data must contain the key 'receiver'.")
         if "coordinates" not in data:
             raise KeyError("data must contain the key 'coordinates'.")
+        if not isinstance(data["coordinates"], (tuple, list)):
+            raise TypeError("data['coordinates'] must be a tuple.")
+        for coord in data["coordinates"]:
+            if coord is not None and not isinstance(coord, (float, int)):
+                raise TypeError("All data['coordinates'] must be floats or None.")
+        # validate coordinates
+        coordinates = []
+        receiver = Receiver.from_dict(data["receiver"])
+        if len(data["coordinates"]) != receiver.nd:
+            raise ValueError(f"data['coordinates'] must have length {receiver.nd}.")
+        for coord, (lower, upper) in zip(
+            data["coordinates"], receiver.bounds, strict=True
+        ):
+            if coord is not None:
+                coord = float(coord)
+                if not (lower <= coord < upper):
+                    raise ValueError(
+                        f"All data['coordinates'] must be in [{lower}, {upper})."
+                    )
+            coordinates.append(coord)
         # initializations
-        result = cls(data["receiver"])
+        result = cls(receiver)
         object.__setattr__(result, "_frozen", False)
-        result._coordinates = tuple(data["coordinates"])
+        result._coordinates = tuple(coordinates)
         object.__setattr__(result, "_frozen", True)
         return result
 
