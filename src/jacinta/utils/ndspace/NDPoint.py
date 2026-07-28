@@ -14,7 +14,10 @@ class NDPoint:
         coordinates (tuple[float, ...]): The coordinates of the point.
     """
 
-    __slots__ = ("_coordinates", "_frozen")
+    __slots__ = (
+        "_coordinates",
+        "_frozen",
+    )
 
     def __init__(self, coordinates: tuple[float, ...]) -> None:
         """

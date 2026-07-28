@@ -155,7 +155,7 @@ point2 = NDPoint.from_dict(data)
 assert point == point2
 
 # Save and load
-point.save("point.json")
-point3 = NDPoint.load("point.json")
+point.save(path="point.json")
+point3 = NDPoint.load(path="point.json")
 assert point == point3
 ```

@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`ReceiverSample`](../../../src/jacinta/receiver/ReceiverSample.py) is a specialized [`NDPoint`](../utils/ndspace/NDPoint.md) used by the [`Receiver`](Receiver.md) module to represent input stimuli.
+[`ReceiverSample`](../../../../src/jacinta/processor/receiver/ReceiverSample.py) is a specialized [`NDPoint`](../../utils/ndspace/NDPoint.md) used by the [`Receiver`](Receiver.md) module to represent input stimuli.
 
 Although it shares the same N-dimensional coordinate representation as `NDPoint`, it provides a distinct semantic type that allows the `Receiver` module to differentiate input stimuli from other spatial representations used throughout Jacinta.
 
@@ -29,19 +29,19 @@ def __init__(self, coordinates: tuple[float, ...]) -> None:
 
 ### Inherited API
 
-`ReceiverSample` inherits from [`NDPoint`](../utils/ndspace/NDPoint.md).
+`ReceiverSample` inherits from [`NDPoint`](../../utils/ndspace/NDPoint.md).
 
 ## Examples
 
 ```python
-from jacinta.receiver import ReceiverSample
+from jacinta.processor.receiver import ReceiverSample
 
-# Initialize a 3D ReceiverSample
+# Initialize a 2D ReceiverSample
 rsample = ReceiverSample(
-    coordinates=(0.1, 0.5, 0.9),
+    coordinates=(0.1, 0.5),
 )
-print(rsample.nd)           # 3
-print(rsample.coordinates)  # (0.1, 0.5, 0.9)
+print(rsample.nd)           # 2
+print(rsample.coordinates)  # (0.1, 0.5)
 
 # Serialize and deserialize
 data = rsample.to_dict()
@@ -49,7 +49,7 @@ rsample2 = ReceiverSample.from_dict(data)
 assert rsample == rsample2
 
 # Save and load
-rsample.save("rsample.json")
-rsample3 = ReceiverSample.load("rsample.json")
+rsample.save(path="rsample.json")
+rsample3 = ReceiverSample.load(path="rsample.json")
 assert rsample == rsample3
 ```

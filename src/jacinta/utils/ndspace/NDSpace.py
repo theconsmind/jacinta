@@ -359,7 +359,7 @@ class NDSpace:
             raise ValueError("point must be contained in self.")
         # self validations
         if not self.can_split(point):
-            raise ValueError("self cannot be split.")
+            raise RuntimeError("self cannot be split.")
         # split the space
         spaces = []
         # generate all combinations of upper/lower halves
@@ -419,18 +419,12 @@ class NDSpace:
             self._update_height()
         return
 
-    def add_dimensions(
-        self,
-        bounds: tuple[tuple[float, float], ...],
-    ) -> Self:
+    def add_dimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
         """
         Add new dimensions to the space.
 
         Args:
             bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
-
-        Returns:
-            Self: The space with added dimensions.
         """
         # bounds validations
         if not isinstance(bounds, (tuple, list)):
@@ -477,17 +471,14 @@ class NDSpace:
             return
 
         _add_dimensions(root)
-        return self
+        return
 
-    def remove_dimensions(self, dims: set[int]) -> Self:
+    def remove_dimensions(self, dims: set[int]) -> None:
         """
         Remove dimensions from the space.
 
         Args:
             dims (set[int]): The indices of the dimensions to remove.
-
-        Returns:
-            Self: The space with removed dimensions.
         """
         # dims validations
         if not isinstance(dims, (set, tuple, list)):
@@ -553,7 +544,7 @@ class NDSpace:
             return
 
         _remove_dimensions(root)
-        return self
+        return
 
     def copy(self) -> Self:
         """
@@ -653,7 +644,7 @@ class NDSpace:
             # parent validations
             if parent is not None:
                 if parent._max_depth is not None and parent._depth == parent._max_depth:
-                    raise ValueError("parent cannot be split.")
+                    raise RuntimeError("parent cannot be split.")
                 if parent._min_width != data["min_width"]:
                     raise ValueError(
                         "data['min_width'] must be equal to parent._min_width."

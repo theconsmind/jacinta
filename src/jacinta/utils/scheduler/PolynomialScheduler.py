@@ -16,7 +16,11 @@ class PolynomialScheduler(Scheduler):
         max_value (float | None): The maximum value of the scheduler.
     """
 
-    __slots__ = ("_coefficients", "_min_value", "_max_value")
+    __slots__ = (
+        "_coefficients",
+        "_min_value",
+        "_max_value",
+    )
 
     def __init__(
         self,

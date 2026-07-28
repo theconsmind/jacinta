@@ -118,9 +118,9 @@ from jacinta.utils.scheduler import ConstantScheduler
 scheduler = ConstantScheduler(
     value=10.0,
 )
-print(scheduler(0))   # 10.0
-print(scheduler(3))   # 10.0
-print(scheduler(10))  # 10.0
+print(scheduler(depth=0))   # 10.0
+print(scheduler(depth=3))   # 10.0
+print(scheduler(depth=10))  # 10.0
 
 # Serialize and deserialize
 data = scheduler.to_dict()
@@ -128,7 +128,7 @@ scheduler2 = ConstantScheduler.from_dict(data)
 assert scheduler == scheduler2
 
 # Save and load
-scheduler.save("scheduler.json")
-scheduler3 = ConstantScheduler.load("scheduler.json")
+scheduler.save(path="scheduler.json")
+scheduler3 = ConstantScheduler.load(path="scheduler.json")
 assert scheduler == scheduler3
 ```

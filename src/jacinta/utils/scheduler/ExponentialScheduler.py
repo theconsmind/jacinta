@@ -18,7 +18,13 @@ class ExponentialScheduler(Scheduler):
         max_value (float | None): The maximum value of the scheduler.
     """
 
-    __slots__ = ("_scale", "_rate", "_intercept", "_min_value", "_max_value")
+    __slots__ = (
+        "_scale",
+        "_rate",
+        "_intercept",
+        "_min_value",
+        "_max_value",
+    )
 
     def __init__(
         self,

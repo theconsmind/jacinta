@@ -1,0 +1,256 @@
+from __future__ import annotations
+
+import json
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
+from .receiver import ReceiverSample
+from .transmitter import TransmitterSample
+
+
+class ProcessorSample:
+    """
+    A ProcessorSample represents an input-output coordinate mapping produced
+    by a Processor.
+
+    Attributes:
+        rsample (ReceiverSample): The receiver sample of the processor sample.
+        tsample (TransmitterSample): The transmitter sample of the processor sample.
+    """
+
+    __slots__ = (
+        "_rsample",
+        "_tsample",
+        "_frozen",
+    )
+
+    def __init__(self, rsample: ReceiverSample, tsample: TransmitterSample) -> None:
+        """
+        Initialize a ProcessorSample.
+
+        Args:
+            rsample (ReceiverSample): The receiver sample of the processor sample.
+            tsample (TransmitterSample): The transmitter sample of the processor sample.
+        """
+        # rsample validations
+        if not isinstance(rsample, ReceiverSample):
+            raise TypeError("rsample must be a ReceiverSample.")
+        # tsample validations
+        if not isinstance(tsample, TransmitterSample):
+            raise TypeError("tsample must be a TransmitterSample.")
+        # initializations
+        object.__setattr__(self, "_frozen", False)
+        self._rsample = rsample
+        self._tsample = tsample
+        object.__setattr__(self, "_frozen", True)
+        return
+
+    def __repr__(self) -> str:
+        """
+        Get the representation of the processor sample.
+
+        Returns:
+            str: The representation of the processor sample.
+        """
+        result = (
+            f"{self.__class__.__name__}"
+            f"(rsample={self._rsample!r}, tsample={self._tsample!r})"
+        )
+        return result
+
+    @property
+    def rsample(self) -> ReceiverSample:
+        """
+        Get the receiver sample of the processor sample.
+
+        Returns:
+            ReceiverSample: The receiver sample of the processor sample.
+        """
+        return self._rsample
+
+    @property
+    def tsample(self) -> TransmitterSample:
+        """
+        Get the transmitter sample of the processor sample.
+
+        Returns:
+            TransmitterSample: The transmitter sample of the processor sample.
+        """
+        return self._tsample
+
+    @property
+    def rcoordinates(self) -> tuple[float, ...]:
+        """
+        Get the coordinates of the receiver sample.
+
+        Returns:
+            tuple[float, ...]: The coordinates of the receiver sample.
+        """
+        return self._rsample.coordinates
+
+    @property
+    def tcoordinates(self) -> tuple[float, ...]:
+        """
+        Get the coordinates of the transmitter sample.
+
+        Returns:
+            tuple[float, ...]: The coordinates of the transmitter sample.
+        """
+        return self._tsample.coordinates
+
+    @property
+    def rnd(self) -> int:
+        """
+        Get the number of dimensions of the receiver sample.
+
+        Returns:
+            int: The number of dimensions of the receiver sample.
+        """
+        return self._rsample.nd
+
+    @property
+    def tnd(self) -> int:
+        """
+        Get the number of dimensions of the transmitter sample.
+
+        Returns:
+            int: The number of dimensions of the transmitter sample.
+        """
+        return self._tsample.nd
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Check if two processor samples are equal.
+
+        Args:
+            other (object): The object to compare with.
+
+        Returns:
+            bool: True if the processor samples are equal, False otherwise.
+        """
+        # other validations
+        if type(self) is not type(other):
+            return NotImplemented
+        # equality check
+        result = self._rsample == other._rsample and self._tsample == other._tsample
+        return result
+
+    def copy(self) -> ProcessorSample:
+        """
+        Get a copy of the processor sample.
+
+        Returns:
+            ProcessorSample: The copy of the processor sample.
+        """
+        result = deepcopy(self)
+        return result
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Get the dictionary representation of the processor sample.
+
+        Returns:
+            dict[str, Any]: The dictionary representation of the processor sample.
+        """
+        result = {
+            "type": self.__class__.__name__,
+            "rsample": self._rsample.to_dict(),
+            "tsample": self._tsample.to_dict(),
+        }
+        return result
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ProcessorSample:
+        """
+        Create a processor sample from a dictionary.
+
+        Args:
+            data (dict[str, Any]): The dictionary representation of
+                the processor sample.
+
+        Returns:
+            ProcessorSample: The processor sample.
+        """
+        # data validations
+        if not isinstance(data, dict):
+            raise TypeError("data must be a dict.")
+        if "type" not in data:
+            raise KeyError("data must contain the key 'type'.")
+        if data["type"] != cls.__name__:
+            raise ValueError(f"data['type'] must be a {cls.__name__}.")
+        if "rsample" not in data:
+            raise KeyError("data must contain the key 'rsample'.")
+        if "tsample" not in data:
+            raise KeyError("data must contain the key 'tsample'.")
+        # initializations
+        result = cls(
+            ReceiverSample.from_dict(data["rsample"]),
+            TransmitterSample.from_dict(data["tsample"]),
+        )
+        return result
+
+    def save(self, path: str | Path, overwrite: bool = False) -> None:
+        """
+        Save the processor sample to a json file.
+
+        Args:
+            path (str | Path): The path to the file.
+            overwrite (bool): Whether to overwrite the file if it exists.
+                Defaults to False.
+        """
+        # path validations
+        if not isinstance(path, (str, Path)):
+            raise TypeError("path must be a string or a Path.")
+        # file validations
+        path = Path(path)
+        if path.suffix != ".json":
+            raise ValueError("path must have a .json extension.")
+        if not overwrite and path.exists():
+            raise FileExistsError(f"path already exists: {path}.")
+        # file creation
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, ensure_ascii=False, indent=4)
+        return
+
+    @classmethod
+    def load(cls, path: str | Path) -> ProcessorSample:
+        """
+        Load a processor sample from a json file.
+
+        Args:
+            path (str | Path): The path to the file.
+
+        Returns:
+            ProcessorSample: The processor sample.
+        """
+        # path validations
+        if not isinstance(path, (str, Path)):
+            raise TypeError("path must be a string or a Path.")
+        # file validations
+        path = Path(path)
+        if path.suffix != ".json":
+            raise ValueError("path must have a .json extension.")
+        if not path.exists():
+            raise FileNotFoundError(f"path does not exist: {path}.")
+        # file loading
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        result = cls.from_dict(data)
+        return result
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """
+        Set an attribute of the processor sample.
+
+        Args:
+            name (str): The name of the attribute.
+            value (Any): The value of the attribute.
+        """
+        # freeze check
+        if getattr(self, "_frozen", False):
+            raise AttributeError(f"{self.__class__.__name__} is immutable.")
+        # set the attribute
+        object.__setattr__(self, name, value)
+        return

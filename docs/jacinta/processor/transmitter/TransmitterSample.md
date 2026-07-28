@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`TransmitterSample`](../../../src/jacinta/transmitter/TransmitterSample.py) is a specialized [`NDPoint`](../utils/ndspace/NDPoint.md) used by the [`Transmitter`](Transmitter.md) module to represent output stimuli.
+[`TransmitterSample`](../../../../src/jacinta/processor/transmitter/TransmitterSample.py) is a specialized [`NDPoint`](../../utils/ndspace/NDPoint.md) used by the [`Transmitter`](Transmitter.md) module to represent output stimuli.
 
 Although it shares the same N-dimensional coordinate representation as `NDPoint`, it provides a distinct semantic type that allows the `Transmitter` module to differentiate output stimuli from other spatial representations used throughout Jacinta.
 
@@ -29,19 +29,19 @@ def __init__(self, coordinates: tuple[float, ...]) -> None:
 
 ### Inherited API
 
-`TransmitterSample` inherits from [`NDPoint`](../utils/ndspace/NDPoint.md).
+`TransmitterSample` inherits from [`NDPoint`](../../utils/ndspace/NDPoint.md).
 
 ## Examples
 
 ```python
-from jacinta.transmitter import TransmitterSample
+from jacinta.processor.transmitter import TransmitterSample
 
 # Initialize a 3D TransmitterSample
 tsample = TransmitterSample(
-    coordinates=(0.1, 0.5, 0.9),
+    coordinates=(0.3, 0.7, 0.9),
 )
 print(tsample.nd)           # 3
-print(tsample.coordinates)  # (0.1, 0.5, 0.9)
+print(tsample.coordinates)  # (0.3, 0.7, 0.9)
 
 # Serialize and deserialize
 data = tsample.to_dict()
@@ -49,7 +49,7 @@ tsample2 = TransmitterSample.from_dict(data)
 assert tsample == tsample2
 
 # Save and load
-tsample.save("tsample.json")
-tsample3 = TransmitterSample.load("tsample.json")
+tsample.save(path="tsample.json")
+tsample3 = TransmitterSample.load(path="tsample.json")
 assert tsample == tsample3
 ```

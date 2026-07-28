@@ -142,9 +142,9 @@ scheduler = PiecewiseScheduler(
         ),
     ),
 )
-print(scheduler(0))   # 0.0
-print(scheduler(3))   # 3.0
-print(scheduler(10))  # 10.0
+print(scheduler(depth=0))   # 0.0
+print(scheduler(depth=3))   # 3.0
+print(scheduler(depth=10))  # 10.0
 
 # Serialize and deserialize
 data = scheduler.to_dict()
@@ -152,7 +152,7 @@ scheduler2 = PiecewiseScheduler.from_dict(data)
 assert scheduler == scheduler2
 
 # Save and load
-scheduler.save("scheduler.json")
-scheduler3 = PiecewiseScheduler.load("scheduler.json")
+scheduler.save(path="scheduler.json")
+scheduler3 = PiecewiseScheduler.load(path="scheduler.json")
 assert scheduler == scheduler3
 ```

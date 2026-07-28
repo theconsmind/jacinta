@@ -238,33 +238,24 @@ def collapse(self) -> None:
 ### `add_dimensions(bounds)`
 
 ```python
-def add_dimensions(
-    self,
-    bounds: tuple[tuple[float, float], ...],
-) -> Self:
+def add_dimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
     """
     Add new dimensions to the space.
 
     Args:
         bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
-
-    Returns:
-        Self: The space with added dimensions.
     """
 ```
 
 ### `remove_dimensions(dims)`
 
 ```python
-def remove_dimensions(self, dims: set[int]) -> Self:
+def remove_dimensions(self, dims: set[int]) -> None:
     """
     Remove dimensions from the space.
 
     Args:
         dims (set[int]): The indices of the dimensions to remove.
-
-    Returns:
-        Self: The space with removed dimensions.
     """
 ```
 
@@ -353,12 +344,12 @@ print(space.height)   # 0
 print(space.depth)    # 0
 
 # Containment
-print(NDPoint((5.0, 5.0)) in space)   # True
-print(NDPoint((10.0, 5.0)) in space)  # False
-print(NDPoint((20.0, 5.0)) in space)  # False
+print(NDPoint(coordinates=(5.0, 5.0)) in space)   # True
+print(NDPoint(coordinates=(10.0, 5.0)) in space)  # False
+print(NDPoint(coordinates=(20.0, 5.0)) in space)  # False
 
 # Split at the midpoint
-midpoint = NDPoint((5.0, 5.0))
+midpoint = NDPoint(coordinates=(5.0, 5.0))
 children = space.split(midpoint)
 print(len(children))            # 4
 print(space.is_leaf)            # False
@@ -366,16 +357,16 @@ print(space.height)             # 1
 print(space.children[0].depth)  # 1
 
 # Find leaf
-leaf = space.find_leaf(NDPoint((2.5, 0.5)))
+leaf = space.find_leaf(NDPoint(coordinates=(2.5, 0.5)))
 print(leaf.bounds)  # ((0.0, 5.0), (0.0, 5.0))
 
 # Add dimension
-space.add_dimensions(((0.0, 5.0),))
+space.add_dimensions(bounds=((0.0, 5.0),))
 print(space.nd)      # 3
 print(space.bounds)  # ((0.0, 10.0), (0.0, 10.0), (0.0, 5.0))
 
 # Remove dimension
-space.remove_dimensions({0})
+space.remove_dimensions(dims={0})
 print(space.nd)      # 2
 print(space.bounds)  # ((0.0, 10.0), (0.0, 5.0))
 
@@ -389,8 +380,8 @@ space2 = NDSpace.from_dict(data)
 assert space == space2
 
 # Save and load
-space.save("space.json")
-space3 = NDSpace.load("space.json")
+space.save(path="space.json")
+space3 = NDSpace.load(path="space.json")
 assert space == space3
 ```
 

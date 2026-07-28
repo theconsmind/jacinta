@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from ..utils.ndspace import NDPoint
+from ...utils.ndspace import NDPoint
 
 
-class ReceiverSample(NDPoint):
+class TransmitterSample(NDPoint):
     """
-    A ReceiverSample represents an NDPoint received by a Receiver.
+    A TransmitterSample represents an NDPoint transmitted by a Transmitter.
     """
 
     def __init__(self, coordinates: tuple[float, ...]) -> None:
         """
-        Initialize a ReceiverSample.
+        Initialize a TransmitterSample.
 
         Args:
             coordinates (tuple[float, ...]): The coordinates of the point.

@@ -14,7 +14,10 @@ class PiecewiseScheduler(Scheduler):
         segments (tuple[tuple[int, Scheduler], ...]): The segments of the scheduler.
     """
 
-    __slots__ = ("_segments", "_depths")
+    __slots__ = (
+        "_segments",
+        "_depths",
+    )
 
     def __init__(
         self,

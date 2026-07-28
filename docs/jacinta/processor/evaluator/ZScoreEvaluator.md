@@ -2,7 +2,7 @@
 
 ## Overview
 
-[`ZScoreEvaluator`](../../../src/jacinta/evaluator/ZScoreEvaluator.py) is an [`Evaluator`](Evaluator.md) that normalizes raw feedback according to its z-score using online estimates of the mean and variance.
+[`ZScoreEvaluator`](../../../../src/jacinta/processor/evaluator/ZScoreEvaluator.py) is an [`Evaluator`](Evaluator.md) that normalizes raw feedback according to its z-score using online estimates of the mean and variance.
 
 It provides a normalized evaluation strategy in which positive values indicate better-than-average feedback, while negative values indicate worse-than-average feedback.
 
@@ -161,7 +161,7 @@ def from_dict(cls, data: dict[str, Any]) -> ZScoreEvaluator:
 ## Examples
 
 ```python
-from jacinta.evaluator import ZScoreEvaluator
+from jacinta.processor.evaluator import ZScoreEvaluator
 
 # Initialize a ZScoreEvaluator
 evaluator = ZScoreEvaluator(
@@ -170,12 +170,12 @@ evaluator = ZScoreEvaluator(
 )
 
 # Warm-up phase: no advantage yet
-print(evaluator(0.5))  # None
-print(evaluator(0.8))  # None
+print(evaluator(feedback=0.5))  # None
+print(evaluator(feedback=0.8))  # None
 
 # From the third call onward
-print(evaluator(0.3))  # -0.7666666641111111
-print(evaluator(0.9))  # 1.3378650681765694
+print(evaluator(feedback=0.3))  # -0.7666666641111111
+print(evaluator(feedback=0.9))  # 1.3378650681765694
 
 # Online statistics
 print(evaluator.mean)  # 0.5463
@@ -187,8 +187,8 @@ evaluator2 = ZScoreEvaluator.from_dict(data)
 assert evaluator == evaluator2
 
 # Save and load
-evaluator.save("evaluator.json")
-evaluator3 = ZScoreEvaluator.load("evaluator.json")
+evaluator.save(path="evaluator.json")
+evaluator3 = ZScoreEvaluator.load(path="evaluator.json")
 assert evaluator == evaluator3
 ```
 
