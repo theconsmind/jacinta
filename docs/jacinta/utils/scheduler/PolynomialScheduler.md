@@ -150,9 +150,9 @@ scheduler = PolynomialScheduler(
     min_value=0.2,
     max_value=10.0,
 )
-print(scheduler(0))   # 0.2
-print(scheduler(3))   # 7.5
-print(scheduler(10))  # 10.0
+print(scheduler(depth=0))   # 0.2
+print(scheduler(depth=3))   # 7.5
+print(scheduler(depth=10))  # 10.0
 
 # Serialize and deserialize
 data = scheduler.to_dict()
@@ -160,7 +160,7 @@ scheduler2 = PolynomialScheduler.from_dict(data)
 assert scheduler == scheduler2
 
 # Save and load
-scheduler.save("scheduler.json")
-scheduler3 = PolynomialScheduler.load("scheduler.json")
+scheduler.save(path="scheduler.json")
+scheduler3 = PolynomialScheduler.load(path="scheduler.json")
 assert scheduler == scheduler3
 ```

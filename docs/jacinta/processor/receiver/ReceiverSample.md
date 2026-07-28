@@ -36,12 +36,12 @@ def __init__(self, coordinates: tuple[float, ...]) -> None:
 ```python
 from jacinta.processor.receiver import ReceiverSample
 
-# Initialize a 3D ReceiverSample
+# Initialize a 2D ReceiverSample
 rsample = ReceiverSample(
-    coordinates=(0.1, 0.5, 0.9),
+    coordinates=(0.1, 0.5),
 )
-print(rsample.nd)           # 3
-print(rsample.coordinates)  # (0.1, 0.5, 0.9)
+print(rsample.nd)           # 2
+print(rsample.coordinates)  # (0.1, 0.5)
 
 # Serialize and deserialize
 data = rsample.to_dict()
@@ -49,7 +49,7 @@ rsample2 = ReceiverSample.from_dict(data)
 assert rsample == rsample2
 
 # Save and load
-rsample.save("rsample.json")
-rsample3 = ReceiverSample.load("rsample.json")
+rsample.save(path="rsample.json")
+rsample3 = ReceiverSample.load(path="rsample.json")
 assert rsample == rsample3
 ```

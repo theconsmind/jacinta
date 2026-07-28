@@ -162,9 +162,9 @@ scheduler = LinearScheduler(
     min_value=0.2,
     max_value=10.0,
 )
-print(scheduler(0))   # 0.2
-print(scheduler(3))   # 3.0
-print(scheduler(10))  # 10.0
+print(scheduler(depth=0))   # 0.2
+print(scheduler(depth=3))   # 3.0
+print(scheduler(depth=10))  # 10.0
 
 # Serialize and deserialize
 data = scheduler.to_dict()
@@ -172,7 +172,7 @@ scheduler2 = LinearScheduler.from_dict(data)
 assert scheduler == scheduler2
 
 # Save and load
-scheduler.save("scheduler.json")
-scheduler3 = LinearScheduler.load("scheduler.json")
+scheduler.save(path="scheduler.json")
+scheduler3 = LinearScheduler.load(path="scheduler.json")
 assert scheduler == scheduler3
 ```

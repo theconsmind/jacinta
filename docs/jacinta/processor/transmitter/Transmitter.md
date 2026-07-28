@@ -236,21 +236,21 @@ from jacinta.processor.evaluator import ZScoreEvaluator
 from jacinta.processor.transmitter import Transmitter, TransmitterSample
 from jacinta.utils.scheduler import ConstantScheduler
 
-# Initialize a 2D Transmitter
+# Initialize a 3D Transmitter
 transmitter = Transmitter(
-    bounds=((0.0, 10.0), (0.0, 10.0)),
+    bounds=((0.0, 10.0), (0.0, 10.0), (0.0, 10.0)),
     evaluator=ZScoreEvaluator(mean_ema_rate=0.001, var_ema_rate=0.001),
-    bias_scale_scheduler=ConstantScheduler(10.0),
-    learning_rate_scheduler=ConstantScheduler(0.001),
-    hits_rate_scheduler=ConstantScheduler(10000.0),
+    bias_scale_scheduler=ConstantScheduler(value=10.0),
+    learning_rate_scheduler=ConstantScheduler(value=0.001),
+    hits_rate_scheduler=ConstantScheduler(value=10000.0),
 )
 tsample = transmitter.forward(bias=1.0)
-print(tsample.coordinates)  # (6.394267984578837, 0.25010755222666936)
+print(tsample.coordinates)  # (9.413804953978108, 7.903053215243755, 2.389435378448763)
 
-# Reward function (maximum at (5,5))
+# Reward function (maximum at (5,5,5))
 def get_reward(tsample: TransmitterSample) -> float:
     """
-    Reward regions close to the center of the space (5,5).
+    Reward regions close to the center of the space (5,5,5).
 
     Args:
         tsample (TransmitterSample): The transmitter sample.
@@ -258,11 +258,11 @@ def get_reward(tsample: TransmitterSample) -> float:
     Returns:
         float: The reward.
     """
-    x, y = tsample.coordinates
+    x, y, z = tsample.coordinates
     # Calculate the Euclidean distance from the center of the space
-    d = math.sqrt((x - 5)**2 + (y - 5)**2)
+    d = math.sqrt((x - 5)**2 + (y - 5)**2 + (z - 5)**2)
     # Calculate the maximum possible distance from the center of the space
-    d_max = 5 * math.sqrt(2)
+    d_max = 5 * math.sqrt(3)
     # Normalize the distance to the range [-1, 1]
     reward = 1 - 2 * d / d_max
     return reward
@@ -275,7 +275,7 @@ for _ in range(1000000):
 
 # Exploit the learned distribution
 tsample = transmitter.forward(bias=1.0)
-print(tsample.coordinates)  # (5.0000036861057096, 4.999993194516738)
+print(tsample.coordinates)  # (4.966190526301341, 5.071998233860069, 4.997656836149372)
 
 # Serialize and deserialize
 data = transmitter.to_dict()
@@ -283,8 +283,8 @@ transmitter2 = Transmitter.from_dict(data)
 assert transmitter == transmitter2
 
 # Save and load
-transmitter.save("transmitter.json")
-transmitter3 = Transmitter.load("transmitter.json")
+transmitter.save(path="transmitter.json")
+transmitter3 = Transmitter.load(path="transmitter.json")
 assert transmitter == transmitter3
 ```
 

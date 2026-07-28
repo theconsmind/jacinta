@@ -188,9 +188,9 @@ scheduler = PowerScheduler(
     min_value=0.2,
     max_value=10.0,
 )
-print(scheduler(0))   # 10.0
-print(scheduler(3))   # 0.24489795918367346
-print(scheduler(10))  # 0.2
+print(scheduler(depth=0))   # 10.0
+print(scheduler(depth=3))   # 0.24489795918367346
+print(scheduler(depth=10))  # 0.2
 
 # Serialize and deserialize
 data = scheduler.to_dict()
@@ -198,7 +198,7 @@ scheduler2 = PowerScheduler.from_dict(data)
 assert scheduler == scheduler2
 
 # Save and load
-scheduler.save("scheduler.json")
-scheduler3 = PowerScheduler.load("scheduler.json")
+scheduler.save(path="scheduler.json")
+scheduler3 = PowerScheduler.load(path="scheduler.json")
 assert scheduler == scheduler3
 ```

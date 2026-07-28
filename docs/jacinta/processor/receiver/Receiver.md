@@ -203,29 +203,29 @@ from jacinta.processor.receiver import Receiver, ReceiverSample
 from jacinta.processor.transmitter import Transmitter, TransmitterSample
 from jacinta.utils.scheduler import ConstantScheduler
 
-# Initialize a 2D Transmitter
+# Initialize a 3D Transmitter
 transmitter = Transmitter(
-    bounds=((0.0, 10.0), (0.0, 10.0)),
+    bounds=((0.0, 10.0), (0.0, 10.0), (0.0, 10.0)),
     evaluator=ZScoreEvaluator(mean_ema_rate=0.001, var_ema_rate=0.001),
-    bias_scale_scheduler=ConstantScheduler(10.0),
-    learning_rate_scheduler=ConstantScheduler(0.001),
-    hits_rate_scheduler=ConstantScheduler(10000.0),
+    bias_scale_scheduler=ConstantScheduler(value=10.0),
+    learning_rate_scheduler=ConstantScheduler(value=0.001),
+    hits_rate_scheduler=ConstantScheduler(value=10000.0),
 )
 
 # Initialize a 2D Receiver
 receiver = Receiver(
     bounds=((0.0, 10.0), (0.0, 10.0)),
     transmitter=transmitter,
-    hits_rate_scheduler=ConstantScheduler(10000.0),
+    hits_rate_scheduler=ConstantScheduler(value=10000.0),
 )
-rsample = ReceiverSample((2.0, 2.0))
+rsample = ReceiverSample(coordinates=(2.0, 2.0))
 tsample = receiver.forward(rsample, bias=1.0)
-print(tsample.coordinates)  # (6.394267984578837, 0.25010755222666936)
+print(tsample.coordinates)  # (2.22952650085686, 8.561472417344296, 3.570507880615521)
 
-# Reward function (maximum at (5,5))
+# Reward function (maximum at (5,5,5))
 def get_reward(tsample: TransmitterSample) -> float:
     """
-    Reward regions close to the center of the space (5,5).
+    Reward regions close to the center of the space (5,5,5).
 
     Args:
         tsample (TransmitterSample): The transmitter sample.
@@ -233,11 +233,11 @@ def get_reward(tsample: TransmitterSample) -> float:
     Returns:
         float: The reward.
     """
-    x, y = tsample.coordinates
+    x, y, z = tsample.coordinates
     # Calculate the Euclidean distance from the center of the space
-    d = math.sqrt((x - 5)**2 + (y - 5)**2)
+    d = math.sqrt((x - 5)**2 + (y - 5)**2 + (z - 5)**2)
     # Calculate the maximum possible distance from the center of the space
-    d_max = 5 * math.sqrt(2)
+    d_max = 5 * math.sqrt(3)
     # Normalize the distance to the range [-1, 1]
     reward = 1 - 2 * d / d_max
     return reward
@@ -250,7 +250,7 @@ for _ in range(1000000):
 
 # Exploit the learned distribution
 tsample = receiver.forward(rsample, bias=1.0)
-print(tsample.coordinates)  # (5.000001647399828, 4.999992279204593)
+print(tsample.coordinates)  # (5.084899737971213, 5.117139008647544, 5.119314292690004)
 
 # Serialize and deserialize
 data = receiver.to_dict()
@@ -258,8 +258,8 @@ receiver2 = Receiver.from_dict(data)
 assert receiver == receiver2
 
 # Save and load
-receiver.save("receiver.json")
-receiver3 = Receiver.load("receiver.json")
+receiver.save(path="receiver.json")
+receiver3 = Receiver.load(path="receiver.json")
 assert receiver == receiver3
 ```
 

@@ -377,7 +377,7 @@ class Processor:
                 the processor.
 
         Returns:
-            Self: The processor.
+            Processor: The processor.
         """
         # data validations
         if not isinstance(data, dict):

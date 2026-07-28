@@ -170,7 +170,7 @@ class ProcessorSample:
                 the processor sample.
 
         Returns:
-            Self: The processor sample.
+            ProcessorSample: The processor sample.
         """
         # data validations
         if not isinstance(data, dict):
