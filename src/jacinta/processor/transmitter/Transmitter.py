@@ -231,43 +231,21 @@ class Transmitter(NDSpace):
         # sample from the transmitter learned distribution
         transmitter = self
         while not transmitter.is_leaf:
-            # separate active and inactive children based on hits_left
-            active_children = []
-            inactive_children = []
-            for child in transmitter._children:
-                if child._hits_left <= 0.0:
-                    active_children.append(child)
-                else:
-                    inactive_children.append(child)
-            transmitters = list(active_children)
-            log_weights = [child._log_weight for child in active_children]
-            # if there are inactive children, the parent becomes a possible choice
-            if inactive_children:
-                max_log_weight = max(child._log_weight for child in inactive_children)
-                log_weight = max_log_weight
-                log_weight += math.log(
-                    sum(
-                        math.exp(child._log_weight - max_log_weight)
-                        for child in inactive_children
-                    )
-                )
-                transmitters.append(transmitter)
-                log_weights.append(log_weight)
+            log_weights = [child._log_weight for child in transmitter._children]
             # bias the sampling
             bias_scale = 1.0 + float(bias) * transmitter._bias_scale_scheduler(
                 transmitter._depth
             )
             log_weights = [log_weight * bias_scale for log_weight in log_weights]
-            # stable log_weights sampling with softmax
+            # stable log-weights sampling with softmax
             max_log_weight = max(log_weights)
             weights = [
                 math.exp(log_weight - max_log_weight) for log_weight in log_weights
             ]
-            # choose a transmitter based on log_weights
-            target = transmitter._rng.choices(transmitters, weights=weights, k=1)[0]
-            if target is transmitter:
-                break
-            transmitter = target
+            # choose a transmitter based on log-weights
+            transmitter = transmitter._rng.choices(
+                transmitter._children, weights=weights, k=1
+            )[0]
         # sample from the transmitter uniform distribution
         coords = tuple(
             lower + transmitter._rng.random() * (upper - lower)
@@ -309,8 +287,6 @@ class Transmitter(NDSpace):
                 if transmitter.can_split():
                     transmitter.split()
             object.__setattr__(transmitter, "_frozen", True)
-            if transmitter._parent is not None:
-                transmitter = transmitter._parent
         # propagate the feedback up to the root
         advantage = transmitter._evaluator(float(feedback))
         if advantage is not None:
@@ -402,7 +378,6 @@ class Transmitter(NDSpace):
                 transmitter._parent = self
                 transmitter._root = self._root
                 transmitter._depth = self._depth + 1
-                transmitter._log_weight = self._log_weight
                 transmitter._hits_left = self._hits_rate_scheduler(self._depth + 1)
                 transmitter._rng = self._rng
                 object.__setattr__(transmitter, "_frozen", True)
