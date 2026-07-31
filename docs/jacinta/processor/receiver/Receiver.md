@@ -265,5 +265,6 @@ assert receiver == receiver3
 
 ## Limitations
 
+- `Receiver` inherits all limitations from `NDSpace`.
 - `backward` updates the `Transmitter` of every ancestor from the active `Receiver` node up to the root.
 - `collapse` is not implemented. Once a region has been split, it cannot be merged back.
