@@ -278,25 +278,30 @@ class Transmitter(NDSpace):
             raise TypeError("feedback must be a float.")
         if not (-1.0 <= feedback <= 1.0):
             raise ValueError("feedback must be in [-1, 1].")
-        # hit the transmitter and split if necessary
+        # hit the transmitter
         transmitter = self.find_leaf(tsample)
+        should_split = False
         if transmitter._hits_left > 0.0:
             object.__setattr__(transmitter, "_frozen", False)
             transmitter._hits_left -= 1.0
             if transmitter._hits_left <= 0.0:
                 if transmitter.can_split():
-                    transmitter.split()
+                    should_split = True
             object.__setattr__(transmitter, "_frozen", True)
         # propagate the feedback up to the root
         advantage = transmitter._evaluator(float(feedback))
         if advantage is not None:
-            while transmitter is not None:
-                object.__setattr__(transmitter, "_frozen", False)
-                transmitter._log_weight += (
-                    transmitter._learning_rate_scheduler(transmitter._depth) * advantage
+            current = transmitter
+            while current is not None:
+                object.__setattr__(current, "_frozen", False)
+                current._log_weight += (
+                    current._learning_rate_scheduler(current._depth) * advantage
                 )
-                object.__setattr__(transmitter, "_frozen", True)
-                transmitter = transmitter._parent
+                object.__setattr__(current, "_frozen", True)
+                current = current._parent
+        # split the transmitter if necessary
+        if should_split:
+            transmitter.split()
         return
 
     def can_split(self) -> bool:
