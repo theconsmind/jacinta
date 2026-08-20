@@ -166,8 +166,6 @@ class Receiver(NDSpace):
             raise TypeError("bias must be a float.")
         # generate a tsample in the appropriate active receiver
         receiver = self.find_leaf(rsample)
-        if receiver._hits_left > 0.0 and receiver._parent is not None:
-            receiver = receiver._parent
         tsample = receiver._transmitter.forward(float(bias))
         return tsample
 
@@ -198,23 +196,24 @@ class Receiver(NDSpace):
         # feedback validations
         if not isinstance(feedback, (float, int)):
             raise TypeError("feedback must be a float.")
-        # hit the receiver and split if necessary
+        # hit the receiver
         receiver = self.find_leaf(rsample)
+        should_split = False
         if receiver._hits_left > 0.0:
             object.__setattr__(receiver, "_frozen", False)
             receiver._hits_left -= 1.0
             if receiver._hits_left <= 0.0:
-                if receiver._parent is not None:
-                    receiver._transmitter = receiver._parent._transmitter.copy()
                 if receiver.can_split():
-                    receiver.split()
+                    should_split = True
             object.__setattr__(receiver, "_frozen", True)
-            if receiver._parent is not None:
-                receiver = receiver._parent
         # propagate the feedback up to the root
-        while receiver is not None:
-            receiver._transmitter.backward(tsample, float(feedback))
-            receiver = receiver._parent
+        current = receiver
+        while current is not None:
+            current._transmitter.backward(tsample, float(feedback))
+            current = current._parent
+        # split the receiver if necessary
+        if should_split:
+            receiver.split()
         return
 
     def can_split(self) -> bool:
@@ -285,7 +284,7 @@ class Receiver(NDSpace):
             if is_valid:
                 receiver = self.__class__(
                     tuple(new_bounds),
-                    self._transmitter,
+                    self._transmitter.copy(),
                     self._hits_rate_scheduler,
                     self._min_width,
                     self._max_depth,
