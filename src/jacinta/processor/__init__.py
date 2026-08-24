@@ -1,5 +1,5 @@
-from .Processor import Processor
-from .ProcessorSample import ProcessorSample
+from .processor import Processor
+from .processor_sample import ProcessorSample
 
 __all__ = [
     "Processor",

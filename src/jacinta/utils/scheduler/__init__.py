@@ -1,11 +1,11 @@
-from .ConstantScheduler import ConstantScheduler
-from .ExponentialScheduler import ExponentialScheduler
-from .LinearScheduler import LinearScheduler
-from .LogarithmicScheduler import LogarithmicScheduler
-from .PiecewiseScheduler import PiecewiseScheduler
-from .PolynomialScheduler import PolynomialScheduler
-from .PowerScheduler import PowerScheduler
-from .Scheduler import Scheduler
+from .constant_scheduler import ConstantScheduler
+from .exponential_scheduler import ExponentialScheduler
+from .linear_scheduler import LinearScheduler
+from .logarithmic_scheduler import LogarithmicScheduler
+from .piecewise_scheduler import PiecewiseScheduler
+from .polynomial_scheduler import PolynomialScheduler
+from .power_scheduler import PowerScheduler
+from .scheduler import Scheduler
 
 __all__ = [
     "ConstantScheduler",

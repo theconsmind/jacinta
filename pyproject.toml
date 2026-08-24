@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,9 +8,10 @@ version = "0.0.0"
 description = "Jacinta"
 readme = "README.md"
 requires-python = ">=3.13"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-  { name = "The Conscious Mind", email = "contact@theconsmind.com" }
+    { name = "The Conscious Mind", email = "contact@theconsmind.com" },
 ]
 dependencies = []
 
@@ -24,6 +25,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+namespaces = false
 
 [tool.ruff]
 line-length = 88
