@@ -1,5 +1,5 @@
-from .Transmitter import Transmitter
-from .TransmitterSample import TransmitterSample
+from .transmitter import Transmitter
+from .transmitter_sample import TransmitterSample
 
 __all__ = [
     "Transmitter",

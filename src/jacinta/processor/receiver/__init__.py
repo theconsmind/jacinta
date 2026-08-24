@@ -1,5 +1,5 @@
-from .Receiver import Receiver
-from .ReceiverSample import ReceiverSample
+from .receiver import Receiver
+from .receiver_sample import ReceiverSample
 
 __all__ = [
     "Receiver",
