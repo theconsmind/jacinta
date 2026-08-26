@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from .processor_sample import ProcessorSample
-from .receiver import Receiver, ReceiverSample
+from .receiver import Receiver
+from .transmitter import TransmitterSample
 
 
 class Processor:
@@ -16,12 +17,10 @@ class Processor:
 
     Attributes:
         receiver (Receiver): The receiver associated to the processor.
-        coordinates (tuple[float | None, ...]): The coordinates of the processor.
     """
 
     __slots__ = (
         "_receiver",
-        "_coordinates",
         "_frozen",
     )
 
@@ -38,7 +37,6 @@ class Processor:
         # initializations
         object.__setattr__(self, "_frozen", False)
         self._receiver = receiver
-        self._coordinates = (None,) * receiver.nd
         object.__setattr__(self, "_frozen", True)
         return
 
@@ -49,11 +47,7 @@ class Processor:
         Returns:
             str: The representation of the processor.
         """
-        result = (
-            f"{self.__class__.__name__}"
-            f"(receiver={self._receiver!r}, "
-            f"coordinates={self._coordinates!r})"
-        )
+        result = f"{self.__class__.__name__}(receiver={self._receiver!r})"
         return result
 
     @property
@@ -65,16 +59,6 @@ class Processor:
             Receiver: The receiver of the processor.
         """
         return self._receiver
-
-    @property
-    def coordinates(self) -> tuple[float | None, ...]:
-        """
-        Get the coordinates of the processor.
-
-        Returns:
-            tuple[float | None, ...]: The coordinates of the processor.
-        """
-        return self._coordinates
 
     @property
     def rbounds(self) -> tuple[tuple[float, float], ...]:
@@ -116,17 +100,6 @@ class Processor:
         """
         return self._receiver.transmitter.nd
 
-    @property
-    def is_ready(self) -> bool:
-        """
-        Check if all coordinates have been received.
-
-        Returns:
-            bool: True if all coordinates have been received, False otherwise.
-        """
-        is_ready = all(coord is not None for coord in self.coordinates)
-        return is_ready
-
     def __eq__(self, other: object) -> bool:
         """
         Check if two processors are equal.
@@ -141,68 +114,33 @@ class Processor:
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = (
-            self._receiver == other._receiver
-            and self._coordinates == other._coordinates
-        )
+        result = self._receiver == other._receiver
         return result
 
-    def receive(self, idx: int, coord: float) -> None:
+    def forward(self, psample: ProcessorSample, bias: float = 0.0) -> ProcessorSample:
         """
-        Receive a coordinate.
+        Sample a value from the input-output mapping distribution.
 
         Args:
-            idx (int): The index of the coordinate.
-            coord (float): The coordinate to receive.
-        """
-        # idx validations
-        if not isinstance(idx, int):
-            raise TypeError("idx must be an int.")
-        if not (0 <= idx < self.rnd):
-            raise IndexError(f"idx must be in [0, {self.rnd}).")
-        if self._coordinates[idx] is not None:
-            raise RuntimeError(f"coord {idx} has already been received.")
-        # coord validations
-        if not isinstance(coord, (float, int)):
-            raise TypeError("coord must be a float.")
-        # check if the coordinate is within the bounds
-        lower, upper = self.rbounds[idx]
-        if not (lower <= coord < upper):
-            raise ValueError(f"coord must be in [{lower}, {upper}).")
-        # register the coordinate
-        coords = list(self._coordinates)
-        coords[idx] = float(coord)
-        object.__setattr__(self, "_frozen", False)
-        self._coordinates = tuple(coords)
-        object.__setattr__(self, "_frozen", True)
-        return
-
-    def forward(self, bias: float = 0.0) -> ProcessorSample:
-        """
-        Sample a value for the received coordinates.
-
-        Args:
+            psample (ProcessorSample): The processor sample.
             bias (float): The bias to apply to the sampling.
                 Defaults to 0.0.
 
         Returns:
             ProcessorSample: The sampled value.
         """
+        # psample validations
+        if not isinstance(psample, ProcessorSample):
+            raise TypeError("psample must be a ProcessorSample.")
+        if psample.tsample is not None:
+            raise ValueError("psample.tsample must be None.")
         # bias validations
         if not isinstance(bias, (float, int)):
             raise TypeError("bias must be a float.")
-        # processor validations
-        if not self.is_ready:
-            raise RuntimeError("self is not ready.")
         # generate the processor sample
-        rsample = ReceiverSample(self._coordinates)
-        tsample = self._receiver.forward(rsample, float(bias))
-        psample = ProcessorSample(rsample, tsample)
-        # reset the coordinates
-        object.__setattr__(self, "_frozen", False)
-        self._coordinates = (None,) * self.rnd
-        object.__setattr__(self, "_frozen", True)
-        return psample
+        tsample = self._receiver.forward(psample.rsample, float(bias))
+        result = ProcessorSample(psample.rsample, tsample)
+        return result
 
     def backward(self, psample: ProcessorSample, feedback: float) -> None:
         """
@@ -215,6 +153,8 @@ class Processor:
         # psample validations
         if not isinstance(psample, ProcessorSample):
             raise TypeError("psample must be a ProcessorSample.")
+        if not isinstance(psample.tsample, TransmitterSample):
+            raise TypeError("psample.tsample must be a TransmitterSample.")
         # feedback validations
         if not isinstance(feedback, (float, int)):
             raise TypeError("feedback must be a float.")
@@ -244,9 +184,6 @@ class Processor:
         # add new bounds to the receiver
         bounds = tuple((float(lower), float(upper)) for lower, upper in bounds)
         self._receiver.add_dimensions(bounds)
-        object.__setattr__(self, "_frozen", False)
-        self._coordinates += (None,) * len(bounds)
-        object.__setattr__(self, "_frozen", True)
         return
 
     def add_tdimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
@@ -275,7 +212,7 @@ class Processor:
         # identify unique transmitters
         while receivers:
             receiver = receivers.pop()
-            transmitter = receiver._transmitter.root
+            transmitter = receiver.transmitter.root
             transmitters[id(transmitter)] = transmitter
             if receiver.children is not None:
                 receivers.extend(receiver.children)
@@ -303,12 +240,6 @@ class Processor:
                 raise IndexError("All dims must be in range.")
         # remove dimensions from the receiver
         self._receiver.remove_dimensions(set(dims))
-        object.__setattr__(self, "_frozen", False)
-        new_coords = tuple(
-            coord for idx, coord in enumerate(self._coordinates) if idx not in dims
-        )
-        self._coordinates = new_coords
-        object.__setattr__(self, "_frozen", True)
         return
 
     def remove_tdimensions(self, dims: set[int]) -> None:
@@ -334,7 +265,7 @@ class Processor:
         # identify unique transmitters
         while receivers:
             receiver = receivers.pop()
-            transmitter = receiver._transmitter.root
+            transmitter = receiver.transmitter.root
             transmitters[id(transmitter)] = transmitter
             if receiver.children is not None:
                 receivers.extend(receiver.children)
@@ -363,7 +294,6 @@ class Processor:
         result = {
             "type": self.__class__.__name__,
             "receiver": self._receiver.to_dict(),
-            "coordinates": self._coordinates,
         }
         return result
 
@@ -388,33 +318,10 @@ class Processor:
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
         if "receiver" not in data:
             raise KeyError("data must contain the key 'receiver'.")
-        if "coordinates" not in data:
-            raise KeyError("data must contain the key 'coordinates'.")
-        if not isinstance(data["coordinates"], (tuple, list)):
-            raise TypeError("data['coordinates'] must be a tuple.")
-        for coord in data["coordinates"]:
-            if coord is not None and not isinstance(coord, (float, int)):
-                raise TypeError("All data['coordinates'] must be floats or None.")
-        # validate coordinates
-        coordinates = []
-        receiver = Receiver.from_dict(data["receiver"])
-        if len(data["coordinates"]) != receiver.nd:
-            raise ValueError(f"data['coordinates'] must have length {receiver.nd}.")
-        for coord, (lower, upper) in zip(
-            data["coordinates"], receiver.bounds, strict=True
-        ):
-            if coord is not None:
-                coord = float(coord)
-                if not (lower <= coord < upper):
-                    raise ValueError(
-                        f"All data['coordinates'] must be in [{lower}, {upper})."
-                    )
-            coordinates.append(coord)
         # initializations
-        result = cls(receiver)
-        object.__setattr__(result, "_frozen", False)
-        result._coordinates = tuple(coordinates)
-        object.__setattr__(result, "_frozen", True)
+        result = cls(
+            Receiver.from_dict(data["receiver"]),
+        )
         return result
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:

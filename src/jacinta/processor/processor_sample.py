@@ -16,7 +16,8 @@ class ProcessorSample:
 
     Attributes:
         rsample (ReceiverSample): The receiver sample of the processor sample.
-        tsample (TransmitterSample): The transmitter sample of the processor sample.
+        tsample (TransmitterSample | None): The transmitter sample
+            of the processor sample.
     """
 
     __slots__ = (
@@ -25,20 +26,26 @@ class ProcessorSample:
         "_frozen",
     )
 
-    def __init__(self, rsample: ReceiverSample, tsample: TransmitterSample) -> None:
+    def __init__(
+        self,
+        rsample: ReceiverSample,
+        tsample: TransmitterSample | None = None,
+    ) -> None:
         """
         Initialize a ProcessorSample.
 
         Args:
             rsample (ReceiverSample): The receiver sample of the processor sample.
-            tsample (TransmitterSample): The transmitter sample of the processor sample.
+            tsample (TransmitterSample | None): The transmitter sample
+                of the processor sample. Defaults to None.
         """
         # rsample validations
         if not isinstance(rsample, ReceiverSample):
             raise TypeError("rsample must be a ReceiverSample.")
         # tsample validations
-        if not isinstance(tsample, TransmitterSample):
-            raise TypeError("tsample must be a TransmitterSample.")
+        if tsample is not None:
+            if not isinstance(tsample, TransmitterSample):
+                raise TypeError("tsample must be a TransmitterSample.")
         # initializations
         object.__setattr__(self, "_frozen", False)
         self._rsample = rsample
@@ -70,12 +77,12 @@ class ProcessorSample:
         return self._rsample
 
     @property
-    def tsample(self) -> TransmitterSample:
+    def tsample(self) -> TransmitterSample | None:
         """
         Get the transmitter sample of the processor sample.
 
         Returns:
-            TransmitterSample: The transmitter sample of the processor sample.
+            TransmitterSample | None: The transmitter sample of the processor sample.
         """
         return self._tsample
 
@@ -90,14 +97,15 @@ class ProcessorSample:
         return self._rsample.coordinates
 
     @property
-    def tcoordinates(self) -> tuple[float, ...]:
+    def tcoordinates(self) -> tuple[float, ...] | None:
         """
         Get the coordinates of the transmitter sample.
 
         Returns:
-            tuple[float, ...]: The coordinates of the transmitter sample.
+            tuple[float, ...] | None: The coordinates of the transmitter sample.
         """
-        return self._tsample.coordinates
+        tcoordinates = self._tsample.coordinates if self._tsample is not None else None
+        return tcoordinates
 
     @property
     def rnd(self) -> int:
@@ -110,14 +118,15 @@ class ProcessorSample:
         return self._rsample.nd
 
     @property
-    def tnd(self) -> int:
+    def tnd(self) -> int | None:
         """
         Get the number of dimensions of the transmitter sample.
 
         Returns:
-            int: The number of dimensions of the transmitter sample.
+            int | None: The number of dimensions of the transmitter sample.
         """
-        return self._tsample.nd
+        tnd = self._tsample.nd if self._tsample is not None else None
+        return tnd
 
     def __eq__(self, other: object) -> bool:
         """
@@ -156,7 +165,7 @@ class ProcessorSample:
         result = {
             "type": self.__class__.__name__,
             "rsample": self._rsample.to_dict(),
-            "tsample": self._tsample.to_dict(),
+            "tsample": self._tsample.to_dict() if self._tsample is not None else None,
         }
         return result
 
@@ -186,7 +195,9 @@ class ProcessorSample:
         # initializations
         result = cls(
             ReceiverSample.from_dict(data["rsample"]),
-            TransmitterSample.from_dict(data["tsample"]),
+            TransmitterSample.from_dict(data["tsample"])
+            if data["tsample"] is not None
+            else None,
         )
         return result
 
