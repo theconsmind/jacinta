@@ -39,6 +39,7 @@ class ZScoreEvaluator(Evaluator):
             mean_ema_rate (float): The mean EMA rate.
             var_ema_rate (float): The variance EMA rate.
             eps (float): A small positive value used for numerical stability.
+                Defaults to 1e-9.
         """
         # mean_ema_rate validations
         if not isinstance(mean_ema_rate, (float, int)):
@@ -231,12 +232,14 @@ class ZScoreEvaluator(Evaluator):
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
         if "mean" not in data:
             raise KeyError("data must contain the key 'mean'.")
-        if data["mean"] is not None and not isinstance(data["mean"], (float, int)):
-            raise TypeError("data['mean'] must be a float.")
+        if data["mean"] is not None:
+            if not isinstance(data["mean"], (float, int)):
+                raise TypeError("data['mean'] must be a float.")
         if "var" not in data:
             raise KeyError("data must contain the key 'var'.")
-        if data["var"] is not None and not isinstance(data["var"], (float, int)):
-            raise TypeError("data['var'] must be a float.")
+        if data["var"] is not None:
+            if not isinstance(data["var"], (float, int)):
+                raise TypeError("data['var'] must be a float.")
         if "mean_ema_rate" not in data:
             raise KeyError("data must contain the key 'mean_ema_rate'.")
         if "var_ema_rate" not in data:

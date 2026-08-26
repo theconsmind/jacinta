@@ -23,8 +23,6 @@ class Transmitter(NDSpace):
         learning_rate_scheduler (Scheduler): The learning rate scheduler.
         hits_rate_scheduler (Scheduler): The hits rate scheduler.
         hits_left (float): The number of hits left to split the transmitter.
-        rng (random.Random): The random number generator.
-        seed (int | None): The seed for the random number generator.
     """
 
     __slots__ = (
@@ -517,8 +515,9 @@ class Transmitter(NDSpace):
                 raise TypeError("data['rng_state'][1] must be a tuple.")
             if not all(isinstance(x, int) for x in data["rng_state"][1]):
                 raise TypeError("All elements of data['rng_state'][1] must be ints.")
-            if not isinstance(data["rng_state"][2], (float, int, type(None))):
-                raise TypeError("data['rng_state'][2] must be a float or None.")
+            if data["rng_state"][2] is not None:
+                if not isinstance(data["rng_state"][2], (float, int)):
+                    raise TypeError("data['rng_state'][2] must be a float.")
             # parent validations
             if parent is not None:
                 if parent._max_depth is not None and parent._depth == parent._max_depth:

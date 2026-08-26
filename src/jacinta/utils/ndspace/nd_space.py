@@ -625,7 +625,7 @@ class NDSpace:
             if "type" not in data:
                 raise KeyError("data must contain the key 'type'.")
             if data["type"] != cls.__name__:
-                raise ValueError(f"data['type'] must be a {cls.__name__}.")
+                raise ValueError(f"data['type'] must be an {cls.__name__}.")
             if "bounds" not in data:
                 raise KeyError("data must contain the key 'bounds'.")
             if "min_width" not in data:

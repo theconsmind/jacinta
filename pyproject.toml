@@ -33,7 +33,7 @@ target-version = "py313"
 fix = true
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
+select = ["E", "F", "I", "B", "UP", "A"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -126,7 +126,7 @@ class NDPoint:
         if "type" not in data:
             raise KeyError("data must contain the key 'type'.")
         if data["type"] != cls.__name__:
-            raise ValueError(f"data['type'] must be a {cls.__name__}.")
+            raise ValueError(f"data['type'] must be an {cls.__name__}.")
         if "coordinates" not in data:
             raise KeyError("data must contain the key 'coordinates'.")
         # initializations
