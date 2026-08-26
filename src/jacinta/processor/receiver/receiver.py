@@ -164,6 +164,8 @@ class Receiver(NDSpace):
         # bias validations
         if not isinstance(bias, (float, int)):
             raise TypeError("bias must be a float.")
+        if not (-1.0 <= bias <= 1.0):
+            raise ValueError("bias must be in [-1, 1].")
         # generate a tsample in the appropriate active receiver
         receiver = self.find_leaf(rsample)
         tsample = receiver._transmitter.forward(float(bias))
@@ -196,16 +198,18 @@ class Receiver(NDSpace):
         # feedback validations
         if not isinstance(feedback, (float, int)):
             raise TypeError("feedback must be a float.")
+        if not (-1.0 <= feedback <= 1.0):
+            raise ValueError("feedback must be in [-1, 1].")
         # hit the receiver
         receiver = self.find_leaf(rsample)
         should_split = False
         if receiver._hits_left > 0.0:
             object.__setattr__(receiver, "_frozen", False)
             receiver._hits_left -= 1.0
-            if receiver._hits_left <= 0.0:
-                if receiver.can_split():
-                    should_split = True
             object.__setattr__(receiver, "_frozen", True)
+        if receiver._hits_left <= 0.0:
+            if receiver.can_split():
+                should_split = True
         # propagate the feedback up to the root
         current = receiver
         while current is not None:

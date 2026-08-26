@@ -282,10 +282,10 @@ class Transmitter(NDSpace):
         if transmitter._hits_left > 0.0:
             object.__setattr__(transmitter, "_frozen", False)
             transmitter._hits_left -= 1.0
-            if transmitter._hits_left <= 0.0:
-                if transmitter.can_split():
-                    should_split = True
             object.__setattr__(transmitter, "_frozen", True)
+        if transmitter._hits_left <= 0.0:
+            if transmitter.can_split():
+                should_split = True
         # propagate the feedback up to the root
         advantage = transmitter._evaluator(float(feedback))
         if advantage is not None:
