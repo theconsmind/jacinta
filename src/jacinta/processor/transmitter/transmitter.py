@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import math
 import random
-from itertools import product
 from typing import Any
 
 from ...utils.ndspace import NDSpace
-from ...utils.scheduler import Scheduler
-from ..evaluator import Evaluator
+from ...utils.schedulers import Scheduler
+from ..evaluators import Evaluator
 from .transmitter_sample import TransmitterSample
 
 
@@ -120,10 +119,7 @@ class Transmitter(NDSpace):
         Returns:
             TransmitterSample | None: The split point of the transmitter.
         """
-        split_point = super().split_point
-        if split_point is not None:
-            split_point = TransmitterSample(split_point.coordinates)
-        return split_point
+        return self._split_point
 
     @property
     def log_weight(self) -> float:
@@ -210,6 +206,47 @@ class Transmitter(NDSpace):
         )
         return result
 
+    def __contains__(self, other: object) -> bool:
+        """
+        Check if a tsample or transmitter is within the bounds of the transmitter.
+
+        Args:
+            other (object): The object to check.
+
+        Returns:
+            bool: True if the tsample or transmitter is within the bounds
+                of the transmitter, False otherwise.
+        """
+        # other validations
+        if not isinstance(other, (TransmitterSample, Transmitter)):
+            raise TypeError("other must be a TransmitterSample or a Transmitter.")
+        if other.nd != self.nd:
+            raise ValueError(f"other must be {self.nd}D.")
+        # check if the tsample is within the bounds
+        result = super().__contains__(other)
+        return result
+
+    def find_leaf(self, tsample: TransmitterSample) -> Transmitter:
+        """
+        Find the leaf that contains the tsample.
+
+        Args:
+            tsample (TransmitterSample): The tsample to find the leaf for.
+
+        Returns:
+            Transmitter: The leaf that contains the tsample.
+        """
+        # tsample validations
+        if not isinstance(tsample, TransmitterSample):
+            raise TypeError("tsample must be a TransmitterSample.")
+        if tsample.nd != self.nd:
+            raise ValueError(f"tsample must be {self.nd}D.")
+        if tsample not in self:
+            raise ValueError("tsample must be contained in self.")
+        # find the leaf that contains the tsample
+        transmitter = super().find_leaf(tsample)
+        return transmitter
+
     def forward(self, bias: float = 0.0) -> TransmitterSample:
         """
         Sample a value from the transmitter distribution.
@@ -224,8 +261,6 @@ class Transmitter(NDSpace):
         # bias validations
         if not isinstance(bias, (float, int)):
             raise TypeError("bias must be a float.")
-        if not (-1.0 <= bias <= 1.0):
-            raise ValueError("bias must be in [-1, 1].")
         # sample from the transmitter learned distribution
         transmitter = self
         while not transmitter.is_leaf:
@@ -274,8 +309,6 @@ class Transmitter(NDSpace):
         # feedback validations
         if not isinstance(feedback, (float, int)):
             raise TypeError("feedback must be a float.")
-        if not (-1.0 <= feedback <= 1.0):
-            raise ValueError("feedback must be in [-1, 1].")
         # hit the transmitter
         transmitter = self.find_leaf(tsample)
         should_split = False
@@ -284,7 +317,10 @@ class Transmitter(NDSpace):
             transmitter._hits_left -= 1.0
             object.__setattr__(transmitter, "_frozen", True)
         if transmitter._hits_left <= 0.0:
-            if transmitter.can_split():
+            # the split point is the midpoint of the transmitter
+            coords = tuple((lower + upper) / 2 for lower, upper in transmitter._bounds)
+            midpoint = TransmitterSample(coords)
+            if transmitter.can_split(midpoint):
                 should_split = True
         # propagate the feedback up to the root
         advantage = transmitter._evaluator(float(feedback))
@@ -299,96 +335,75 @@ class Transmitter(NDSpace):
                 current = current._parent
         # split the transmitter if necessary
         if should_split:
-            transmitter.split()
+            transmitter.split(midpoint)
         return
 
-    def can_split(self) -> bool:
+    def can_split(self, tsample: TransmitterSample) -> bool:
         """
         Check if the transmitter can be split.
+
+        Args:
+            tsample (TransmitterSample): The tsample to check if the transmitter
+                can be split by.
 
         Returns:
             bool: True if the transmitter can be split, False otherwise.
         """
-        # the split point is the midpoint of the transmitter
-        coords = tuple((lower + upper) / 2 for lower, upper in self._bounds)
-        midpoint = TransmitterSample(coords)
+        # tsample validations
+        if not isinstance(tsample, TransmitterSample):
+            raise TypeError("tsample must be a TransmitterSample.")
+        if tsample.nd != self.nd:
+            raise ValueError(f"tsample must be {self.nd}D.")
+        if tsample not in self:
+            raise ValueError("tsample must be contained in self.")
         # check if the transmitter is a leaf
-        result = True
-        if not self.is_leaf:
-            result = False
-        # check if the transmitter is at max depth
-        elif self._max_depth is not None and self._depth == self._max_depth:
-            result = False
-        # check if the transmitter can be split by the point
-        elif self._min_width is not None:
-            for coord, (lower, upper) in zip(
-                midpoint.coordinates, self._bounds, strict=True
-            ):
-                lower_width = coord - lower
-                upper_width = upper - coord
-                # skip new empty bounds (lower == upper)
-                if lower_width != 0 and lower_width < self._min_width:
-                    result = False
-                    break
-                if upper_width != 0 and upper_width < self._min_width:
-                    result = False
-                    break
+        result = super().can_split(tsample)
         return result
 
-    def split(self) -> tuple[Transmitter, ...]:
+    def split(self, tsample: TransmitterSample) -> tuple[Transmitter, ...]:
         """
         Split the transmitter into smaller transmitters.
+
+        Args:
+            tsample (TransmitterSample): The tsample to split the transmitter by.
 
         Returns:
             tuple[Transmitter, ...]: The sub-transmitters created by the split.
         """
+        # tsample validations
+        if not isinstance(tsample, TransmitterSample):
+            raise TypeError("tsample must be a TransmitterSample.")
+        if tsample.nd != self.nd:
+            raise ValueError(f"tsample must be {self.nd}D.")
+        if tsample not in self:
+            raise ValueError("tsample must be contained in self.")
         # self validations
-        if not self.can_split():
+        if not self.can_split(tsample):
             raise RuntimeError("self cannot be split.")
-        # the split point is the midpoint of the transmitter
-        coords = tuple((lower + upper) / 2 for lower, upper in self._bounds)
-        midpoint = TransmitterSample(coords)
         # split the transmitter
         transmitters = []
-        # generate all combinations of upper/lower halves
-        for directions in product((False, True), repeat=self.nd):
-            new_bounds = list(self._bounds)
-            is_valid = True
-            # build bounds for each sub-transmitter
-            for dim, upper_half in enumerate(directions):
-                lower, upper = self._bounds[dim]
-                if upper_half:
-                    new_bound = (midpoint.coordinates[dim], upper)
-                else:
-                    new_bound = (lower, midpoint.coordinates[dim])
-                # skip if the new bound is empty (lower == upper)
-                if new_bound[0] == new_bound[1]:
-                    is_valid = False
-                    break
-                new_bounds[dim] = new_bound
-            # create new transmitter if valid (lower < upper)
-            if is_valid:
-                transmitter = self.__class__(
-                    tuple(new_bounds),
-                    self._evaluator,
-                    self._bias_scale_scheduler,
-                    self._learning_rate_scheduler,
-                    self._hits_rate_scheduler,
-                    self._min_width,
-                    self._max_depth,
-                )
-                object.__setattr__(transmitter, "_frozen", False)
-                transmitter._parent = self
-                transmitter._root = self._root
-                transmitter._depth = self._depth + 1
-                transmitter._hits_left = self._hits_rate_scheduler(self._depth + 1)
-                transmitter._rng = self._rng
-                object.__setattr__(transmitter, "_frozen", True)
-                transmitters.append(transmitter)
+        for bounds in self._get_split_bounds(tsample):
+            transmitter = self.__class__(
+                bounds,
+                self._evaluator,
+                self._bias_scale_scheduler,
+                self._learning_rate_scheduler,
+                self._hits_rate_scheduler,
+                self._min_width,
+                self._max_depth,
+            )
+            object.__setattr__(transmitter, "_frozen", False)
+            transmitter._parent = self
+            transmitter._root = self._root
+            transmitter._depth = self._depth + 1
+            transmitter._hits_left = self._hits_rate_scheduler(self._depth + 1)
+            transmitter._rng = self._rng
+            object.__setattr__(transmitter, "_frozen", True)
+            transmitters.append(transmitter)
         transmitters = tuple(transmitters)
         # update children
         object.__setattr__(self, "_frozen", False)
-        self._split_point = midpoint
+        self._split_point = tsample
         self._children = transmitters
         object.__setattr__(self, "_frozen", True)
         self._update_height()
@@ -433,6 +448,11 @@ class Transmitter(NDSpace):
                 "max_depth": transmitter._max_depth,
                 "seed": transmitter._seed,
                 "rng_state": transmitter._rng.getstate(),
+                "split_point": (
+                    transmitter._split_point.to_dict()
+                    if transmitter._split_point is not None
+                    else None
+                ),
                 "children": (
                     tuple(_to_dict(child) for child in transmitter._children)
                     if not transmitter.is_leaf
@@ -457,7 +477,8 @@ class Transmitter(NDSpace):
         """
 
         def _from_dict(
-            data: dict[str, Any], parent: Transmitter | None = None
+            data: dict[str, Any],
+            parent: Transmitter | None = None,
         ) -> Transmitter:
             """
             Recursively convert a dictionary to a tree.
@@ -483,8 +504,15 @@ class Transmitter(NDSpace):
                 raise KeyError("data must contain the key 'min_width'.")
             if "max_depth" not in data:
                 raise KeyError("data must contain the key 'max_depth'.")
+            if "split_point" not in data:
+                raise KeyError("data must contain the key 'split_point'.")
             if "children" not in data:
                 raise KeyError("data must contain the key 'children'.")
+            if (data["split_point"] is None) != (data["children"] is None):
+                raise ValueError(
+                    "data['split_point'] and data['children'] must be both None "
+                    "or both not None."
+                )
             if "log_weight" not in data:
                 raise KeyError("data must contain the key 'log_weight'.")
             if not isinstance(data["log_weight"], (float, int)):
@@ -524,11 +552,11 @@ class Transmitter(NDSpace):
                     raise RuntimeError("parent cannot be split.")
                 if parent._min_width != data["min_width"]:
                     raise ValueError(
-                        "data['min_width'] must be equal to parent._min_width."
+                        "data['min_width'] must be equal to parent.min_width."
                     )
                 if parent._max_depth != data["max_depth"]:
                     raise ValueError(
-                        "data['max_depth'] must be equal to parent._max_depth."
+                        "data['max_depth'] must be equal to parent.max_depth."
                     )
             # initializations
             transmitter = cls(
@@ -541,23 +569,57 @@ class Transmitter(NDSpace):
                 data["max_depth"],
                 data["seed"],
             )
+            rng_state = (
+                data["rng_state"][0],
+                tuple(x for x in data["rng_state"][1]),
+                (
+                    float(data["rng_state"][2])
+                    if data["rng_state"][2] is not None
+                    else None
+                ),
+            )
+            if parent is not None:
+                if transmitter._evaluator != parent._evaluator:
+                    raise ValueError(
+                        "data['evaluator'] must be equal to parent.evaluator."
+                    )
+                if transmitter._bias_scale_scheduler != parent._bias_scale_scheduler:
+                    raise ValueError(
+                        "data['bias_scale_scheduler'] must be equal to "
+                        "parent.bias_scale_scheduler."
+                    )
+                if (
+                    transmitter._learning_rate_scheduler
+                    != parent._learning_rate_scheduler
+                ):
+                    raise ValueError(
+                        "data['learning_rate_scheduler'] must be equal to "
+                        "parent.learning_rate_scheduler."
+                    )
+                if transmitter._hits_rate_scheduler != parent._hits_rate_scheduler:
+                    raise ValueError(
+                        "data['hits_rate_scheduler'] must be equal to "
+                        "parent.hits_rate_scheduler."
+                    )
+                if rng_state != parent._rng.getstate():
+                    raise ValueError(
+                        "data['rng_state'] must be equal to the parent rng state."
+                    )
             # update parent attributes
             object.__setattr__(transmitter, "_frozen", False)
             if parent is not None:
                 transmitter._parent = parent
                 transmitter._root = parent._root
                 transmitter._depth = parent._depth + 1
+                transmitter._evaluator = parent._evaluator
+                transmitter._bias_scale_scheduler = parent._bias_scale_scheduler
+                transmitter._learning_rate_scheduler = parent._learning_rate_scheduler
+                transmitter._hits_rate_scheduler = parent._hits_rate_scheduler
                 transmitter._rng = parent._rng
+            else:
+                transmitter._rng.setstate(rng_state)
             transmitter._log_weight = float(data["log_weight"])
             transmitter._hits_left = float(data["hits_left"])
-            rng_state = data["rng_state"]
-            transmitter._rng.setstate(
-                (
-                    rng_state[0],
-                    tuple(x for x in rng_state[1]),
-                    float(rng_state[2]) if rng_state[2] is not None else None,
-                )
-            )
             object.__setattr__(transmitter, "_frozen", True)
             if transmitter._hits_left > transmitter._hits_rate_scheduler(
                 transmitter._depth
@@ -567,31 +629,21 @@ class Transmitter(NDSpace):
                 )
             # update children attributes
             if data["children"] is not None:
+                split_point = TransmitterSample.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, transmitter)
                     for child_data in data["children"]
                 )
                 # validate split integrity
-                expected_transmitter = cls(
-                    data["bounds"],
-                    Evaluator.from_dict(data["evaluator"]),
-                    Scheduler.from_dict(data["bias_scale_scheduler"]),
-                    Scheduler.from_dict(data["learning_rate_scheduler"]),
-                    Scheduler.from_dict(data["hits_rate_scheduler"]),
-                    data["min_width"],
-                    data["max_depth"],
-                    data["seed"],
-                )
-                expected_children = expected_transmitter.split()
+                expected_bounds = set(transmitter._get_split_bounds(split_point))
                 actual_bounds = {child._bounds for child in children}
-                expected_bounds = {child._bounds for child in expected_children}
                 if (
-                    len(children) != len(expected_children)
+                    len(children) != len(expected_bounds)
                     or actual_bounds != expected_bounds
                 ):
                     raise ValueError("children are not compatible with split_point.")
                 object.__setattr__(transmitter, "_frozen", False)
-                transmitter._split_point = expected_transmitter._split_point
+                transmitter._split_point = split_point
                 transmitter._children = children
                 object.__setattr__(transmitter, "_frozen", True)
                 transmitter._update_height()
