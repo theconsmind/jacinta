@@ -44,9 +44,10 @@ class PolynomialScheduler(Scheduler):
             raise TypeError("coefficients must be a tuple.")
         if len(coefficients) == 0:
             raise ValueError("coefficients must not be empty.")
-        for coefficient in coefficients:
-            if not isinstance(coefficient, (float, int)):
-                raise TypeError("All coefficients must be floats.")
+        if not all(
+            isinstance(coefficient, (float, int)) for coefficient in coefficients
+        ):
+            raise TypeError("All coefficients must be floats.")
         # min_value validations
         if min_value is not None:
             if not isinstance(min_value, (float, int)):

@@ -38,7 +38,7 @@ class ConstantScheduler(Scheduler):
         Returns:
             str: The representation of the scheduler.
         """
-        result = f"{self.__class__.__name__}(value={self._value})"
+        result = f"{self.__class__.__name__}(value={self._value!r})"
         return result
 
     def __call__(self, depth: int) -> float:
