@@ -29,9 +29,8 @@ class NDPoint:
         # coordinates validations
         if not isinstance(coordinates, (tuple, list)):
             raise TypeError("coordinates must be a tuple.")
-        for coord in coordinates:
-            if not isinstance(coord, (float, int)):
-                raise TypeError("All coordinates must be floats.")
+        if not all(isinstance(coord, (float, int)) for coord in coordinates):
+            raise TypeError("All coordinates must be floats.")
         # initializations
         object.__setattr__(self, "_frozen", False)
         self._coordinates = tuple(float(coord) for coord in coordinates)
