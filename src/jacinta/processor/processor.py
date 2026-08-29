@@ -134,11 +134,8 @@ class Processor:
             raise TypeError("psample must be a ProcessorSample.")
         if psample.tsample is not None:
             raise ValueError("psample.tsample must be None.")
-        # bias validations
-        if not isinstance(bias, (float, int)):
-            raise TypeError("bias must be a float.")
-        # generate the processor sample
-        tsample = self._receiver.forward(psample.rsample, float(bias))
+        # generate the processor tsample
+        tsample = self._receiver.forward(psample.rsample, bias)
         result = ProcessorSample(psample.rsample, tsample)
         return result
 
@@ -155,11 +152,8 @@ class Processor:
             raise TypeError("psample must be a ProcessorSample.")
         if not isinstance(psample.tsample, TransmitterSample):
             raise TypeError("psample.tsample must be a TransmitterSample.")
-        # feedback validations
-        if not isinstance(feedback, (float, int)):
-            raise TypeError("feedback must be a float.")
         # propagate the feedback
-        self._receiver.backward(psample.rsample, psample.tsample, float(feedback))
+        self._receiver.backward(psample.rsample, psample.tsample, feedback)
         return
 
     def add_rdimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
@@ -169,56 +163,7 @@ class Processor:
         Args:
             bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
         """
-        # bounds validations
-        if not isinstance(bounds, (tuple, list)):
-            raise TypeError("bounds must be a tuple.")
-        for bound in bounds:
-            if not isinstance(bound, (tuple, list)):
-                raise TypeError("All bounds must be tuples.")
-            if len(bound) != 2:
-                raise ValueError("All bounds must have length 2.")
-            if not isinstance(bound[0], (float, int)):
-                raise TypeError("All lower bounds must be floats.")
-            if not isinstance(bound[1], (float, int)):
-                raise TypeError("All upper bounds must be floats.")
-        # add new bounds to the receiver
-        bounds = tuple((float(lower), float(upper)) for lower, upper in bounds)
         self._receiver.add_dimensions(bounds)
-        return
-
-    def add_tdimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
-        """
-        Add new dimensions to the transmitter.
-
-        Args:
-            bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
-        """
-        # bounds validations
-        if not isinstance(bounds, (tuple, list)):
-            raise TypeError("bounds must be a tuple.")
-        for bound in bounds:
-            if not isinstance(bound, (tuple, list)):
-                raise TypeError("All bounds must be tuples.")
-            if len(bound) != 2:
-                raise ValueError("All bounds must have length 2.")
-            if not isinstance(bound[0], (float, int)):
-                raise TypeError("All lower bounds must be floats.")
-            if not isinstance(bound[1], (float, int)):
-                raise TypeError("All upper bounds must be floats.")
-        # add new bounds to every distinct transmitter in the receiver tree
-        bounds = tuple((float(lower), float(upper)) for lower, upper in bounds)
-        receivers = [self._receiver.root]
-        transmitters = {}
-        # identify unique transmitters
-        while receivers:
-            receiver = receivers.pop()
-            transmitter = receiver.transmitter.root
-            transmitters[id(transmitter)] = transmitter
-            if receiver.children is not None:
-                receivers.extend(receiver.children)
-        # add new bounds to each unique transmitter
-        for transmitter in transmitters.values():
-            transmitter.add_dimensions(bounds)
         return
 
     def remove_rdimensions(self, dims: set[int]) -> None:
@@ -228,18 +173,23 @@ class Processor:
         Args:
             dims (set[int]): The indices of the dimensions to remove.
         """
-        # dims validations
-        if not isinstance(dims, (set, tuple, list)):
-            raise TypeError("dims must be a set.")
-        if len(set(dims)) != len(dims):
-            raise ValueError("All dims must be unique.")
-        for dim in dims:
-            if not isinstance(dim, int):
-                raise TypeError("All dims must be ints.")
-            if not (0 <= dim < self.rnd):
-                raise IndexError("All dims must be in range.")
-        # remove dimensions from the receiver
-        self._receiver.remove_dimensions(set(dims))
+        self._receiver.remove_dimensions(dims)
+        return
+
+    def add_tdimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
+        """
+        Add new dimensions to the transmitter.
+
+        Args:
+            bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
+        """
+        receivers = [self._receiver.root]
+        while receivers:
+            receiver = receivers.pop()
+            transmitter = receiver.transmitter.root
+            transmitter.add_dimensions(bounds)
+            if receiver.children is not None:
+                receivers.extend(receiver.children)
         return
 
     def remove_tdimensions(self, dims: set[int]) -> None:
@@ -249,29 +199,13 @@ class Processor:
         Args:
             dims (set[int]): The indices of the dimensions to remove.
         """
-        # dims validations
-        if not isinstance(dims, (set, tuple, list)):
-            raise TypeError("dims must be a set.")
-        if len(set(dims)) != len(dims):
-            raise ValueError("All dims must be unique.")
-        for dim in dims:
-            if not isinstance(dim, int):
-                raise TypeError("All dims must be ints.")
-            if not (0 <= dim < self.tnd):
-                raise IndexError("All dims must be in range.")
-        # remove dimensions from every distinct transmitter in the receiver tree
         receivers = [self._receiver.root]
-        transmitters = {}
-        # identify unique transmitters
         while receivers:
             receiver = receivers.pop()
             transmitter = receiver.transmitter.root
-            transmitters[id(transmitter)] = transmitter
+            transmitter.remove_dimensions(dims)
             if receiver.children is not None:
                 receivers.extend(receiver.children)
-        # remove dimensions from each unique transmitter
-        for transmitter in transmitters.values():
-            transmitter.remove_dimensions(set(dims))
         return
 
     def copy(self) -> Processor:
