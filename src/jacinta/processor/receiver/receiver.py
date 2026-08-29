@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from itertools import product
 from typing import Any
 
 from ...utils.ndspace import NDSpace
-from ...utils.scheduler import Scheduler
+from ...utils.schedulers import Scheduler
 from ..transmitter import Transmitter, TransmitterSample
 from .receiver_sample import ReceiverSample
 
@@ -85,10 +84,7 @@ class Receiver(NDSpace):
         Returns:
             ReceiverSample | None: The split point of the receiver.
         """
-        split_point = super().split_point
-        if split_point is not None:
-            split_point = ReceiverSample(split_point.coordinates)
-        return split_point
+        return self._split_point
 
     @property
     def transmitter(self) -> Transmitter:
@@ -142,6 +138,47 @@ class Receiver(NDSpace):
         )
         return result
 
+    def __contains__(self, other: object) -> bool:
+        """
+        Check if an rsample or receiver is within the bounds of the receiver.
+
+        Args:
+            other (object): The object to check.
+
+        Returns:
+            bool: True if the rsample or receiver is within the bounds of the receiver,
+                False otherwise.
+        """
+        # other validations
+        if not isinstance(other, (ReceiverSample, Receiver)):
+            raise TypeError("other must be a ReceiverSample or a Receiver.")
+        if other.nd != self.nd:
+            raise ValueError(f"other must be {self.nd}D.")
+        # check if the rsample is within the bounds
+        result = super().__contains__(other)
+        return result
+
+    def find_leaf(self, rsample: ReceiverSample) -> Receiver:
+        """
+        Find the leaf that contains the rsample.
+
+        Args:
+            rsample (ReceiverSample): The rsample to find the leaf for.
+
+        Returns:
+            Receiver: The leaf that contains the rsample.
+        """
+        # rsample validations
+        if not isinstance(rsample, ReceiverSample):
+            raise TypeError("rsample must be a ReceiverSample.")
+        if rsample.nd != self.nd:
+            raise ValueError(f"rsample must be {self.nd}D.")
+        if rsample not in self:
+            raise ValueError("rsample must be contained in self.")
+        # find the leaf that contains the rsample
+        receiver = super().find_leaf(rsample)
+        return receiver
+
     def forward(self, rsample: ReceiverSample, bias: float = 0.0) -> TransmitterSample:
         """
         Sample a value from the receiver distribution.
@@ -161,14 +198,9 @@ class Receiver(NDSpace):
             raise ValueError(f"rsample must be {self.nd}D.")
         if rsample not in self:
             raise ValueError("rsample must be contained in self.")
-        # bias validations
-        if not isinstance(bias, (float, int)):
-            raise TypeError("bias must be a float.")
-        if not (-1.0 <= bias <= 1.0):
-            raise ValueError("bias must be in [-1, 1].")
         # generate a tsample in the appropriate active receiver
         receiver = self.find_leaf(rsample)
-        tsample = receiver._transmitter.forward(float(bias))
+        tsample = receiver._transmitter.forward(bias)
         return tsample
 
     def backward(
@@ -195,11 +227,13 @@ class Receiver(NDSpace):
         # tsample validations
         if not isinstance(tsample, TransmitterSample):
             raise TypeError("tsample must be a TransmitterSample.")
+        if tsample.nd != self._transmitter.nd:
+            raise ValueError(f"tsample must be {self._transmitter.nd}D.")
+        if tsample not in self._transmitter:
+            raise ValueError("tsample must be contained in self.transmitter.")
         # feedback validations
         if not isinstance(feedback, (float, int)):
             raise TypeError("feedback must be a float.")
-        if not (-1.0 <= feedback <= 1.0):
-            raise ValueError("feedback must be in [-1, 1].")
         # hit the receiver
         receiver = self.find_leaf(rsample)
         should_split = False
@@ -208,102 +242,84 @@ class Receiver(NDSpace):
             receiver._hits_left -= 1.0
             object.__setattr__(receiver, "_frozen", True)
         if receiver._hits_left <= 0.0:
-            if receiver.can_split():
+            # the split point is the midpoint of the receiver
+            coords = tuple((lower + upper) / 2 for lower, upper in receiver._bounds)
+            midpoint = ReceiverSample(coords)
+            if receiver.can_split(midpoint):
                 should_split = True
         # propagate the feedback up to the root
         current = receiver
         while current is not None:
-            current._transmitter.backward(tsample, float(feedback))
+            current._transmitter.backward(tsample, feedback)
             current = current._parent
         # split the receiver if necessary
         if should_split:
-            receiver.split()
+            receiver.split(midpoint)
         return
 
-    def can_split(self) -> bool:
+    def can_split(self, rsample: ReceiverSample) -> bool:
         """
         Check if the receiver can be split.
+
+        Args:
+            rsample (ReceiverSample): The rsample to check if the receiver
+                can be split by.
 
         Returns:
             bool: True if the receiver can be split, False otherwise.
         """
-        # the split point is the midpoint of the receiver
-        coords = tuple((lower + upper) / 2 for lower, upper in self._bounds)
-        midpoint = ReceiverSample(coords)
+        # rsample validations
+        if not isinstance(rsample, ReceiverSample):
+            raise TypeError("rsample must be a ReceiverSample.")
+        if rsample.nd != self.nd:
+            raise ValueError(f"rsample must be {self.nd}D.")
+        if rsample not in self:
+            raise ValueError("rsample must be contained in self.")
         # check if the receiver is a leaf
-        result = True
-        if not self.is_leaf:
-            result = False
-        # check if the receiver is at max depth
-        elif self._max_depth is not None and self._depth == self._max_depth:
-            result = False
-        # check if the receiver can be split by the point
-        elif self._min_width is not None:
-            for coord, (lower, upper) in zip(
-                midpoint.coordinates, self._bounds, strict=True
-            ):
-                lower_width = coord - lower
-                upper_width = upper - coord
-                # skip new empty bounds (lower == upper)
-                if lower_width != 0 and lower_width < self._min_width:
-                    result = False
-                    break
-                if upper_width != 0 and upper_width < self._min_width:
-                    result = False
-                    break
+        result = super().can_split(rsample)
         return result
 
-    def split(self) -> tuple[Receiver, ...]:
+    def split(self, rsample: ReceiverSample) -> tuple[Receiver, ...]:
         """
         Split the receiver into smaller receivers.
+
+        Args:
+            rsample (ReceiverSample): The rsample to split the receiver by.
 
         Returns:
             tuple[Receiver, ...]: The sub-receivers created by the split.
         """
+        # rsample validations
+        if not isinstance(rsample, ReceiverSample):
+            raise TypeError("rsample must be a ReceiverSample.")
+        if rsample.nd != self.nd:
+            raise ValueError(f"rsample must be {self.nd}D.")
+        if rsample not in self:
+            raise ValueError("rsample must be contained in self.")
         # self validations
-        if not self.can_split():
+        if not self.can_split(rsample):
             raise RuntimeError("self cannot be split.")
-        # the split point is the midpoint of the receiver
-        coords = tuple((lower + upper) / 2 for lower, upper in self._bounds)
-        midpoint = ReceiverSample(coords)
         # split the receiver
         receivers = []
-        # generate all combinations of upper/lower halves
-        for directions in product((False, True), repeat=self.nd):
-            new_bounds = list(self._bounds)
-            is_valid = True
-            # build bounds for each sub-receiver
-            for dim, upper_half in enumerate(directions):
-                lower, upper = self._bounds[dim]
-                if upper_half:
-                    new_bound = (midpoint.coordinates[dim], upper)
-                else:
-                    new_bound = (lower, midpoint.coordinates[dim])
-                # skip if the new bound is empty (lower == upper)
-                if new_bound[0] == new_bound[1]:
-                    is_valid = False
-                    break
-                new_bounds[dim] = new_bound
-            # create new receiver if valid (lower < upper)
-            if is_valid:
-                receiver = self.__class__(
-                    tuple(new_bounds),
-                    self._transmitter.copy(),
-                    self._hits_rate_scheduler,
-                    self._min_width,
-                    self._max_depth,
-                )
-                object.__setattr__(receiver, "_frozen", False)
-                receiver._parent = self
-                receiver._root = self._root
-                receiver._depth = self._depth + 1
-                receiver._hits_left = self._hits_rate_scheduler(self._depth + 1)
-                object.__setattr__(receiver, "_frozen", True)
-                receivers.append(receiver)
+        for bounds in self._get_split_bounds(rsample):
+            receiver = self.__class__(
+                bounds,
+                self._transmitter.copy(),
+                self._hits_rate_scheduler,
+                self._min_width,
+                self._max_depth,
+            )
+            object.__setattr__(receiver, "_frozen", False)
+            receiver._parent = self
+            receiver._root = self._root
+            receiver._depth = self._depth + 1
+            receiver._hits_left = self._hits_rate_scheduler(self._depth + 1)
+            object.__setattr__(receiver, "_frozen", True)
+            receivers.append(receiver)
         receivers = tuple(receivers)
         # update children
         object.__setattr__(self, "_frozen", False)
-        self._split_point = midpoint
+        self._split_point = rsample
         self._children = receivers
         object.__setattr__(self, "_frozen", True)
         self._update_height()
@@ -341,6 +357,11 @@ class Receiver(NDSpace):
                 "hits_left": receiver._hits_left,
                 "min_width": receiver._min_width,
                 "max_depth": receiver._max_depth,
+                "split_point": (
+                    receiver._split_point.to_dict()
+                    if receiver._split_point is not None
+                    else None
+                ),
                 "children": (
                     tuple(_to_dict(child) for child in receiver._children)
                     if not receiver.is_leaf
@@ -365,7 +386,8 @@ class Receiver(NDSpace):
         """
 
         def _from_dict(
-            data: dict[str, Any], parent: Receiver | None = None
+            data: dict[str, Any],
+            parent: Receiver | None = None,
         ) -> Receiver:
             """
             Recursively convert a dictionary to a tree.
@@ -391,8 +413,15 @@ class Receiver(NDSpace):
                 raise KeyError("data must contain the key 'min_width'.")
             if "max_depth" not in data:
                 raise KeyError("data must contain the key 'max_depth'.")
+            if "split_point" not in data:
+                raise KeyError("data must contain the key 'split_point'.")
             if "children" not in data:
                 raise KeyError("data must contain the key 'children'.")
+            if (data["split_point"] is None) != (data["children"] is None):
+                raise ValueError(
+                    "data['split_point'] and data['children'] must be both None "
+                    "or both not None."
+                )
             if "transmitter" not in data:
                 raise KeyError("data must contain the key 'transmitter'.")
             if "hits_rate_scheduler" not in data:
@@ -407,11 +436,11 @@ class Receiver(NDSpace):
                     raise RuntimeError("parent cannot be split.")
                 if parent._min_width != data["min_width"]:
                     raise ValueError(
-                        "data['min_width'] must be equal to parent._min_width."
+                        "data['min_width'] must be equal to parent.min_width."
                     )
                 if parent._max_depth != data["max_depth"]:
                     raise ValueError(
-                        "data['max_depth'] must be equal to parent._max_depth."
+                        "data['max_depth'] must be equal to parent.max_depth."
                     )
             # initializations
             receiver = cls(
@@ -421,12 +450,58 @@ class Receiver(NDSpace):
                 data["min_width"],
                 data["max_depth"],
             )
+            if parent is not None:
+                if receiver._hits_rate_scheduler != parent._hits_rate_scheduler:
+                    raise ValueError(
+                        "data['hits_rate_scheduler'] must be equal to "
+                        "parent.hits_rate_scheduler."
+                    )
+                if receiver._transmitter._bounds != parent._transmitter._bounds:
+                    raise ValueError(
+                        "data['transmitter']['bounds'] must be equal to "
+                        "parent.transmitter.bounds."
+                    )
+                if receiver._transmitter._min_width != parent._transmitter._min_width:
+                    raise ValueError(
+                        "data['transmitter']['min_width'] must be equal to "
+                        "parent.transmitter.min_width."
+                    )
+                if receiver._transmitter._max_depth != parent._transmitter._max_depth:
+                    raise ValueError(
+                        "data['transmitter']['max_depth'] must be equal to "
+                        "parent.transmitter.max_depth."
+                    )
+                if (
+                    receiver._transmitter._bias_scale_scheduler
+                    != parent._transmitter._bias_scale_scheduler
+                ):
+                    raise ValueError(
+                        "data['transmitter']['bias_scale_scheduler'] must be equal "
+                        "to parent.transmitter.bias_scale_scheduler."
+                    )
+                if (
+                    receiver._transmitter._learning_rate_scheduler
+                    != parent._transmitter._learning_rate_scheduler
+                ):
+                    raise ValueError(
+                        "data['transmitter']['learning_rate_scheduler'] must be "
+                        "equal to parent.transmitter.learning_rate_scheduler."
+                    )
+                if (
+                    receiver._transmitter._hits_rate_scheduler
+                    != parent._transmitter._hits_rate_scheduler
+                ):
+                    raise ValueError(
+                        "data['transmitter']['hits_rate_scheduler'] must be equal "
+                        "to parent.transmitter.hits_rate_scheduler."
+                    )
             # update parent attributes
             object.__setattr__(receiver, "_frozen", False)
             if parent is not None:
                 receiver._parent = parent
                 receiver._root = parent._root
                 receiver._depth = parent._depth + 1
+                receiver._hits_rate_scheduler = parent._hits_rate_scheduler
             receiver._hits_left = float(data["hits_left"])
             object.__setattr__(receiver, "_frozen", True)
             if receiver._hits_left > receiver._hits_rate_scheduler(receiver._depth):
@@ -435,27 +510,20 @@ class Receiver(NDSpace):
                 )
             # update children attributes
             if data["children"] is not None:
+                split_point = ReceiverSample.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, receiver) for child_data in data["children"]
                 )
                 # validate split integrity
-                expected_receiver = cls(
-                    data["bounds"],
-                    Transmitter.from_dict(data["transmitter"]),
-                    Scheduler.from_dict(data["hits_rate_scheduler"]),
-                    data["min_width"],
-                    data["max_depth"],
-                )
-                expected_children = expected_receiver.split()
+                expected_bounds = set(receiver._get_split_bounds(split_point))
                 actual_bounds = {child._bounds for child in children}
-                expected_bounds = {child._bounds for child in expected_children}
                 if (
-                    len(children) != len(expected_children)
+                    len(children) != len(expected_bounds)
                     or actual_bounds != expected_bounds
                 ):
                     raise ValueError("children are not compatible with split_point.")
                 object.__setattr__(receiver, "_frozen", False)
-                receiver._split_point = expected_receiver._split_point
+                receiver._split_point = split_point
                 receiver._children = children
                 object.__setattr__(receiver, "_frozen", True)
                 receiver._update_height()

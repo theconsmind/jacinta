@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from ...utils.ndspace import NDPoint
 
 
@@ -17,3 +19,27 @@ class ReceiverSample(NDPoint):
         """
         super().__init__(coordinates)
         return
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ReceiverSample:
+        """
+        Create a receiver sample from a dictionary.
+
+        Args:
+            data (dict[str, Any]): The dictionary representation of the receiver sample.
+
+        Returns:
+            ReceiverSample: The receiver sample.
+        """
+        # data validations
+        if not isinstance(data, dict):
+            raise TypeError("data must be a dict.")
+        if "type" not in data:
+            raise KeyError("data must contain the key 'type'.")
+        if data["type"] != cls.__name__:
+            raise ValueError(f"data['type'] must be a {cls.__name__}.")
+        if "coordinates" not in data:
+            raise KeyError("data must contain the key 'coordinates'.")
+        # initializations
+        result = cls(data["coordinates"])
+        return result
