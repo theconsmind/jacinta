@@ -62,7 +62,12 @@ class Network:
 
     def __eq__(self, other: object) -> bool:
         """ """
-        raise NotImplementedError
+        # other validations
+        if type(self) is not type(other):
+            return NotImplemented
+        # equality check
+        result = self._has_same_topology(other)
+        return result
 
     def __contains__(self, other: object) -> bool:
         """ """
@@ -520,6 +525,192 @@ class Network:
             data = json.load(f)
         result = cls.from_dict(data)
         return result
+
+    def _has_same_topology(self, other: Network) -> bool:
+        """ """
+        result = False
+        if (
+            len(self._nodes) == len(other._nodes)
+            and len(self._connections) == len(other._connections)
+            and len(self._rports) == len(other._rports)
+            and len(self._tports) == len(other._tports)
+        ):
+            # get network topologies
+            self_connections, _, _ = self._get_topology()
+            other_connections, _, _ = other._get_topology()
+            # get network signatures
+            self_signatures = self._get_signatures()
+            other_signatures = other._get_signatures()
+            # find candidates for each node in self
+            candidates = {
+                self_idx: tuple(
+                    other_idx
+                    for other_idx, other_node in enumerate(other._nodes)
+                    if self_node == other_node
+                    and self_signatures[self_idx] == other_signatures[other_idx]
+                )
+                for self_idx, self_node in enumerate(self._nodes)
+            }
+            # ensure all nodes have candidates
+            if all(len(self_candidates) > 0 for self_candidates in candidates.values()):
+                mapping = {}
+                used_other_idxs = set()
+
+                def _is_compatible(self_idx: int, other_idx: int) -> bool:
+                    """ """
+                    result = True
+                    # build candidate mappings
+                    self_mapping = mapping | {self_idx: other_idx}
+                    other_mapping = {
+                        mapped_other_idx: mapped_self_idx
+                        for mapped_self_idx, mapped_other_idx in self_mapping.items()
+                    }
+                    # check if connections in self are in other
+                    for (self_source, self_source_dim), (
+                        self_target,
+                        self_target_dim,
+                    ) in self_connections:
+                        if self_source in self_mapping and self_target in self_mapping:
+                            other_connection = (
+                                (self_mapping[self_source], self_source_dim),
+                                (self_mapping[self_target], self_target_dim),
+                            )
+                            if other_connection not in other_connections:
+                                result = False
+                                break
+                    # check if connections in other are in self
+                    for (other_source, other_source_dim), (
+                        other_target,
+                        other_target_dim,
+                    ) in other_connections:
+                        if (
+                            other_source in other_mapping
+                            and other_target in other_mapping
+                        ):
+                            self_connection = (
+                                (other_mapping[other_source], other_source_dim),
+                                (other_mapping[other_target], other_target_dim),
+                            )
+                            if self_connection not in self_connections:
+                                result = False
+                                break
+                    return result
+
+                def _match_nodes() -> bool:
+                    """ """
+                    result = False
+                    # check if all nodes have been matched
+                    if len(mapping) == len(self._nodes):
+                        result = True
+                    else:
+                        # select the node with the fewest unmatched candidates
+                        self_idx = min(
+                            (
+                                idx
+                                for idx in range(len(self._nodes))
+                                if idx not in mapping
+                            ),
+                            key=lambda idx: sum(
+                                other_idx not in used_other_idxs
+                                for other_idx in candidates[idx]
+                            ),
+                        )
+                        # try to match the node with the remaining candidates
+                        for other_idx in candidates[self_idx]:
+                            # skip already matched candidates
+                            if other_idx in used_other_idxs:
+                                continue
+                            # skip incompatible candidates
+                            if not _is_compatible(self_idx, other_idx):
+                                continue
+                            # match the selected unmatched node with the candidate
+                            mapping[self_idx] = other_idx
+                            used_other_idxs.add(other_idx)
+                            # recursively try to match the remaining unmatched nodes
+                            if _match_nodes():
+                                result = True
+                                break
+                            # backtrack if the matching fails
+                            used_other_idxs.remove(other_idx)
+                            del mapping[self_idx]
+                    return result
+
+                # try to match nodes with their candidates
+                result = _match_nodes()
+        return result
+
+    def _get_topology(
+        self,
+    ) -> tuple[
+        set[tuple[tuple[int, int], tuple[int, int]]],
+        set[tuple[int, int]],
+        set[tuple[int, int]],
+    ]:
+        """ """
+        # map nodes to indexes
+        node_idxs = {id(node): idx for idx, node in enumerate(self._nodes)}
+        # get network topology
+        connections = {
+            (
+                (node_idxs[id(source)], source_dim),
+                (node_idxs[id(target)], target_dim),
+            )
+            for (source, source_dim), (target, target_dim) in self._connections
+        }
+        rports = {(node_idxs[id(node)], dim) for node, dim in self._rports}
+        tports = {(node_idxs[id(node)], dim) for node, dim in self._tports}
+        return connections, rports, tports
+
+    def _get_signatures(
+        self,
+    ) -> tuple[
+        tuple[
+            tuple[tuple[int, int], ...],
+            tuple[tuple[int, int], ...],
+            tuple[tuple[int, int], ...],
+            tuple[int, ...],
+            tuple[int, ...],
+        ],
+        ...,
+    ]:
+        """ """
+        # get network topology
+        connections, rports, tports = self._get_topology()
+        # get signatures for each node
+        signatures = []
+        for idx in range(len(self._nodes)):
+            # get outgoing connections
+            outgoing = tuple(
+                sorted(
+                    (source_dim, target_dim)
+                    for (source, source_dim), (target, target_dim) in connections
+                    if source == idx and target != idx
+                )
+            )
+            # get incoming connections
+            incoming = tuple(
+                sorted(
+                    (source_dim, target_dim)
+                    for (source, source_dim), (target, target_dim) in connections
+                    if source != idx and target == idx
+                )
+            )
+            # get loop connections
+            loops = tuple(
+                sorted(
+                    (source_dim, target_dim)
+                    for (source, source_dim), (target, target_dim) in connections
+                    if source == idx and target == idx
+                )
+            )
+            # get rport and tport dimensions
+            rdims = tuple(sorted(dim for node_idx, dim in rports if node_idx == idx))
+            tdims = tuple(sorted(dim for node_idx, dim in tports if node_idx == idx))
+            # create signature
+            signature = (outgoing, incoming, loops, rdims, tdims)
+            signatures.append(signature)
+        signatures = tuple(signatures)
+        return signatures
 
     def __setattr__(self, name: str, value: Any) -> None:
         """ """
