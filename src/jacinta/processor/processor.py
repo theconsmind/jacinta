@@ -47,8 +47,8 @@ class Processor:
         Returns:
             str: The representation of the processor.
         """
-        result = f"{self.__class__.__name__}(receiver={self._receiver!r})"
-        return result
+        processor = f"{self.__class__.__name__}(receiver={self._receiver!r})"
+        return processor
 
     @property
     def receiver(self) -> Receiver:
@@ -114,8 +114,8 @@ class Processor:
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = self._receiver == other._receiver
-        return result
+        is_equal = self._receiver == other._receiver
+        return is_equal
 
     def forward(self, psample: ProcessorSample, bias: float = 0.0) -> ProcessorSample:
         """
@@ -136,8 +136,8 @@ class Processor:
             raise ValueError("psample.tsample must be None.")
         # generate the processor tsample
         tsample = self._receiver.forward(psample.rsample, bias)
-        result = ProcessorSample(psample.rsample, tsample)
-        return result
+        psample = ProcessorSample(psample.rsample, tsample)
+        return psample
 
     def backward(self, psample: ProcessorSample, feedback: float) -> None:
         """
@@ -215,8 +215,8 @@ class Processor:
         Returns:
             Processor: The copy of the processor.
         """
-        result = deepcopy(self)
-        return result
+        processor = deepcopy(self)
+        return processor
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -225,11 +225,11 @@ class Processor:
         Returns:
             dict[str, Any]: The dictionary representation of the processor.
         """
-        result = {
+        processor = {
             "type": self.__class__.__name__,
             "receiver": self._receiver.to_dict(),
         }
-        return result
+        return processor
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Processor:
@@ -253,10 +253,10 @@ class Processor:
         if "receiver" not in data:
             raise KeyError("data must contain the key 'receiver'.")
         # initializations
-        result = cls(
+        processor = cls(
             Receiver.from_dict(data["receiver"]),
         )
-        return result
+        return processor
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
@@ -305,8 +305,8 @@ class Processor:
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
-        result = cls.from_dict(data)
-        return result
+        processor = cls.from_dict(data)
+        return processor
 
     def __setattr__(self, name: str, value: Any) -> None:
         """

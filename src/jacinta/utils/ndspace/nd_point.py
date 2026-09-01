@@ -44,8 +44,8 @@ class NDPoint:
         Returns:
             str: The representation of the point.
         """
-        result = f"{self.__class__.__name__}(coordinates={self._coordinates!r})"
-        return result
+        point = f"{self.__class__.__name__}(coordinates={self._coordinates!r})"
+        return point
 
     @property
     def coordinates(self) -> tuple[float, ...]:
@@ -82,8 +82,8 @@ class NDPoint:
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = self._coordinates == other._coordinates
-        return result
+        is_equal = self._coordinates == other._coordinates
+        return is_equal
 
     def copy(self) -> Self:
         """
@@ -92,8 +92,8 @@ class NDPoint:
         Returns:
             Self: The copy of the point.
         """
-        result = deepcopy(self)
-        return result
+        point = deepcopy(self)
+        return point
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -102,11 +102,11 @@ class NDPoint:
         Returns:
             dict[str, Any]: The dictionary representation of the point.
         """
-        result = {
+        point = {
             "type": self.__class__.__name__,
             "coordinates": self._coordinates,
         }
-        return result
+        return point
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
@@ -129,8 +129,8 @@ class NDPoint:
         if "coordinates" not in data:
             raise KeyError("data must contain the key 'coordinates'.")
         # initializations
-        result = cls(data["coordinates"])
-        return result
+        point = cls(data["coordinates"])
+        return point
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
@@ -179,8 +179,8 @@ class NDPoint:
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
-        result = cls.from_dict(data)
-        return result
+        point = cls.from_dict(data)
+        return point
 
     def __setattr__(self, name: str, value: Any) -> None:
         """

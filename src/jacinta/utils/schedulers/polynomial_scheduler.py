@@ -75,12 +75,12 @@ class PolynomialScheduler(Scheduler):
         Returns:
             str: The representation of the scheduler.
         """
-        result = (
+        scheduler = (
             f"{self.__class__.__name__}"
             f"(coefficients={self._coefficients!r}, "
             f"min_value={self._min_value!r}, max_value={self._max_value!r})"
         )
-        return result
+        return scheduler
 
     def __call__(self, depth: int) -> float:
         """
@@ -98,16 +98,16 @@ class PolynomialScheduler(Scheduler):
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
         # get the value based on the depth
-        result = sum(
+        value = sum(
             coefficient * math.pow(depth, exponent)
             for exponent, coefficient in enumerate(self._coefficients)
         )
         # apply min and max values
         if self._min_value is not None:
-            result = max(result, self._min_value)
+            value = max(value, self._min_value)
         if self._max_value is not None:
-            result = min(result, self._max_value)
-        return result
+            value = min(value, self._max_value)
+        return value
 
     @property
     def coefficients(self) -> tuple[float, ...]:
@@ -153,12 +153,12 @@ class PolynomialScheduler(Scheduler):
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = (
+        is_equal = (
             self._coefficients == other._coefficients
             and self._min_value == other._min_value
             and self._max_value == other._max_value
         )
-        return result
+        return is_equal
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -167,13 +167,13 @@ class PolynomialScheduler(Scheduler):
         Returns:
             dict[str, Any]: The dictionary representation of the scheduler.
         """
-        result = {
+        scheduler = {
             "type": self.__class__.__name__,
             "coefficients": self._coefficients,
             "min_value": self._min_value,
             "max_value": self._max_value,
         }
-        return result
+        return scheduler
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PolynomialScheduler:
@@ -200,9 +200,9 @@ class PolynomialScheduler(Scheduler):
         if "max_value" not in data:
             raise KeyError("data must contain the key 'max_value'.")
         # initializations
-        result = cls(
+        scheduler = cls(
             data["coefficients"],
             data["min_value"],
             data["max_value"],
         )
-        return result
+        return scheduler

@@ -107,8 +107,8 @@ class NDSpace:
         Returns:
             str: The representation of the space.
         """
-        result = f"{self.__class__.__name__}(bounds={self._bounds!r})"
-        return result
+        space = f"{self.__class__.__name__}(bounds={self._bounds!r})"
+        return space
 
     @property
     def bounds(self) -> tuple[tuple[float, float], ...]:
@@ -236,8 +236,8 @@ class NDSpace:
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = self._bounds == other._bounds
-        return result
+        is_equal = self._bounds == other._bounds
+        return is_equal
 
     def __contains__(self, other: object) -> bool:
         """
@@ -256,9 +256,9 @@ class NDSpace:
         if other.nd != self.nd:
             raise ValueError(f"other must be {self.nd}D.")
         # check if the point is within the bounds
-        result = False
+        is_in = False
         if isinstance(other, NDPoint):
-            result = all(
+            is_in = all(
                 lower <= coord < upper
                 for coord, (lower, upper) in zip(
                     other.coordinates, self._bounds, strict=True
@@ -266,13 +266,13 @@ class NDSpace:
             )
         # check if the space is within the bounds
         elif isinstance(other, NDSpace):
-            result = all(
+            is_in = all(
                 lower <= other_lower and other_upper <= upper
                 for (other_lower, other_upper), (lower, upper) in zip(
                     other._bounds, self._bounds, strict=True
                 )
             )
-        return result
+        return is_in
 
     def find_leaf(self, point: NDPoint) -> Self:
         """
@@ -318,20 +318,20 @@ class NDSpace:
         if point not in self:
             raise ValueError("point must be contained in self.")
         # check if the space is a leaf
-        result = True
+        is_splittable = True
         if not self.is_leaf:
-            result = False
+            is_splittable = False
         # check if the space is at max depth
         elif self._max_depth is not None and self._depth == self._max_depth:
-            result = False
+            is_splittable = False
         # check if the point produces at least one effective split
         elif self.nd == 0:
-            result = False
+            is_splittable = False
         elif all(
             coord == lower
             for coord, (lower, _) in zip(point.coordinates, self._bounds, strict=True)
         ):
-            result = False
+            is_splittable = False
         # check if the space can be split by the point
         elif self._min_width is not None:
             for coord, (lower, upper) in zip(
@@ -341,12 +341,12 @@ class NDSpace:
                 upper_width = upper - coord
                 # skip new empty bounds (lower == upper)
                 if lower_width != 0 and lower_width < self._min_width:
-                    result = False
+                    is_splittable = False
                     break
                 if upper_width != 0 and upper_width < self._min_width:
-                    result = False
+                    is_splittable = False
                     break
-        return result
+        return is_splittable
 
     def split(self, point: NDPoint) -> tuple[Self, ...]:
         """
@@ -542,8 +542,8 @@ class NDSpace:
         Returns:
             Self: The copy of the space.
         """
-        result = deepcopy(self)
-        return result
+        space = deepcopy(self)
+        return space
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -563,7 +563,7 @@ class NDSpace:
             Returns:
                 dict[str, Any]: The dictionary representation of the space.
             """
-            result = {
+            space = {
                 "type": space.__class__.__name__,
                 "bounds": space._bounds,
                 "min_width": space._min_width,
@@ -579,10 +579,10 @@ class NDSpace:
                     else None
                 ),
             }
-            return result
+            return space
 
-        result = _to_dict(self)
-        return result
+        space = _to_dict(self)
+        return space
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
@@ -722,8 +722,8 @@ class NDSpace:
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
-        result = cls.from_dict(data)
-        return result
+        space = cls.from_dict(data)
+        return space
 
     def _update_root(self) -> None:
         """

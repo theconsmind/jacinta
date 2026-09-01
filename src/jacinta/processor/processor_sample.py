@@ -60,11 +60,11 @@ class ProcessorSample:
         Returns:
             str: The representation of the processor sample.
         """
-        result = (
+        psample = (
             f"{self.__class__.__name__}"
             f"(rsample={self._rsample!r}, tsample={self._tsample!r})"
         )
-        return result
+        return psample
 
     @property
     def rsample(self) -> ReceiverSample:
@@ -142,8 +142,8 @@ class ProcessorSample:
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = self._rsample == other._rsample and self._tsample == other._tsample
-        return result
+        is_equal = self._rsample == other._rsample and self._tsample == other._tsample
+        return is_equal
 
     def copy(self) -> ProcessorSample:
         """
@@ -152,8 +152,8 @@ class ProcessorSample:
         Returns:
             ProcessorSample: The copy of the processor sample.
         """
-        result = deepcopy(self)
-        return result
+        psample = deepcopy(self)
+        return psample
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -162,12 +162,12 @@ class ProcessorSample:
         Returns:
             dict[str, Any]: The dictionary representation of the processor sample.
         """
-        result = {
+        psample = {
             "type": self.__class__.__name__,
             "rsample": self._rsample.to_dict(),
             "tsample": self._tsample.to_dict() if self._tsample is not None else None,
         }
-        return result
+        return psample
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ProcessorSample:
@@ -193,13 +193,13 @@ class ProcessorSample:
         if "tsample" not in data:
             raise KeyError("data must contain the key 'tsample'.")
         # initializations
-        result = cls(
+        psample = cls(
             ReceiverSample.from_dict(data["rsample"]),
             TransmitterSample.from_dict(data["tsample"])
             if data["tsample"] is not None
             else None,
         )
-        return result
+        return psample
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
@@ -248,8 +248,8 @@ class ProcessorSample:
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
-        result = cls.from_dict(data)
-        return result
+        psample = cls.from_dict(data)
+        return psample
 
     def __setattr__(self, name: str, value: Any) -> None:
         """

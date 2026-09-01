@@ -66,8 +66,8 @@ class PiecewiseScheduler(Scheduler):
         Returns:
             str: The representation of the scheduler.
         """
-        result = f"{self.__class__.__name__}(segments={self._segments!r})"
-        return result
+        scheduler = f"{self.__class__.__name__}(segments={self._segments!r})"
+        return scheduler
 
     def __call__(self, depth: int) -> float:
         """
@@ -87,8 +87,8 @@ class PiecewiseScheduler(Scheduler):
         # get the value based on the depth
         idx = bisect_right(self._depths, depth) - 1
         _, scheduler = self._segments[idx]
-        result = scheduler(depth)
-        return result
+        value = scheduler(depth)
+        return value
 
     @property
     def segments(self) -> tuple[tuple[int, Scheduler], ...]:
@@ -114,8 +114,8 @@ class PiecewiseScheduler(Scheduler):
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = self._segments == other._segments
-        return result
+        is_equal = self._segments == other._segments
+        return is_equal
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -124,13 +124,13 @@ class PiecewiseScheduler(Scheduler):
         Returns:
             dict[str, Any]: The dictionary representation of the scheduler.
         """
-        result = {
+        scheduler = {
             "type": self.__class__.__name__,
             "segments": tuple(
                 (depth, scheduler.to_dict()) for depth, scheduler in self._segments
             ),
         }
-        return result
+        return scheduler
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PiecewiseScheduler:
@@ -157,5 +157,5 @@ class PiecewiseScheduler(Scheduler):
             (depth, Scheduler.from_dict(scheduler_data))
             for depth, scheduler_data in data["segments"]
         )
-        result = cls(segments)
-        return result
+        scheduler = cls(segments)
+        return scheduler

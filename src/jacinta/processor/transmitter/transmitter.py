@@ -99,7 +99,7 @@ class Transmitter(NDSpace):
         Returns:
             str: The representation of the transmitter.
         """
-        result = (
+        transmitter = (
             f"{self.__class__.__name__}"
             f"(bounds={self._bounds!r}, "
             f"log_weight={self._log_weight!r}, "
@@ -109,7 +109,7 @@ class Transmitter(NDSpace):
             f"hits_rate_scheduler={self._hits_rate_scheduler!r}, "
             f"hits_left={self._hits_left!r})"
         )
-        return result
+        return transmitter
 
     @property
     def split_point(self) -> TransmitterSample | None:
@@ -195,7 +195,7 @@ class Transmitter(NDSpace):
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = (
+        is_equal = (
             super().__eq__(other)
             and self._log_weight == other._log_weight
             and self._evaluator == other._evaluator
@@ -204,7 +204,7 @@ class Transmitter(NDSpace):
             and self._hits_rate_scheduler == other._hits_rate_scheduler
             and self._hits_left == other._hits_left
         )
-        return result
+        return is_equal
 
     def __contains__(self, other: object) -> bool:
         """
@@ -223,8 +223,8 @@ class Transmitter(NDSpace):
         if other.nd != self.nd:
             raise ValueError(f"other must be {self.nd}D.")
         # check if the tsample is within the bounds
-        result = super().__contains__(other)
-        return result
+        is_in = super().__contains__(other)
+        return is_in
 
     def find_leaf(self, tsample: TransmitterSample) -> Transmitter:
         """
@@ -357,8 +357,8 @@ class Transmitter(NDSpace):
         if tsample not in self:
             raise ValueError("tsample must be contained in self.")
         # check if the transmitter is a leaf
-        result = super().can_split(tsample)
-        return result
+        is_splittable = super().can_split(tsample)
+        return is_splittable
 
     def split(self, tsample: TransmitterSample) -> tuple[Transmitter, ...]:
         """
@@ -433,7 +433,7 @@ class Transmitter(NDSpace):
             Returns:
                 dict[str, Any]: The dictionary representation of the transmitter.
             """
-            result = {
+            transmitter = {
                 "type": transmitter.__class__.__name__,
                 "bounds": transmitter._bounds,
                 "log_weight": transmitter._log_weight,
@@ -459,10 +459,10 @@ class Transmitter(NDSpace):
                     else None
                 ),
             }
-            return result
+            return transmitter
 
-        result = _to_dict(self)
-        return result
+        transmitter = _to_dict(self)
+        return transmitter
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Transmitter:

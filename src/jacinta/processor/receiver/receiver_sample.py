@@ -41,5 +41,5 @@ class ReceiverSample(NDPoint):
         if "coordinates" not in data:
             raise KeyError("data must contain the key 'coordinates'.")
         # initializations
-        result = cls(data["coordinates"])
-        return result
+        rsample = cls(data["coordinates"])
+        return rsample

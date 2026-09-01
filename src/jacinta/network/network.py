@@ -33,12 +33,12 @@ class Network:
 
     def __repr__(self) -> str:
         """ """
-        result = (
+        network = (
             f"{self.__class__.__name__}"
             f"(nodes={self._nodes!r}, connections={self._connections!r}, "
             f"rports={self._rports!r}, tports={self._tports!r})"
         )
-        return result
+        return network
 
     @property
     def nodes(self) -> tuple[Node, ...]:
@@ -66,8 +66,8 @@ class Network:
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = self._has_same_topology(other)
-        return result
+        is_equal = self._has_same_topology(other)
+        return is_equal
 
     def __contains__(self, other: object) -> bool:
         """ """
@@ -75,8 +75,8 @@ class Network:
         if not isinstance(other, Node):
             raise TypeError("other must be a Node.")
         # check if the node is within the network
-        result = any(node is other for node in self._nodes)
-        return result
+        is_in = any(node is other for node in self._nodes)
+        return is_in
 
     def add_node(self, processor: Processor, defaults: tuple[float, ...]) -> Node:
         """ """
@@ -464,14 +464,14 @@ class Network:
 
     def copy(self) -> Network:
         """ """
-        result = deepcopy(self)
-        return result
+        network = deepcopy(self)
+        return network
 
     def to_dict(self) -> dict[str, Any]:
         """ """
-        # map nodes to indexes
+        # map nodes to indices
         node_idxs = {id(node): idx for idx, node in enumerate(self._nodes)}
-        result = {
+        network = {
             "type": self.__class__.__name__,
             "nodes": tuple(node.to_dict() for node in self._nodes),
             "connections": tuple(
@@ -484,7 +484,7 @@ class Network:
             "rports": tuple((node_idxs[id(node)], dim) for node, dim in self._rports),
             "tports": tuple((node_idxs[id(node)], dim) for node, dim in self._tports),
         }
-        return result
+        return network
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Network:
@@ -523,12 +523,12 @@ class Network:
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
-        result = cls.from_dict(data)
-        return result
+        network = cls.from_dict(data)
+        return network
 
     def _has_same_topology(self, other: Network) -> bool:
         """ """
-        result = False
+        is_equal = False
         if (
             len(self._nodes) == len(other._nodes)
             and len(self._connections) == len(other._connections)
@@ -558,7 +558,7 @@ class Network:
 
                 def _is_compatible(self_idx: int, other_idx: int) -> bool:
                     """ """
-                    result = True
+                    is_compatible = True
                     # build candidate mappings
                     self_mapping = mapping | {self_idx: other_idx}
                     other_mapping = {
@@ -576,7 +576,7 @@ class Network:
                                 (self_mapping[self_target], self_target_dim),
                             )
                             if other_connection not in other_connections:
-                                result = False
+                                is_compatible = False
                                 break
                     # check if connections in other are in self
                     for (other_source, other_source_dim), (
@@ -592,16 +592,16 @@ class Network:
                                 (other_mapping[other_target], other_target_dim),
                             )
                             if self_connection not in self_connections:
-                                result = False
+                                is_compatible = False
                                 break
-                    return result
+                    return is_compatible
 
                 def _match_nodes() -> bool:
                     """ """
-                    result = False
+                    is_matched = False
                     # check if all nodes have been matched
                     if len(mapping) == len(self._nodes):
-                        result = True
+                        is_matched = True
                     else:
                         # select the node with the fewest unmatched candidates
                         self_idx = min(
@@ -628,16 +628,16 @@ class Network:
                             used_other_idxs.add(other_idx)
                             # recursively try to match the remaining unmatched nodes
                             if _match_nodes():
-                                result = True
+                                is_matched = True
                                 break
                             # backtrack if the matching fails
                             used_other_idxs.remove(other_idx)
                             del mapping[self_idx]
-                    return result
+                    return is_matched
 
                 # try to match nodes with their candidates
-                result = _match_nodes()
-        return result
+                is_equal = _match_nodes()
+        return is_equal
 
     def _get_topology(
         self,
@@ -647,7 +647,7 @@ class Network:
         set[tuple[int, int]],
     ]:
         """ """
-        # map nodes to indexes
+        # map nodes to indices
         node_idxs = {id(node): idx for idx, node in enumerate(self._nodes)}
         # get network topology
         connections = {

@@ -41,11 +41,11 @@ class Node:
 
     def __repr__(self) -> str:
         """ """
-        result = (
+        node = (
             f"{self.__class__.__name__}"
             f"(processor={self._processor!r}, defaults={self._defaults!r})"
         )
-        return result
+        return node
 
     @property
     def processor(self) -> Processor:
@@ -83,24 +83,24 @@ class Node:
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = (
+        is_equal = (
             self._processor == other._processor and self._defaults == other._defaults
         )
-        return result
+        return is_equal
 
     def copy(self) -> Node:
         """ """
-        result = deepcopy(self)
-        return result
+        node = deepcopy(self)
+        return node
 
     def to_dict(self) -> dict[str, Any]:
         """ """
-        result = {
+        node = {
             "type": self.__class__.__name__,
             "processor": self._processor.to_dict(),
             "defaults": self._defaults,
         }
-        return result
+        return node
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Node:
@@ -117,11 +117,11 @@ class Node:
         if "defaults" not in data:
             raise KeyError("data must contain the key 'defaults'.")
         # initializations
-        result = cls(
+        node = cls(
             Processor.from_dict(data["processor"]),
             data["defaults"],
         )
-        return result
+        return node
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """ """
@@ -155,8 +155,8 @@ class Node:
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
-        result = cls.from_dict(data)
-        return result
+        node = cls.from_dict(data)
+        return node
 
     def __setattr__(self, name: str, value: Any) -> None:
         """ """

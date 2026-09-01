@@ -67,14 +67,14 @@ class Receiver(NDSpace):
         Returns:
             str: The representation of the receiver.
         """
-        result = (
+        receiver = (
             f"{self.__class__.__name__}"
             f"(bounds={self._bounds!r}, "
             f"transmitter={self._transmitter!r}, "
             f"hits_rate_scheduler={self._hits_rate_scheduler!r}, "
             f"hits_left={self._hits_left!r})"
         )
-        return result
+        return receiver
 
     @property
     def split_point(self) -> ReceiverSample | None:
@@ -130,13 +130,13 @@ class Receiver(NDSpace):
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = (
+        is_equal = (
             super().__eq__(other)
             and self._transmitter == other._transmitter
             and self._hits_rate_scheduler == other._hits_rate_scheduler
             and self._hits_left == other._hits_left
         )
-        return result
+        return is_equal
 
     def __contains__(self, other: object) -> bool:
         """
@@ -155,8 +155,8 @@ class Receiver(NDSpace):
         if other.nd != self.nd:
             raise ValueError(f"other must be {self.nd}D.")
         # check if the rsample is within the bounds
-        result = super().__contains__(other)
-        return result
+        is_in = super().__contains__(other)
+        return is_in
 
     def find_leaf(self, rsample: ReceiverSample) -> Receiver:
         """
@@ -276,8 +276,8 @@ class Receiver(NDSpace):
         if rsample not in self:
             raise ValueError("rsample must be contained in self.")
         # check if the receiver is a leaf
-        result = super().can_split(rsample)
-        return result
+        is_splittable = super().can_split(rsample)
+        return is_splittable
 
     def split(self, rsample: ReceiverSample) -> tuple[Receiver, ...]:
         """
@@ -349,7 +349,7 @@ class Receiver(NDSpace):
             Returns:
                 dict[str, Any]: The dictionary representation of the receiver.
             """
-            result = {
+            receiver = {
                 "type": receiver.__class__.__name__,
                 "bounds": receiver._bounds,
                 "transmitter": receiver._transmitter.to_dict(),
@@ -368,10 +368,10 @@ class Receiver(NDSpace):
                     else None
                 ),
             }
-            return result
+            return receiver
 
-        result = _to_dict(self)
-        return result
+        receiver = _to_dict(self)
+        return receiver
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Receiver:

@@ -38,8 +38,8 @@ class ConstantScheduler(Scheduler):
         Returns:
             str: The representation of the scheduler.
         """
-        result = f"{self.__class__.__name__}(value={self._value!r})"
-        return result
+        scheduler = f"{self.__class__.__name__}(value={self._value!r})"
+        return scheduler
 
     def __call__(self, depth: int) -> float:
         """
@@ -57,8 +57,8 @@ class ConstantScheduler(Scheduler):
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
         # get the value based on the depth
-        result = self._value
-        return result
+        value = self._value
+        return value
 
     @property
     def value(self) -> float:
@@ -84,8 +84,8 @@ class ConstantScheduler(Scheduler):
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = self._value == other._value
-        return result
+        is_equal = self._value == other._value
+        return is_equal
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -94,11 +94,11 @@ class ConstantScheduler(Scheduler):
         Returns:
             dict[str, Any]: The dictionary representation of the scheduler.
         """
-        result = {
+        scheduler = {
             "type": self.__class__.__name__,
             "value": self._value,
         }
-        return result
+        return scheduler
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ConstantScheduler:
@@ -121,5 +121,5 @@ class ConstantScheduler(Scheduler):
         if "value" not in data:
             raise KeyError("data must contain the key 'value'.")
         # initializations
-        result = cls(data["value"])
-        return result
+        scheduler = cls(data["value"])
+        return scheduler

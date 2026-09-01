@@ -47,8 +47,8 @@ class Evaluator(ABC):
         Returns:
             Self: The copy of the evaluator.
         """
-        result = deepcopy(self)
-        return result
+        evaluator = deepcopy(self)
+        return evaluator
 
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:
@@ -80,14 +80,14 @@ class Evaluator(ABC):
         if not isinstance(data["type"], str):
             raise TypeError("data['type'] must be a string.")
         # find the subclass
-        result = None
+        evaluator = None
         for subclass in cls.__subclasses__():
             if subclass.__name__ == data["type"]:
-                result = subclass.from_dict(data)
+                evaluator = subclass.from_dict(data)
                 break
-        if result is None:
+        if evaluator is None:
             raise ValueError(f"Evaluator type '{data['type']}' not found.")
-        return result
+        return evaluator
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """
@@ -136,8 +136,8 @@ class Evaluator(ABC):
         # file loading
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
-        result = cls.from_dict(data)
-        return result
+        evaluator = cls.from_dict(data)
+        return evaluator
 
     def __setattr__(self, name: str, value: Any) -> None:
         """

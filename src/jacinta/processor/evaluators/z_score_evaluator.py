@@ -73,14 +73,14 @@ class ZScoreEvaluator(Evaluator):
         Returns:
             str: The representation of the evaluator.
         """
-        result = (
+        evaluator = (
             f"{self.__class__.__name__}"
             f"(mean={self._mean!r}, var={self._var!r}, "
             f"mean_ema_rate={self._mean_ema_rate!r}, "
             f"var_ema_rate={self._var_ema_rate!r}, "
             f"eps={self._eps!r})"
         )
-        return result
+        return evaluator
 
     def __call__(self, feedback: float) -> float | None:
         """
@@ -186,14 +186,14 @@ class ZScoreEvaluator(Evaluator):
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = (
+        is_equal = (
             self._mean == other._mean
             and self._var == other._var
             and self._mean_ema_rate == other._mean_ema_rate
             and self._var_ema_rate == other._var_ema_rate
             and self._eps == other._eps
         )
-        return result
+        return is_equal
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -202,7 +202,7 @@ class ZScoreEvaluator(Evaluator):
         Returns:
             dict[str, Any]: The dictionary representation of the evaluator.
         """
-        result = {
+        evaluator = {
             "type": self.__class__.__name__,
             "mean": self._mean,
             "var": self._var,
@@ -210,7 +210,7 @@ class ZScoreEvaluator(Evaluator):
             "var_ema_rate": self._var_ema_rate,
             "eps": self._eps,
         }
-        return result
+        return evaluator
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ZScoreEvaluator:
@@ -247,14 +247,14 @@ class ZScoreEvaluator(Evaluator):
         if "eps" not in data:
             raise KeyError("data must contain the key 'eps'.")
         # initializations
-        result = cls(
+        evaluator = cls(
             data["mean_ema_rate"],
             data["var_ema_rate"],
             data["eps"],
         )
         # update mean and var
-        object.__setattr__(result, "_frozen", False)
-        result._mean = float(data["mean"]) if data["mean"] is not None else None
-        result._var = float(data["var"]) if data["var"] is not None else None
-        object.__setattr__(result, "_frozen", True)
-        return result
+        object.__setattr__(evaluator, "_frozen", False)
+        evaluator._mean = float(data["mean"]) if data["mean"] is not None else None
+        evaluator._var = float(data["var"]) if data["var"] is not None else None
+        object.__setattr__(evaluator, "_frozen", True)
+        return evaluator

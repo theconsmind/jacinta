@@ -84,13 +84,13 @@ class LogarithmicScheduler(Scheduler):
         Returns:
             str: The representation of the scheduler.
         """
-        result = (
+        scheduler = (
             f"{self.__class__.__name__}"
             f"(scale={self._scale!r}, offset={self._offset!r}, "
             f"intercept={self._intercept!r}, "
             f"min_value={self._min_value!r}, max_value={self._max_value!r})"
         )
-        return result
+        return scheduler
 
     def __call__(self, depth: int) -> float:
         """
@@ -108,13 +108,13 @@ class LogarithmicScheduler(Scheduler):
         if depth < 0:
             raise ValueError("depth must be greater than or equal to 0.")
         # get the value based on the depth
-        result = self._scale * math.log(depth + self._offset) + self._intercept
+        value = self._scale * math.log(depth + self._offset) + self._intercept
         # apply min and max values
         if self._min_value is not None:
-            result = max(result, self._min_value)
+            value = max(value, self._min_value)
         if self._max_value is not None:
-            result = min(result, self._max_value)
-        return result
+            value = min(value, self._max_value)
+        return value
 
     @property
     def scale(self) -> float:
@@ -180,14 +180,14 @@ class LogarithmicScheduler(Scheduler):
         if type(self) is not type(other):
             return NotImplemented
         # equality check
-        result = (
+        is_equal = (
             self._scale == other._scale
             and self._offset == other._offset
             and self._intercept == other._intercept
             and self._min_value == other._min_value
             and self._max_value == other._max_value
         )
-        return result
+        return is_equal
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -196,7 +196,7 @@ class LogarithmicScheduler(Scheduler):
         Returns:
             dict[str, Any]: The dictionary representation of the scheduler.
         """
-        result = {
+        scheduler = {
             "type": self.__class__.__name__,
             "scale": self._scale,
             "offset": self._offset,
@@ -204,7 +204,7 @@ class LogarithmicScheduler(Scheduler):
             "min_value": self._min_value,
             "max_value": self._max_value,
         }
-        return result
+        return scheduler
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> LogarithmicScheduler:
@@ -235,11 +235,11 @@ class LogarithmicScheduler(Scheduler):
         if "max_value" not in data:
             raise KeyError("data must contain the key 'max_value'.")
         # initializations
-        result = cls(
+        scheduler = cls(
             data["scale"],
             data["offset"],
             data["intercept"],
             data["min_value"],
             data["max_value"],
         )
-        return result
+        return scheduler
