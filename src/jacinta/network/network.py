@@ -489,7 +489,89 @@ class Network:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Network:
         """ """
-        raise NotImplementedError
+        # data validations
+        if not isinstance(data, dict):
+            raise TypeError("data must be a dict.")
+        if "type" not in data:
+            raise KeyError("data must contain the key 'type'.")
+        if data["type"] != cls.__name__:
+            raise ValueError(f"data['type'] must be a {cls.__name__}.")
+        if "nodes" not in data:
+            raise KeyError("data must contain the key 'nodes'.")
+        if not isinstance(data["nodes"], (tuple, list)):
+            raise TypeError("data['nodes'] must be a tuple.")
+        if "connections" not in data:
+            raise KeyError("data must contain the key 'connections'.")
+        if not isinstance(data["connections"], (tuple, list)):
+            raise TypeError("data['connections'] must be a tuple.")
+        for connection in data["connections"]:
+            if not isinstance(connection, (tuple, list)):
+                raise TypeError("All connections must be tuples.")
+            if len(connection) != 2:
+                raise ValueError("All connections must have length 2.")
+            if not isinstance(connection[0], (tuple, list)):
+                raise TypeError("All connection sources must be tuples.")
+            if len(connection[0]) != 2:
+                raise ValueError("All connection sources must have length 2.")
+            if not isinstance(connection[0][0], int):
+                raise TypeError("All connection source indices must be ints.")
+            if not (0 <= connection[0][0] < len(data["nodes"])):
+                raise IndexError("All connection source indices must be in range.")
+            if not isinstance(connection[1], (tuple, list)):
+                raise TypeError("All connection targets must be tuples.")
+            if len(connection[1]) != 2:
+                raise ValueError("All connection targets must have length 2.")
+            if not isinstance(connection[1][0], int):
+                raise TypeError("All connection target indices must be ints.")
+            if not (0 <= connection[1][0] < len(data["nodes"])):
+                raise IndexError("All connection target indices must be in range.")
+        if "rports" not in data:
+            raise KeyError("data must contain the key 'rports'.")
+        if not isinstance(data["rports"], (tuple, list)):
+            raise TypeError("data['rports'] must be a tuple.")
+        for port in data["rports"]:
+            if not isinstance(port, (tuple, list)):
+                raise TypeError("All rports must be tuples.")
+            if len(port) != 2:
+                raise ValueError("All rports must have length 2.")
+            if not isinstance(port[0], int):
+                raise TypeError("All rport indices must be ints.")
+            if not (0 <= port[0] < len(data["nodes"])):
+                raise IndexError("All rport indices must be in range.")
+        if "tports" not in data:
+            raise KeyError("data must contain the key 'tports'.")
+        if not isinstance(data["tports"], (tuple, list)):
+            raise TypeError("data['tports'] must be a tuple.")
+        for port in data["tports"]:
+            if not isinstance(port, (tuple, list)):
+                raise TypeError("All tports must be tuples.")
+            if len(port) != 2:
+                raise ValueError("All tports must have length 2.")
+            if not isinstance(port[0], int):
+                raise TypeError("All tport indices must be ints.")
+            if not (0 <= port[0] < len(data["nodes"])):
+                raise IndexError("All tport indices must be in range.")
+        # initializations
+        network = cls()
+        nodes = tuple(Node.from_dict(node_data) for node_data in data["nodes"])
+        object.__setattr__(network, "_frozen", False)
+        network._nodes = nodes
+        object.__setattr__(network, "_frozen", True)
+        # add connections
+        for (source_idx, source_dim), (target_idx, target_dim) in data["connections"]:
+            network.connect(
+                nodes[source_idx],
+                source_dim,
+                nodes[target_idx],
+                target_dim,
+            )
+        # add rports
+        for node_idx, dim in data["rports"]:
+            network.add_rport(nodes[node_idx], dim)
+        # add tports
+        for node_idx, dim in data["tports"]:
+            network.add_tport(nodes[node_idx], dim)
+        return network
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
         """ """
