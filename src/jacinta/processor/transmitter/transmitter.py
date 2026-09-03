@@ -542,7 +542,6 @@ class Transmitter(NDSpace):
             if data["rng_state"][2] is not None:
                 if not isinstance(data["rng_state"][2], (float, int)):
                     raise TypeError("data['rng_state'][2] must be a float.")
-
             # initializations
             transmitter = cls(
                 data["bounds"],
@@ -556,7 +555,7 @@ class Transmitter(NDSpace):
             )
             rng_state = (
                 data["rng_state"][0],
-                tuple(x for x in data["rng_state"][1]),
+                tuple(data["rng_state"][1]),
                 (
                     float(data["rng_state"][2])
                     if data["rng_state"][2] is not None

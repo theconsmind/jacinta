@@ -250,11 +250,7 @@ class ZScoreEvaluator(Evaluator):
             if data.get("mean") is None:
                 raise ValueError("data['var'] must be None if data['mean'] is None.")
         # initializations
-        evaluator = cls(
-            data["mean_ema_rate"],
-            data["var_ema_rate"],
-            data["eps"],
-        )
+        evaluator = cls(data["mean_ema_rate"], data["var_ema_rate"], data["eps"])
         # update mean and var
         object.__setattr__(evaluator, "_frozen", False)
         evaluator._mean = float(data["mean"]) if data.get("mean") is not None else None
