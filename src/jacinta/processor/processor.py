@@ -63,40 +63,40 @@ class Processor:
     @property
     def rbounds(self) -> tuple[tuple[float, float], ...]:
         """
-        Get the bounds of the receiver.
+        Get the rbounds of the processor.
 
         Returns:
-            tuple[tuple[float, float], ...]: The bounds of the receiver.
+            tuple[tuple[float, float], ...]: The rbounds of the processor.
         """
         return self._receiver.bounds
 
     @property
     def tbounds(self) -> tuple[tuple[float, float], ...]:
         """
-        Get the bounds of the transmitter.
+        Get the tbounds of the processor.
 
         Returns:
-            tuple[tuple[float, float], ...]: The bounds of the transmitter.
+            tuple[tuple[float, float], ...]: The tbounds of the processor.
         """
         return self._receiver.transmitter.bounds
 
     @property
     def rnd(self) -> int:
         """
-        Get the number of dimensions of the receiver.
+        Get the number of rdimensions of the processor.
 
         Returns:
-            int: The number of dimensions of the receiver.
+            int: The number of rdimensions of the processor.
         """
         return self._receiver.nd
 
     @property
     def tnd(self) -> int:
         """
-        Get the number of dimensions of the transmitter.
+        Get the number of tdimensions of the processor.
 
         Returns:
-            int: The number of dimensions of the transmitter.
+            int: The number of tdimensions of the processor.
         """
         return self._receiver.transmitter.nd
 
@@ -158,7 +158,7 @@ class Processor:
 
     def add_rdimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
         """
-        Add new dimensions to the receiver.
+        Add new rdimensions to the processor.
 
         Args:
             bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
@@ -168,7 +168,7 @@ class Processor:
 
     def remove_rdimensions(self, dims: set[int]) -> None:
         """
-        Remove dimensions from the receiver.
+        Remove rdimensions from the processor.
 
         Args:
             dims (set[int]): The indices of the dimensions to remove.
@@ -178,7 +178,7 @@ class Processor:
 
     def add_tdimensions(self, bounds: tuple[tuple[float, float], ...]) -> None:
         """
-        Add new dimensions to the transmitter.
+        Add new tdimensions to the processor.
 
         Args:
             bounds (tuple[tuple[float, float], ...]): The bounds of the new dimensions.
@@ -194,7 +194,7 @@ class Processor:
 
     def remove_tdimensions(self, dims: set[int]) -> None:
         """
-        Remove dimensions from the transmitter.
+        Remove tdimensions from the processor.
 
         Args:
             dims (set[int]): The indices of the dimensions to remove.
@@ -253,9 +253,7 @@ class Processor:
         if "receiver" not in data:
             raise KeyError("data must contain the key 'receiver'.")
         # initializations
-        processor = cls(
-            Receiver.from_dict(data["receiver"]),
-        )
+        processor = cls(Receiver.from_dict(data["receiver"]))
         return processor
 
     def save(self, path: str | Path, overwrite: bool = False) -> None:
@@ -270,6 +268,9 @@ class Processor:
         # path validations
         if not isinstance(path, (str, Path)):
             raise TypeError("path must be a string or a Path.")
+        # overwrite validations
+        if not isinstance(overwrite, bool):
+            raise TypeError("overwrite must be a bool.")
         # file validations
         path = Path(path)
         if path.suffix != ".json":

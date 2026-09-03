@@ -89,20 +89,20 @@ class ProcessorSample:
     @property
     def rcoordinates(self) -> tuple[float, ...]:
         """
-        Get the coordinates of the receiver sample.
+        Get the rcoordinates of the processor sample.
 
         Returns:
-            tuple[float, ...]: The coordinates of the receiver sample.
+            tuple[float, ...]: The rcoordinates of the processor sample.
         """
         return self._rsample.coordinates
 
     @property
     def tcoordinates(self) -> tuple[float, ...] | None:
         """
-        Get the coordinates of the transmitter sample.
+        Get the tcoordinates of the processor sample.
 
         Returns:
-            tuple[float, ...] | None: The coordinates of the transmitter sample.
+            tuple[float, ...] | None: The tcoordinates of the processor sample.
         """
         tcoordinates = self._tsample.coordinates if self._tsample is not None else None
         return tcoordinates
@@ -110,20 +110,20 @@ class ProcessorSample:
     @property
     def rnd(self) -> int:
         """
-        Get the number of dimensions of the receiver sample.
+        Get the number of rdimensions of the processor sample.
 
         Returns:
-            int: The number of dimensions of the receiver sample.
+            int: The number of rdimensions of the processor sample.
         """
         return self._rsample.nd
 
     @property
     def tnd(self) -> int | None:
         """
-        Get the number of dimensions of the transmitter sample.
+        Get the number of tdimensions of the processor sample.
 
         Returns:
-            int | None: The number of dimensions of the transmitter sample.
+            int | None: The number of tdimensions of the processor sample.
         """
         tnd = self._tsample.nd if self._tsample is not None else None
         return tnd
@@ -165,8 +165,10 @@ class ProcessorSample:
         psample = {
             "type": self.__class__.__name__,
             "rsample": self._rsample.to_dict(),
-            "tsample": self._tsample.to_dict() if self._tsample is not None else None,
         }
+        # add tsample
+        if self._tsample is not None:
+            psample["tsample"] = self._tsample.to_dict()
         return psample
 
     @classmethod
@@ -190,13 +192,11 @@ class ProcessorSample:
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
         if "rsample" not in data:
             raise KeyError("data must contain the key 'rsample'.")
-        if "tsample" not in data:
-            raise KeyError("data must contain the key 'tsample'.")
         # initializations
         psample = cls(
             ReceiverSample.from_dict(data["rsample"]),
             TransmitterSample.from_dict(data["tsample"])
-            if data["tsample"] is not None
+            if data.get("tsample") is not None
             else None,
         )
         return psample
@@ -213,6 +213,9 @@ class ProcessorSample:
         # path validations
         if not isinstance(path, (str, Path)):
             raise TypeError("path must be a string or a Path.")
+        # overwrite validations
+        if not isinstance(overwrite, bool):
+            raise TypeError("overwrite must be a bool.")
         # file validations
         path = Path(path)
         if path.suffix != ".json":
