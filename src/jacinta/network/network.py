@@ -5,7 +5,10 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from ..processor import Processor
+from ..processor import Processor, ProcessorSample
+from ..processor.receiver import ReceiverSample
+from ..processor.transmitter import TransmitterSample
+from .network_sample import NetworkSample
 from .node import Node
 
 
@@ -60,6 +63,30 @@ class Network:
         """ """
         return self._tports
 
+    @property
+    def rbounds(self) -> tuple[tuple[float, float], ...]:
+        """ """
+        rbounds = tuple(node.rbounds[dim] for node, dim in self._rports)
+        return rbounds
+
+    @property
+    def tbounds(self) -> tuple[tuple[float, float], ...]:
+        """ """
+        tbounds = tuple(node.tbounds[dim] for node, dim in self._tports)
+        return tbounds
+
+    @property
+    def rnd(self) -> int:
+        """ """
+        rnd = len(self._rports)
+        return rnd
+
+    @property
+    def tnd(self) -> int:
+        """ """
+        tnd = len(self._tports)
+        return tnd
+
     def __eq__(self, other: object) -> bool:
         """ """
         # other validations
@@ -77,6 +104,76 @@ class Network:
         # check if the node is within the network
         is_in = any(node is other for node in self._nodes)
         return is_in
+
+    def create_sample(self, rsample: ReceiverSample) -> NetworkSample:
+        """ """
+        # rsample validations
+        if not isinstance(rsample, ReceiverSample):
+            raise TypeError("rsample must be a ReceiverSample.")
+        if rsample.nd != self.rnd:
+            raise ValueError(f"rsample must be {self.rnd}D.")
+        if not all(
+            lower <= coord < upper
+            for coord, (lower, upper) in zip(
+                rsample.coordinates, self.rbounds, strict=True
+            )
+        ):
+            raise ValueError("rsample must be contained in rbounds.")
+        # create rcoordinates from defaults
+        rcoordinates = [list(node.defaults) for node in self._nodes]
+        # update rcoordinates with rsample
+        node_idxs = {id(node): idx for idx, node in enumerate(self._nodes)}
+        for coord, (node, dim) in zip(rsample.coordinates, self._rports, strict=True):
+            rcoordinates[node_idxs[id(node)]][dim] = coord
+        # create psamples
+        psamples = tuple(
+            ProcessorSample(ReceiverSample(rcoords)) for rcoords in rcoordinates
+        )
+        # create nsample
+        nsample = NetworkSample(rsample, psamples)
+        return nsample
+
+    def forward(self, nsample: NetworkSample, bias: float = 0.0) -> NetworkSample:
+        """ """
+        # nsample validations
+        if not isinstance(nsample, NetworkSample):
+            raise TypeError("nsample must be a NetworkSample.")
+        if nsample.tsample is not None:
+            raise ValueError("nsample.tsample must be None.")
+        if nsample.rnd != self.rnd:
+            raise ValueError(f"nsample.rsample must be {self.rnd}D.")
+        if len(nsample.psamples) != len(self._nodes):
+            raise ValueError(f"nsample.psamples must have length {len(self._nodes)}.")
+        for node, psample in zip(self._nodes, nsample.psamples, strict=True):
+            if psample.tsample is not None:
+                raise ValueError("All nsample.psamples tsamples must be None.")
+            if psample.rsample not in node.processor.receiver:
+                raise ValueError(
+                    "All nsample.psamples rsamples must be contained "
+                    "in their respective rbounds."
+                )
+        node_idxs = {id(node): idx for idx, node in enumerate(self._nodes)}
+        if not all(
+            coord == nsample.psamples[node_idxs[id(node)]].rcoordinates[dim]
+            for coord, (node, dim) in zip(
+                nsample.rcoordinates, self._rports, strict=True
+            )
+        ):
+            raise ValueError("nsample.rsample must match rports.")
+        # create psamples
+        psamples = tuple(
+            node.processor.forward(psample, bias)
+            for node, psample in zip(self._nodes, nsample.psamples, strict=True)
+        )
+        # create tsample
+        tcoords = tuple(
+            psamples[node_idxs[id(node)]].tcoordinates[dim]
+            for node, dim in self._tports
+        )
+        tsample = TransmitterSample(tcoords)
+        # create nsample
+        nsample = NetworkSample(nsample.rsample, psamples, tsample)
+        return nsample
 
     def add_node(self, processor: Processor, defaults: tuple[float, ...]) -> Node:
         """ """
@@ -145,6 +242,14 @@ class Network:
             raise ValueError("target_dim is already connected.")
         if any(port[0] is target and port[1] == target_dim for port in self._rports):
             raise ValueError("target_dim is already an rport.")
+        # source and target bound validations
+        if not (
+            source.tbounds[source_dim][0] >= target.rbounds[target_dim][0]
+            and source.tbounds[source_dim][1] <= target.rbounds[target_dim][1]
+        ):
+            raise ValueError(
+                "source_dim bounds must be contained in target_dim bounds."
+            )
         # add connection
         connection = ((source, source_dim), (target, target_dim))
         object.__setattr__(self, "_frozen", False)
@@ -323,6 +428,10 @@ class Network:
                 raise TypeError("All lower bounds must be floats.")
             if not isinstance(bound[1], (float, int)):
                 raise TypeError("All upper bounds must be floats.")
+            if bound[0] >= bound[1]:
+                raise ValueError(
+                    "All lower bounds must be lower than their respective upper bounds."
+                )
         # defaults validations
         if not isinstance(defaults, (tuple, list)):
             raise TypeError("defaults must be a tuple.")
@@ -350,13 +459,13 @@ class Network:
         # dims validations
         if not isinstance(dims, (set, tuple, list)):
             raise TypeError("dims must be a set.")
-        if len(set(dims)) != len(dims):
-            raise ValueError("All dims must be unique.")
         for dim in dims:
             if not isinstance(dim, int):
                 raise TypeError("All dims must be ints.")
             if not (0 <= dim < node.rnd):
                 raise IndexError("All dims must be in range.")
+        if len(set(dims)) != len(dims):
+            raise ValueError("All dims must be unique.")
         # remove rdimensions from the processor
         dims = set(dims)
         node.processor.remove_rdimensions(dims)
@@ -422,13 +531,13 @@ class Network:
         # dims validations
         if not isinstance(dims, (set, tuple, list)):
             raise TypeError("dims must be a set.")
-        if len(set(dims)) != len(dims):
-            raise ValueError("All dims must be unique.")
         for dim in dims:
             if not isinstance(dim, int):
                 raise TypeError("All dims must be ints.")
             if not (0 <= dim < node.tnd):
                 raise IndexError("All dims must be in range.")
+        if len(set(dims)) != len(dims):
+            raise ValueError("All dims must be unique.")
         # remove tdimensions from the processor
         dims = set(dims)
         node.processor.remove_tdimensions(dims)
@@ -578,6 +687,9 @@ class Network:
         # path validations
         if not isinstance(path, (str, Path)):
             raise TypeError("path must be a string or a Path.")
+        # overwrite validations
+        if not isinstance(overwrite, bool):
+            raise TypeError("overwrite must be a bool.")
         # file validations
         path = Path(path)
         if path.suffix != ".json":
