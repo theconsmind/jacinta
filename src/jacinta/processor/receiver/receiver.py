@@ -506,11 +506,11 @@ class Receiver(NDSpace):
                     and receiver._depth == receiver._max_depth
                 ):
                     raise RuntimeError("receiver cannot be split.")
-                split_point = ReceiverSample.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, receiver) for child_data in data["children"]
                 )
                 # validate split integrity
+                split_point = ReceiverSample.from_dict(data["split_point"])
                 expected_bounds = set(receiver._get_split_bounds(split_point))
                 actual_bounds = {child._bounds for child in children}
                 if (

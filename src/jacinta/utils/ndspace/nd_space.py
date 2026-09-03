@@ -647,11 +647,11 @@ class NDSpace:
             if data.get("children") is not None:
                 if space._max_depth is not None and space._depth == space._max_depth:
                     raise RuntimeError("space cannot be split.")
-                split_point = NDPoint.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, space) for child_data in data["children"]
                 )
                 # validate split integrity
+                split_point = NDPoint.from_dict(data["split_point"])
                 expected_bounds = set(space._get_split_bounds(split_point))
                 actual_bounds = {child._bounds for child in children}
                 if (

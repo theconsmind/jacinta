@@ -626,12 +626,12 @@ class Transmitter(NDSpace):
                     and transmitter._depth == transmitter._max_depth
                 ):
                     raise RuntimeError("transmitter cannot be split.")
-                split_point = TransmitterSample.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, transmitter)
                     for child_data in data["children"]
                 )
                 # validate split integrity
+                split_point = TransmitterSample.from_dict(data["split_point"])
                 expected_bounds = set(transmitter._get_split_bounds(split_point))
                 actual_bounds = {child._bounds for child in children}
                 if (
