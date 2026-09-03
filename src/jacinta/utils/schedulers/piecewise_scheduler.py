@@ -152,6 +152,13 @@ class PiecewiseScheduler(Scheduler):
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
         if "segments" not in data:
             raise KeyError("data must contain the key 'segments'.")
+        if not isinstance(data["segments"], (tuple, list)):
+            raise TypeError("data['segments'] must be a tuple.")
+        for segment in data["segments"]:
+            if not isinstance(segment, (tuple, list)):
+                raise TypeError("All segments must be tuples.")
+            if len(segment) != 2:
+                raise ValueError("All segments must have length 2.")
         # initializations
         segments = tuple(
             (depth, Scheduler.from_dict(scheduler_data))
