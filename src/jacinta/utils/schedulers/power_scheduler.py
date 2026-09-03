@@ -224,9 +224,12 @@ class PowerScheduler(Scheduler):
             "exponent": self._exponent,
             "offset": self._offset,
             "intercept": self._intercept,
-            "min_value": self._min_value,
-            "max_value": self._max_value,
         }
+        # add min and max values
+        if self._min_value is not None:
+            scheduler["min_value"] = self._min_value
+        if self._max_value is not None:
+            scheduler["max_value"] = self._max_value
         return scheduler
 
     @classmethod
@@ -255,17 +258,13 @@ class PowerScheduler(Scheduler):
             raise KeyError("data must contain the key 'offset'.")
         if "intercept" not in data:
             raise KeyError("data must contain the key 'intercept'.")
-        if "min_value" not in data:
-            raise KeyError("data must contain the key 'min_value'.")
-        if "max_value" not in data:
-            raise KeyError("data must contain the key 'max_value'.")
         # initializations
         scheduler = cls(
             data["scale"],
             data["exponent"],
             data["offset"],
             data["intercept"],
-            data["min_value"],
-            data["max_value"],
+            data.get("min_value"),
+            data.get("max_value"),
         )
         return scheduler

@@ -170,9 +170,12 @@ class PolynomialScheduler(Scheduler):
         scheduler = {
             "type": self.__class__.__name__,
             "coefficients": self._coefficients,
-            "min_value": self._min_value,
-            "max_value": self._max_value,
         }
+        # add min and max values
+        if self._min_value is not None:
+            scheduler["min_value"] = self._min_value
+        if self._max_value is not None:
+            scheduler["max_value"] = self._max_value
         return scheduler
 
     @classmethod
@@ -195,14 +198,10 @@ class PolynomialScheduler(Scheduler):
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
         if "coefficients" not in data:
             raise KeyError("data must contain the key 'coefficients'.")
-        if "min_value" not in data:
-            raise KeyError("data must contain the key 'min_value'.")
-        if "max_value" not in data:
-            raise KeyError("data must contain the key 'max_value'.")
         # initializations
         scheduler = cls(
             data["coefficients"],
-            data["min_value"],
-            data["max_value"],
+            data.get("min_value"),
+            data.get("max_value"),
         )
         return scheduler
