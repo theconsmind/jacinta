@@ -472,13 +472,13 @@ class NDSpace:
         # dims validations
         if not isinstance(dims, (set, tuple, list)):
             raise TypeError("dims must be a set.")
-        if len(set(dims)) != len(dims):
-            raise ValueError("All dims must be unique.")
         for dim in dims:
             if not isinstance(dim, int):
                 raise TypeError("All dims must be ints.")
             if not (0 <= dim < self.nd):
                 raise IndexError("All dims must be in range.")
+        if len(set(dims)) != len(dims):
+            raise ValueError("All dims must be unique.")
         # remove dimensions from the whole tree
         dims = set(dims)
         root = self.root
@@ -563,23 +563,24 @@ class NDSpace:
             Returns:
                 dict[str, Any]: The dictionary representation of the space.
             """
-            space = {
+            space_data = {
                 "type": space.__class__.__name__,
                 "bounds": space._bounds,
-                "min_width": space._min_width,
-                "max_depth": space._max_depth,
-                "split_point": (
-                    space._split_point.to_dict()
-                    if space._split_point is not None
-                    else None
-                ),
-                "children": (
-                    tuple(_to_dict(child) for child in space._children)
-                    if not space.is_leaf
-                    else None
-                ),
             }
-            return space
+            # add split_point
+            if space._split_point is not None:
+                space_data["split_point"] = space._split_point.to_dict()
+            # add children
+            if not space.is_leaf:
+                space_data["children"] = tuple(
+                    _to_dict(child) for child in space._children
+                )
+            # add min_width and max_depth
+            if space._min_width is not None:
+                space_data["min_width"] = space._min_width
+            if space._max_depth is not None:
+                space_data["max_depth"] = space._max_depth
+            return space_data
 
         space = _to_dict(self)
         return space
@@ -617,42 +618,35 @@ class NDSpace:
                 raise ValueError(f"data['type'] must be an {cls.__name__}.")
             if "bounds" not in data:
                 raise KeyError("data must contain the key 'bounds'.")
-            if "min_width" not in data:
-                raise KeyError("data must contain the key 'min_width'.")
-            if "max_depth" not in data:
-                raise KeyError("data must contain the key 'max_depth'.")
-            if "split_point" not in data:
-                raise KeyError("data must contain the key 'split_point'.")
-            if "children" not in data:
-                raise KeyError("data must contain the key 'children'.")
-            if (data["split_point"] is None) != (data["children"] is None):
+            if data.get("children") is not None:
+                if not isinstance(data["children"], (tuple, list)):
+                    raise TypeError("data['children'] must be a tuple.")
+            if (data.get("split_point") is None) != (data.get("children") is None):
                 raise ValueError(
                     "data['split_point'] and data['children'] must be both None "
                     "or both not None."
                 )
-            # parent validations
+            # initializations
+            space = cls(data["bounds"], data.get("min_width"), data.get("max_depth"))
+            # update parent attributes
             if parent is not None:
-                if parent._max_depth is not None and parent._depth == parent._max_depth:
-                    raise RuntimeError("parent cannot be split.")
-                if parent._min_width != data["min_width"]:
+                if parent._min_width != space._min_width:
                     raise ValueError(
                         "data['min_width'] must be equal to parent.min_width."
                     )
-                if parent._max_depth != data["max_depth"]:
+                if parent._max_depth != space._max_depth:
                     raise ValueError(
                         "data['max_depth'] must be equal to parent.max_depth."
                     )
-            # initializations
-            space = cls(data["bounds"], data["min_width"], data["max_depth"])
-            # update parent attributes
-            if parent is not None:
                 object.__setattr__(space, "_frozen", False)
                 space._parent = parent
                 space._root = parent._root
                 space._depth = parent._depth + 1
                 object.__setattr__(space, "_frozen", True)
             # update children attributes
-            if data["children"] is not None:
+            if data.get("children") is not None:
+                if space._max_depth is not None and space._depth == space._max_depth:
+                    raise RuntimeError("space cannot be split.")
                 split_point = NDPoint.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, space) for child_data in data["children"]
@@ -687,6 +681,9 @@ class NDSpace:
         # path validations
         if not isinstance(path, (str, Path)):
             raise TypeError("path must be a string or a Path.")
+        # overwrite validations
+        if not isinstance(overwrite, bool):
+            raise TypeError("overwrite must be a bool.")
         # file validations
         path = Path(path)
         if path.suffix != ".json":

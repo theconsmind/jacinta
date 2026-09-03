@@ -144,6 +144,9 @@ class NDPoint:
         # path validations
         if not isinstance(path, (str, Path)):
             raise TypeError("path must be a string or a Path.")
+        # overwrite validations
+        if not isinstance(overwrite, bool):
+            raise TypeError("overwrite must be a bool.")
         # file validations
         path = Path(path)
         if path.suffix != ".json":
