@@ -204,12 +204,15 @@ class ZScoreEvaluator(Evaluator):
         """
         evaluator = {
             "type": self.__class__.__name__,
-            "mean": self._mean,
-            "var": self._var,
             "mean_ema_rate": self._mean_ema_rate,
             "var_ema_rate": self._var_ema_rate,
             "eps": self._eps,
         }
+        # add mean and var
+        if self._mean is not None:
+            evaluator["mean"] = self._mean
+        if self._var is not None:
+            evaluator["var"] = self._var
         return evaluator
 
     @classmethod
@@ -230,22 +233,22 @@ class ZScoreEvaluator(Evaluator):
             raise KeyError("data must contain the key 'type'.")
         if data["type"] != cls.__name__:
             raise ValueError(f"data['type'] must be a {cls.__name__}.")
-        if "mean" not in data:
-            raise KeyError("data must contain the key 'mean'.")
-        if data["mean"] is not None:
-            if not isinstance(data["mean"], (float, int)):
-                raise TypeError("data['mean'] must be a float.")
-        if "var" not in data:
-            raise KeyError("data must contain the key 'var'.")
-        if data["var"] is not None:
-            if not isinstance(data["var"], (float, int)):
-                raise TypeError("data['var'] must be a float.")
         if "mean_ema_rate" not in data:
             raise KeyError("data must contain the key 'mean_ema_rate'.")
         if "var_ema_rate" not in data:
             raise KeyError("data must contain the key 'var_ema_rate'.")
         if "eps" not in data:
             raise KeyError("data must contain the key 'eps'.")
+        if data.get("mean") is not None:
+            if not isinstance(data.get("mean"), (float, int)):
+                raise TypeError("data['mean'] must be a float.")
+        if data.get("var") is not None:
+            if not isinstance(data.get("var"), (float, int)):
+                raise TypeError("data['var'] must be a float.")
+            if data.get("var") < 0.0:
+                raise ValueError("data['var'] must be greater than or equal to 0.0.")
+            if data.get("mean") is None:
+                raise ValueError("data['var'] must be None if data['mean'] is None.")
         # initializations
         evaluator = cls(
             data["mean_ema_rate"],
@@ -254,7 +257,9 @@ class ZScoreEvaluator(Evaluator):
         )
         # update mean and var
         object.__setattr__(evaluator, "_frozen", False)
-        evaluator._mean = float(data["mean"]) if data["mean"] is not None else None
-        evaluator._var = float(data["var"]) if data["var"] is not None else None
+        evaluator._mean = (
+            float(data.get("mean")) if data.get("mean") is not None else None
+        )
+        evaluator._var = float(data.get("var")) if data.get("var") is not None else None
         object.__setattr__(evaluator, "_frozen", True)
         return evaluator
