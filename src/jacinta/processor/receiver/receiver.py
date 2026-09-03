@@ -349,26 +349,27 @@ class Receiver(NDSpace):
             Returns:
                 dict[str, Any]: The dictionary representation of the receiver.
             """
-            receiver = {
+            receiver_data = {
                 "type": receiver.__class__.__name__,
                 "bounds": receiver._bounds,
                 "transmitter": receiver._transmitter.to_dict(),
                 "hits_rate_scheduler": receiver._hits_rate_scheduler.to_dict(),
                 "hits_left": receiver._hits_left,
-                "min_width": receiver._min_width,
-                "max_depth": receiver._max_depth,
-                "split_point": (
-                    receiver._split_point.to_dict()
-                    if receiver._split_point is not None
-                    else None
-                ),
-                "children": (
-                    tuple(_to_dict(child) for child in receiver._children)
-                    if not receiver.is_leaf
-                    else None
-                ),
             }
-            return receiver
+            # add split_point
+            if receiver._split_point is not None:
+                receiver_data["split_point"] = receiver._split_point.to_dict()
+            # add children
+            if not receiver.is_leaf:
+                receiver_data["children"] = tuple(
+                    _to_dict(child) for child in receiver._children
+                )
+            # add min_width and max_depth
+            if receiver._min_width is not None:
+                receiver_data["min_width"] = receiver._min_width
+            if receiver._max_depth is not None:
+                receiver_data["max_depth"] = receiver._max_depth
+            return receiver_data
 
         receiver = _to_dict(self)
         return receiver
@@ -409,15 +410,10 @@ class Receiver(NDSpace):
                 raise ValueError(f"data['type'] must be a {cls.__name__}.")
             if "bounds" not in data:
                 raise KeyError("data must contain the key 'bounds'.")
-            if "min_width" not in data:
-                raise KeyError("data must contain the key 'min_width'.")
-            if "max_depth" not in data:
-                raise KeyError("data must contain the key 'max_depth'.")
-            if "split_point" not in data:
-                raise KeyError("data must contain the key 'split_point'.")
-            if "children" not in data:
-                raise KeyError("data must contain the key 'children'.")
-            if (data["split_point"] is None) != (data["children"] is None):
+            if data.get("children") is not None:
+                if not isinstance(data["children"], (tuple, list)):
+                    raise TypeError("data['children'] must be a tuple.")
+            if (data.get("split_point") is None) != (data.get("children") is None):
                 raise ValueError(
                     "data['split_point'] and data['children'] must be both None "
                     "or both not None."
@@ -430,27 +426,25 @@ class Receiver(NDSpace):
                 raise KeyError("data must contain the key 'hits_left'.")
             if not isinstance(data["hits_left"], (float, int)):
                 raise TypeError("data['hits_left'] must be a float.")
-            # parent validations
-            if parent is not None:
-                if parent._max_depth is not None and parent._depth == parent._max_depth:
-                    raise RuntimeError("parent cannot be split.")
-                if parent._min_width != data["min_width"]:
-                    raise ValueError(
-                        "data['min_width'] must be equal to parent.min_width."
-                    )
-                if parent._max_depth != data["max_depth"]:
-                    raise ValueError(
-                        "data['max_depth'] must be equal to parent.max_depth."
-                    )
             # initializations
             receiver = cls(
                 data["bounds"],
                 Transmitter.from_dict(data["transmitter"]),
                 Scheduler.from_dict(data["hits_rate_scheduler"]),
-                data["min_width"],
-                data["max_depth"],
+                data.get("min_width"),
+                data.get("max_depth"),
             )
+            # update parent attributes
+            object.__setattr__(receiver, "_frozen", False)
             if parent is not None:
+                if parent._min_width != receiver._min_width:
+                    raise ValueError(
+                        "data['min_width'] must be equal to parent.min_width."
+                    )
+                if parent._max_depth != receiver._max_depth:
+                    raise ValueError(
+                        "data['max_depth'] must be equal to parent.max_depth."
+                    )
                 if receiver._hits_rate_scheduler != parent._hits_rate_scheduler:
                     raise ValueError(
                         "data['hits_rate_scheduler'] must be equal to "
@@ -495,9 +489,6 @@ class Receiver(NDSpace):
                         "data['transmitter']['hits_rate_scheduler'] must be equal "
                         "to parent.transmitter.hits_rate_scheduler."
                     )
-            # update parent attributes
-            object.__setattr__(receiver, "_frozen", False)
-            if parent is not None:
                 receiver._parent = parent
                 receiver._root = parent._root
                 receiver._depth = parent._depth + 1
@@ -509,7 +500,12 @@ class Receiver(NDSpace):
                     "data['hits_left'] is not compatible with the hits_rate_scheduler."
                 )
             # update children attributes
-            if data["children"] is not None:
+            if data.get("children") is not None:
+                if (
+                    receiver._max_depth is not None
+                    and receiver._depth == receiver._max_depth
+                ):
+                    raise RuntimeError("receiver cannot be split.")
                 split_point = ReceiverSample.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, receiver) for child_data in data["children"]
