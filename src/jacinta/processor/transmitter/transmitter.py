@@ -433,7 +433,7 @@ class Transmitter(NDSpace):
             Returns:
                 dict[str, Any]: The dictionary representation of the transmitter.
             """
-            transmitter = {
+            transmitter_data = {
                 "type": transmitter.__class__.__name__,
                 "bounds": transmitter._bounds,
                 "log_weight": transmitter._log_weight,
@@ -444,22 +444,25 @@ class Transmitter(NDSpace):
                 ),
                 "hits_rate_scheduler": transmitter._hits_rate_scheduler.to_dict(),
                 "hits_left": transmitter._hits_left,
-                "min_width": transmitter._min_width,
-                "max_depth": transmitter._max_depth,
-                "seed": transmitter._seed,
                 "rng_state": transmitter._rng.getstate(),
-                "split_point": (
-                    transmitter._split_point.to_dict()
-                    if transmitter._split_point is not None
-                    else None
-                ),
-                "children": (
-                    tuple(_to_dict(child) for child in transmitter._children)
-                    if not transmitter.is_leaf
-                    else None
-                ),
             }
-            return transmitter
+            # add split_point
+            if transmitter._split_point is not None:
+                transmitter_data["split_point"] = transmitter._split_point.to_dict()
+            # add children
+            if not transmitter.is_leaf:
+                transmitter_data["children"] = tuple(
+                    _to_dict(child) for child in transmitter._children
+                )
+            # add min_width and max_depth
+            if transmitter._min_width is not None:
+                transmitter_data["min_width"] = transmitter._min_width
+            if transmitter._max_depth is not None:
+                transmitter_data["max_depth"] = transmitter._max_depth
+            # add seed
+            if transmitter._seed is not None:
+                transmitter_data["seed"] = transmitter._seed
+            return transmitter_data
 
         transmitter = _to_dict(self)
         return transmitter
@@ -500,15 +503,10 @@ class Transmitter(NDSpace):
                 raise ValueError(f"data['type'] must be a {cls.__name__}.")
             if "bounds" not in data:
                 raise KeyError("data must contain the key 'bounds'.")
-            if "min_width" not in data:
-                raise KeyError("data must contain the key 'min_width'.")
-            if "max_depth" not in data:
-                raise KeyError("data must contain the key 'max_depth'.")
-            if "split_point" not in data:
-                raise KeyError("data must contain the key 'split_point'.")
-            if "children" not in data:
-                raise KeyError("data must contain the key 'children'.")
-            if (data["split_point"] is None) != (data["children"] is None):
+            if data.get("children") is not None:
+                if not isinstance(data["children"], (tuple, list)):
+                    raise TypeError("data['children'] must be a tuple.")
+            if (data.get("split_point") is None) != (data.get("children") is None):
                 raise ValueError(
                     "data['split_point'] and data['children'] must be both None "
                     "or both not None."
@@ -529,8 +527,6 @@ class Transmitter(NDSpace):
                 raise KeyError("data must contain the key 'hits_left'.")
             if not isinstance(data["hits_left"], (float, int)):
                 raise TypeError("data['hits_left'] must be a float.")
-            if "seed" not in data:
-                raise KeyError("data must contain the key 'seed'.")
             if "rng_state" not in data:
                 raise KeyError("data must contain the key 'rng_state'.")
             if not isinstance(data["rng_state"], (tuple, list)):
@@ -546,18 +542,7 @@ class Transmitter(NDSpace):
             if data["rng_state"][2] is not None:
                 if not isinstance(data["rng_state"][2], (float, int)):
                     raise TypeError("data['rng_state'][2] must be a float.")
-            # parent validations
-            if parent is not None:
-                if parent._max_depth is not None and parent._depth == parent._max_depth:
-                    raise RuntimeError("parent cannot be split.")
-                if parent._min_width != data["min_width"]:
-                    raise ValueError(
-                        "data['min_width'] must be equal to parent.min_width."
-                    )
-                if parent._max_depth != data["max_depth"]:
-                    raise ValueError(
-                        "data['max_depth'] must be equal to parent.max_depth."
-                    )
+
             # initializations
             transmitter = cls(
                 data["bounds"],
@@ -565,9 +550,9 @@ class Transmitter(NDSpace):
                 Scheduler.from_dict(data["bias_scale_scheduler"]),
                 Scheduler.from_dict(data["learning_rate_scheduler"]),
                 Scheduler.from_dict(data["hits_rate_scheduler"]),
-                data["min_width"],
-                data["max_depth"],
-                data["seed"],
+                data.get("min_width"),
+                data.get("max_depth"),
+                data.get("seed"),
             )
             rng_state = (
                 data["rng_state"][0],
@@ -578,7 +563,17 @@ class Transmitter(NDSpace):
                     else None
                 ),
             )
+            # update parent attributes
+            object.__setattr__(transmitter, "_frozen", False)
             if parent is not None:
+                if parent._min_width != transmitter._min_width:
+                    raise ValueError(
+                        "data['min_width'] must be equal to parent.min_width."
+                    )
+                if parent._max_depth != transmitter._max_depth:
+                    raise ValueError(
+                        "data['max_depth'] must be equal to parent.max_depth."
+                    )
                 if transmitter._evaluator != parent._evaluator:
                     raise ValueError(
                         "data['evaluator'] must be equal to parent.evaluator."
@@ -605,9 +600,6 @@ class Transmitter(NDSpace):
                     raise ValueError(
                         "data['rng_state'] must be equal to the parent rng state."
                     )
-            # update parent attributes
-            object.__setattr__(transmitter, "_frozen", False)
-            if parent is not None:
                 transmitter._parent = parent
                 transmitter._root = parent._root
                 transmitter._depth = parent._depth + 1
@@ -628,7 +620,12 @@ class Transmitter(NDSpace):
                     "data['hits_left'] is not compatible with the hits_rate_scheduler."
                 )
             # update children attributes
-            if data["children"] is not None:
+            if data.get("children") is not None:
+                if (
+                    transmitter._max_depth is not None
+                    and transmitter._depth == transmitter._max_depth
+                ):
+                    raise RuntimeError("transmitter cannot be split.")
                 split_point = TransmitterSample.from_dict(data["split_point"])
                 children = tuple(
                     _from_dict(child_data, transmitter)
